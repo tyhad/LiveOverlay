@@ -41,7 +41,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
    bun install
    ```
 
-3. **Build aset CSS & JS:**
+3. **Build aset CSS:**
    ```bash
    bun run build
    ```
@@ -89,9 +89,8 @@ Buka web browser Anda dan akses:
 | :--- | :--- |
 | `bun run dev` | Menjalankan server backend dalam mode watch |
 | `bun run dev:css` | Menjalankan watch compiler untuk Tailwind CSS |
-| `bun run build` | Mengompilasi Tailwind CSS dan bundle JS klien |
-| `bun run build:css` | Mengompilasi `src/styles/input.css` ke `public/styles.css` |
-| `bun run build:js` | Mengompilasi `src/client/app.ts` ke `public/js/app.js` |
+| `bun run build` | Mengompilasi Tailwind CSS (`src/styles/input.css` ke `public/styles.css`) |
+| `bun run build:css` | Mengompilasi `src/styles/input.css` ke `public/styles.css` secara langsung |
 | `bun start` | Menjalankan server dalam mode produksi |
 
 ---
@@ -115,6 +114,8 @@ Jika Anda ingin menambahkan proteksi ekstra pada endpoint update settings `POST 
 SETTINGS_SECRET=kunci_rahasia_anda_disini
 ```
 
+> ⚠️ **Catatan Penting**: Variabel `SETTINGS_SECRET` bersifat **opsional**. Jika variabel ini tidak diatur di `.env`, endpoint `POST /api/settings` akan menerima perubahan tanpa autentikasi token (hanya mengandalkan pembatasan localhost `127.0.0.1`). Pastikan menyetel secret token ini jika Anda berencana mengekspos server ke jaringan luar/LAN.
+
 ---
 
 ## 📁 Struktur Proyek
@@ -124,12 +125,10 @@ LiveOverlay/
 ├── public/
 │   ├── index.html           # Control Panel Dashboard (GUI)
 │   ├── overlay.html         # Transparent OBS Browser Source Overlay
-│   ├── styles.css           # Compiled Tailwind CSS
-│   └── js/app.js            # Bundled client script
+│   └── styles.css           # Compiled Tailwind CSS
 ├── src/
 │   ├── index.ts             # ElysiaJS Backend Server & API Routes
-│   ├── styles/input.css     # Tailwind CSS entry directive
-│   └── client/app.ts        # GSAP frontend client entry
+│   └── styles/input.css     # Tailwind CSS entry directive
 ├── settings.example.json    # Template data settings
 ├── package.json             # Project dependencies & scripts
 ├── tsconfig.json            # TypeScript configuration

@@ -7,8 +7,7 @@
     "dev": "bun --watch src/index.ts",
     "dev:css": "tailwindcss -i src/styles/input.css -o public/styles.css --watch",
     "build:css": "tailwindcss -i src/styles/input.css -o public/styles.css --minify",
-    "build:js": "bun build src/client/app.ts --outdir public/js --minify",
-    "build": "bun run build:css && bun run build:js",
+    "build": "bun run build:css",
     "start": "bun src/index.ts"
   },
   "devDependencies": {

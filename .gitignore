@@ -24,6 +24,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # local data
 settings.json
+scene.json
+scenes.json
 
 # caches
 .eslintcache

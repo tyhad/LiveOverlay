@@ -3,11 +3,54 @@ import { staticPlugin } from '@elysiajs/static'
 
 const SETTINGS_FILE = 'settings.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
+const SCENE_FILE = 'scene.json'
+const EXAMPLE_SCENE_FILE = 'scene.example.json'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
 
 interface Settings {
   tiktokUsername: string
   runningText: string
+}
+
+interface ElementStyle {
+  text?: string
+  fontSize?: number
+  fontFamily?: string
+  fontWeight?: string
+  color?: string
+  backgroundColor?: string
+  borderRadius?: number
+  borderWidth?: number
+  borderColor?: string
+  padding?: number
+  textAlign?: string
+  shadowColor?: string
+  shadowBlur?: number
+}
+
+interface SceneElement {
+  id: string
+  type: 'text' | 'shape' | 'badge' | 'image'
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation?: number
+  opacity?: number
+  zIndex?: number
+  style: ElementStyle
+}
+
+interface SceneData {
+  id: string
+  name: string
+  canvas: {
+    width: number
+    height: number
+    backgroundColor?: string
+  }
+  elements: SceneElement[]
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -26,7 +69,6 @@ async function getSettings(): Promise<Settings> {
     }
   }
 
-  // Check if example file exists to use as template
   const exampleFile = Bun.file(EXAMPLE_SETTINGS_FILE)
   let initialData = DEFAULT_SETTINGS
   if (await exampleFile.exists()) {
@@ -51,6 +93,73 @@ async function saveSettings(data: Partial<Settings>): Promise<Settings> {
   return updated
 }
 
+async function getScene(): Promise<SceneData> {
+  const file = Bun.file(SCENE_FILE)
+  if (await file.exists()) {
+    try {
+      const text = await file.text()
+      return JSON.parse(text)
+    } catch {
+      // Fallback if parsing fails
+    }
+  }
+
+  const exampleFile = Bun.file(EXAMPLE_SCENE_FILE)
+  if (await exampleFile.exists()) {
+    try {
+      const initialScene: SceneData = JSON.parse(await exampleFile.text())
+      await Bun.write(SCENE_FILE, JSON.stringify(initialScene, null, 2))
+      return initialScene
+    } catch {
+      // Fallback
+    }
+  }
+
+  const fallbackScene: SceneData = {
+    id: 'default',
+    name: 'Live Streaming Scene',
+    canvas: {
+      width: 1920,
+      height: 1080,
+      backgroundColor: 'transparent',
+    },
+    elements: [
+      {
+        id: 'el-welcome-text',
+        type: 'text',
+        name: 'Welcome Text',
+        x: 100,
+        y: 900,
+        width: 500,
+        height: 50,
+        rotation: 0,
+        opacity: 1,
+        zIndex: 1,
+        style: {
+          text: '✨ Live Stream Starting Soon!',
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: '#ffffff',
+          backgroundColor: '#1e1b4b',
+          borderRadius: 12,
+          padding: 10,
+          textAlign: 'left',
+          borderColor: '#6366f1',
+          borderWidth: 2,
+        },
+      },
+    ],
+  }
+
+  await Bun.write(SCENE_FILE, JSON.stringify(fallbackScene, null, 2))
+  return fallbackScene
+}
+
+async function saveScene(scene: SceneData): Promise<SceneData> {
+  await Bun.write(SCENE_FILE, JSON.stringify(scene, null, 2))
+  return scene
+}
+
 const app = new Elysia()
   .use(
     staticPlugin({
@@ -65,7 +174,7 @@ const app = new Elysia()
   .get('/api/health', () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    message: 'LiveOverlay Backend Ready',
+    message: 'LiveOverlay Studio Backend Ready',
   }))
   .get('/api/settings', async () => {
     return await getSettings()
@@ -73,7 +182,6 @@ const app = new Elysia()
   .post(
     '/api/settings',
     async ({ body, headers, set }) => {
-      // If a secret token is configured in the environment, validate it
       if (SETTINGS_SECRET) {
         const authHeader = headers['authorization'] || headers['x-secret-token']
         const token = authHeader?.replace(/^Bearer\s+/i, '')
@@ -101,9 +209,32 @@ const app = new Elysia()
       }),
     }
   )
+  .get('/api/scene', async () => {
+    return await getScene()
+  })
+  .post(
+    '/api/scene',
+    async ({ body, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
+      const updated = await saveScene(body as SceneData)
+      return {
+        success: true,
+        message: 'Scene saved successfully',
+        data: updated,
+      }
+    }
+  )
   .listen({
     port: 3000,
     hostname: '127.0.0.1',
   })
 
-console.log(`🦊 Elysia is running at http://${app.server?.hostname}:${app.server?.port}`)
+console.log(`🦊 LiveOverlay Studio running at http://${app.server?.hostname}:${app.server?.port}`)

@@ -2,6 +2,8 @@ import { Elysia, t } from 'elysia'
 import { staticPlugin } from '@elysiajs/static'
 
 const SETTINGS_FILE = 'settings.json'
+const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
+const SETTINGS_SECRET = process.env.SETTINGS_SECRET
 
 interface Settings {
   tiktokUsername: string
@@ -15,18 +17,28 @@ const DEFAULT_SETTINGS: Settings = {
 
 async function getSettings(): Promise<Settings> {
   const file = Bun.file(SETTINGS_FILE)
-  if (!(await file.exists())) {
-    await Bun.write(SETTINGS_FILE, JSON.stringify(DEFAULT_SETTINGS, null, 2))
-    return DEFAULT_SETTINGS
+  if (await file.exists()) {
+    try {
+      const text = await file.text()
+      return JSON.parse(text)
+    } catch {
+      // Fallback if parsing fails
+    }
   }
 
-  try {
-    const text = await file.text()
-    return JSON.parse(text)
-  } catch {
-    await Bun.write(SETTINGS_FILE, JSON.stringify(DEFAULT_SETTINGS, null, 2))
-    return DEFAULT_SETTINGS
+  // Check if example file exists to use as template
+  const exampleFile = Bun.file(EXAMPLE_SETTINGS_FILE)
+  let initialData = DEFAULT_SETTINGS
+  if (await exampleFile.exists()) {
+    try {
+      initialData = JSON.parse(await exampleFile.text())
+    } catch {
+      initialData = DEFAULT_SETTINGS
+    }
   }
+
+  await Bun.write(SETTINGS_FILE, JSON.stringify(initialData, null, 2))
+  return initialData
 }
 
 async function saveSettings(data: Partial<Settings>): Promise<Settings> {
@@ -46,7 +58,10 @@ const app = new Elysia()
       prefix: '',
     })
   )
-  .get('/', () => Bun.file('public/gui.html'))
+  .get('/', () => Bun.file('public/index.html'))
+  .get('/gui.html', ({ set }) => {
+    set.redirect = '/'
+  })
   .get('/api/health', () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -57,11 +72,22 @@ const app = new Elysia()
   })
   .post(
     '/api/settings',
-    async ({ body }) => {
+    async ({ body, headers, set }) => {
+      // If a secret token is configured in the environment, validate it
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
       const updated = await saveSettings({
         tiktokUsername: body.tiktokUsername,
         runningText: body.runningText,
       })
+
       return {
         success: true,
         message: 'Settings saved successfully',
@@ -75,6 +101,9 @@ const app = new Elysia()
       }),
     }
   )
-  .listen(3000)
+  .listen({
+    port: 3000,
+    hostname: '127.0.0.1',
+  })
 
 console.log(`🦊 Elysia is running at http://${app.server?.hostname}:${app.server?.port}`)

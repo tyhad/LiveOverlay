@@ -1,0 +1,99 @@
+{
+  "id": "default",
+  "name": "Live Streaming Scene",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "backgroundColor": "transparent"
+  },
+  "elements": [
+    {
+      "id": "banner-bg",
+      "type": "shape",
+      "name": "Announcement Box",
+      "x": 60,
+      "y": 940,
+      "width": 640,
+      "height": 60,
+      "rotation": 0,
+      "opacity": 0.95,
+      "zIndex": 1,
+      "style": {
+        "backgroundColor": "#090d16",
+        "borderRadius": 18,
+        "borderWidth": 1.5,
+        "borderColor": "#334155",
+        "shadowColor": "rgba(0,0,0,0.5)",
+        "shadowBlur": 20
+      }
+    },
+    {
+      "id": "banner-text",
+      "type": "text",
+      "name": "Running Stream Text",
+      "x": 84,
+      "y": 955,
+      "width": 590,
+      "height": 30,
+      "rotation": 0,
+      "opacity": 1,
+      "zIndex": 2,
+      "style": {
+        "text": "✨ Welcome to the live stream! Jangan lupa Tap-tap layar & Follow!",
+        "fontSize": 18,
+        "fontWeight": "600",
+        "color": "#f8fafc",
+        "backgroundColor": "transparent",
+        "textAlign": "left",
+        "padding": 0,
+        "borderRadius": 0,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "badge-bg",
+      "type": "shape",
+      "name": "TikTok Badge BG",
+      "x": 60,
+      "y": 865,
+      "width": 260,
+      "height": 55,
+      "rotation": 0,
+      "opacity": 0.95,
+      "zIndex": 3,
+      "style": {
+        "backgroundColor": "#18181b",
+        "borderRadius": 16,
+        "borderWidth": 1.5,
+        "borderColor": "#ec4899",
+        "shadowColor": "rgba(236,72,153,0.3)",
+        "shadowBlur": 16
+      }
+    },
+    {
+      "id": "badge-text",
+      "type": "text",
+      "name": "TikTok Username",
+      "x": 80,
+      "y": 878,
+      "width": 220,
+      "height": 30,
+      "rotation": 0,
+      "opacity": 1,
+      "zIndex": 4,
+      "style": {
+        "text": "🎵 @creator_stream",
+        "fontSize": 20,
+        "fontWeight": "bold",
+        "color": "#f43f5e",
+        "backgroundColor": "transparent",
+        "textAlign": "left",
+        "padding": 0,
+        "borderRadius": 0,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    }
+  ]
+}

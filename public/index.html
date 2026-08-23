@@ -3,132 +3,864 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LiveOverlay - Control Panel</title>
+  <title>LiveOverlay Studio - Canvas Editor</title>
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* Custom checkered background for canvas workspace */
+    .canvas-workspace {
+      background-color: #0b0f19;
+      background-image: 
+        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+    
+    /* Selection bounding box and resize handles */
+    .element-selected {
+      outline: 2px solid #6366f1 !important;
+      outline-offset: 1px;
+    }
+
+    .resize-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: #ffffff;
+      border: 2px solid #4f46e5;
+      border-radius: 2px;
+      z-index: 9999;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+    .handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+    .handle-n  { top: -6px; left: calc(50% - 5px); cursor: ns-resize; }
+    .handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+    .handle-e  { top: calc(50% - 5px); right: -6px; cursor: ew-resize; }
+    .handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+    .handle-s  { bottom: -6px; left: calc(50% - 5px); cursor: ns-resize; }
+    .handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+    .handle-w  { top: calc(50% - 5px); left: -6px; cursor: ew-resize; }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans antialiased selection:bg-indigo-500 selection:text-white">
-  <div class="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur">
-    <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-      <div class="flex items-center space-x-3">
-        <span class="text-2xl">🎛️</span>
-        <div>
-          <h1 class="text-xl font-bold text-white tracking-tight">LiveOverlay Control Panel</h1>
-          <p class="text-xs text-slate-400">Manage stream overlay content</p>
-        </div>
+<body class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
+
+  <!-- TOP NAVIGATION / HEADER -->
+  <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white font-black text-base shadow-lg shadow-indigo-500/20">
+        ⚡
       </div>
-      <a href="/overlay.html" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-indigo-400 hover:text-indigo-300 border border-slate-700 transition">
-        <span>Open Overlay</span>
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-sm font-bold tracking-tight text-white">LiveOverlay Studio</h1>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Fase 1</span>
+        </div>
+        <p class="text-[11px] text-slate-400 font-mono" id="scene-title">Canvas: 1920 × 1080 (16:9)</p>
+      </div>
+    </div>
+
+    <!-- Zoom & Canvas Controls -->
+    <div class="flex items-center space-x-2 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+      <button id="zoom-out-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom Out">−</button>
+      <span id="zoom-level" class="text-xs font-mono px-2 text-slate-300">50%</span>
+      <button id="zoom-in-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom In">+</button>
+      <button id="zoom-fit-btn" class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">Fit</button>
+    </div>
+
+    <!-- Actions: Save & Open Overlay -->
+    <div class="flex items-center space-x-3">
+      <div id="save-status" class="text-xs font-medium text-emerald-400 opacity-0 transition-opacity duration-200 flex items-center gap-1">
+        <span>✓</span><span>Saved</span>
+      </div>
+      
+      <button id="save-scene-btn" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
+        <span>💾</span>
+        <span>Save Scene</span>
+      </button>
+
+      <a href="/overlay.html" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
+        <span>Preview OBS</span>
+        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
         </svg>
       </a>
     </div>
+  </header>
 
-    <form id="settings-form" class="space-y-5">
-      <div>
-        <label for="tiktokUsername" class="block text-sm font-medium text-slate-300 mb-1.5">
-          Username TikTok
-        </label>
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-sm">@</span>
-          <input
-            type="text"
-            id="tiktokUsername"
-            name="tiktokUsername"
-            placeholder="creator_username"
-            class="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-          >
+  <!-- MAIN WORKSPACE -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT SIDEBAR: Tools & Layers -->
+    <aside class="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 z-20">
+      
+      <!-- Section 1: Add Elements -->
+      <div class="p-4 border-b border-slate-800">
+        <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-3">Add Elements</h2>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="add-text-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+            <span class="text-lg">🔤</span>
+            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Text</span>
+          </button>
+
+          <button id="add-shape-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+            <span class="text-lg">⬛</span>
+            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Shape Box</span>
+          </button>
+
+          <button id="add-badge-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+            <span class="text-lg">🎵</span>
+            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Badge</span>
+          </button>
+
+          <button id="add-banner-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+            <span class="text-lg">📢</span>
+            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Banner</span>
+          </button>
         </div>
       </div>
 
-      <div>
-        <label for="runningText" class="block text-sm font-medium text-slate-300 mb-1.5">
-          Running Text
-        </label>
-        <textarea
-          id="runningText"
-          name="runningText"
-          rows="3"
-          placeholder="Tulis pesan running text di sini..."
-          class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
-        ></textarea>
-      </div>
-
-      <div class="flex items-center justify-between pt-2">
-        <div id="save-status" class="flex items-center space-x-1.5 text-sm font-medium opacity-0 transition-opacity duration-300 text-emerald-400">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-          </svg>
-          <span>Saved!</span>
+      <!-- Section 2: Layers Hierarchy -->
+      <div class="flex-1 flex flex-col min-h-0">
+        <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+          <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400">Layers</h2>
+          <div class="flex items-center space-x-1">
+            <button id="layer-up-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs" title="Move Up">▲</button>
+            <button id="layer-down-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs" title="Move Down">▼</button>
+          </div>
         </div>
 
-        <button
-          type="submit"
-          id="save-btn"
-          class="px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium text-sm rounded-xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all duration-150 cursor-pointer disabled:opacity-50"
+        <div id="layers-list" class="flex-1 overflow-y-auto p-2 space-y-1.5">
+          <!-- Layer items injected dynamically -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: Visual Canvas Artboard -->
+    <main id="canvas-container" class="flex-1 canvas-workspace overflow-auto relative flex items-center justify-center p-8">
+      <!-- Artboard Outer Box -->
+      <div id="artboard-scaler" style="transform-origin: center center; transition: transform 0.15s ease-out;">
+        <div
+          id="artboard"
+          class="relative bg-transparent border-2 border-dashed border-slate-700/80 shadow-2xl overflow-hidden"
+          style="width: 1920px; height: 1080px; background-size: cover;"
         >
-          Save Changes
-        </button>
+          <!-- Canvas Elements injected dynamically -->
+        </div>
       </div>
-    </form>
+    </main>
+
+    <!-- RIGHT SIDEBAR: Properties Inspector -->
+    <aside id="properties-panel" class="w-72 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-20">
+      
+      <!-- Empty State -->
+      <div id="no-selection" class="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500">
+        <span class="text-4xl mb-3">🎯</span>
+        <p class="text-sm font-medium text-slate-400">No element selected</p>
+        <p class="text-xs text-slate-500 mt-1">Click an element on the canvas to inspect & edit its properties.</p>
+      </div>
+
+      <!-- Active Properties Form -->
+      <div id="selection-form" class="hidden p-4 space-y-5">
+        
+        <!-- Header Info -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <span id="prop-type-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">TEXT</span>
+            <input type="text" id="prop-name" class="mt-1.5 text-sm font-bold text-white bg-transparent border-b border-transparent hover:border-slate-700 focus:border-indigo-500 focus:outline-none w-full">
+          </div>
+          <button id="delete-element-btn" class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition" title="Delete Element">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Transform: Position & Dimensions -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Transform</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">X (px)</label>
+              <input type="number" id="prop-x" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Y (px)</label>
+              <input type="number" id="prop-y" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
+              <input type="number" id="prop-width" min="10" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
+              <input type="number" id="prop-height" min="10" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Opacity (%)</label>
+              <input type="number" id="prop-opacity" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Z-Index</label>
+              <input type="number" id="prop-zindex" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Text Properties (If applicable) -->
+        <div id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Text Content</h3>
+          <div>
+            <textarea id="prop-text-content" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Font Size (px)</label>
+              <input type="number" id="prop-font-size" min="8" max="140" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Font Weight</label>
+              <select id="prop-font-weight" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="normal">Normal</option>
+                <option value="500">Medium</option>
+                <option value="600">Semibold</option>
+                <option value="bold">Bold</option>
+                <option value="900">Black</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="prop-text-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="prop-text-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- Styling & Appearance (Background, Border, Radius) -->
+        <div class="space-y-3 pt-2 border-t border-slate-800">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Styling</h3>
+          
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="prop-bg-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="prop-bg-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Border Radius (px)</label>
+              <input type="number" id="prop-border-radius" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Border Width (px)</label>
+              <input type="number" id="prop-border-width" min="0" max="20" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Border Color</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="prop-border-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="prop-border-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Element Actions -->
+        <div class="pt-2 border-t border-slate-800 flex gap-2">
+          <button id="duplicate-btn" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg transition">
+            Duplicate
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
   </div>
 
+  <!-- STUDIO CLIENT JAVASCRIPT -->
   <script>
-    const form = document.getElementById('settings-form')
-    const usernameInput = document.getElementById('tiktokUsername')
-    const textInput = document.getElementById('runningText')
-    const saveStatus = document.getElementById('save-status')
-    const saveBtn = document.getElementById('save-btn')
+    // State management
+    let scene = {
+      id: 'default',
+      name: 'Default Scene',
+      canvas: { width: 1920, height: 1080, backgroundColor: 'transparent' },
+      elements: []
+    }
 
-    // Load initial settings
-    async function loadSettings() {
+    let selectedElementId = null
+    let zoom = 0.45 // default zoom scale
+    let isDragging = false
+    let isResizing = false
+    let activeResizeHandle = null
+    let dragStartX = 0, dragStartY = 0
+    let elementStartX = 0, elementStartY = 0
+    let elementStartW = 0, elementStartH = 0
+
+    // DOM Elements
+    const artboard = document.getElementById('artboard')
+    const artboardScaler = document.getElementById('artboard-scaler')
+    const canvasContainer = document.getElementById('canvas-container')
+    const zoomLevelEl = document.getElementById('zoom-level')
+    const layersListEl = document.getElementById('layers-list')
+    const noSelectionEl = document.getElementById('no-selection')
+    const selectionFormEl = document.getElementById('selection-form')
+    const saveStatusEl = document.getElementById('save-status')
+
+    // Set Zoom
+    function setZoom(val) {
+      zoom = Math.max(0.15, Math.min(1.5, val))
+      artboardScaler.style.transform = `scale(${zoom})`
+      zoomLevelEl.textContent = `${Math.round(zoom * 100)}%`
+    }
+
+    function fitZoom() {
+      if (!canvasContainer) return
+      const containerW = canvasContainer.clientWidth - 80
+      const containerH = canvasContainer.clientHeight - 80
+      const scaleX = containerW / 1920
+      const scaleY = containerH / 1080
+      setZoom(Math.min(scaleX, scaleY, 0.85))
+    }
+
+    // Fetch initial Scene from Backend
+    async function loadScene() {
       try {
-        const res = await fetch('/api/settings')
+        const res = await fetch('/api/scene')
         if (res.ok) {
-          const data = await res.json()
-          let username = data.tiktokUsername || ''
-          if (username.startsWith('@')) username = username.slice(1)
-          usernameInput.value = username
-          textInput.value = data.runningText || ''
+          scene = await res.json()
+          renderCanvas()
+          renderLayers()
         }
       } catch (err) {
-        console.error('Failed to load settings:', err)
+        console.error('Failed to load scene:', err)
       }
     }
 
-    // Save settings
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault()
-      saveBtn.disabled = true
-      
-      const payload = {
-        tiktokUsername: usernameInput.value.trim() ? `@${usernameInput.value.trim().replace(/^@+/, '')}` : '',
-        runningText: textInput.value.trim()
-      }
-
+    // Save Scene to Backend
+    async function saveScene() {
       try {
-        const res = await fetch('/api/settings', {
+        const res = await fetch('/api/scene', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(scene)
         })
-
         if (res.ok) {
-          saveStatus.classList.remove('opacity-0')
-          saveStatus.classList.add('opacity-100')
+          saveStatusEl.classList.remove('opacity-0')
+          saveStatusEl.classList.add('opacity-100')
           setTimeout(() => {
-            saveStatus.classList.remove('opacity-100')
-            saveStatus.classList.add('opacity-0')
-          }, 2500)
+            saveStatusEl.classList.remove('opacity-100')
+            saveStatusEl.classList.add('opacity-0')
+          }, 2000)
         }
       } catch (err) {
-        console.error('Failed to save settings:', err)
-      } finally {
-        saveBtn.disabled = false
+        console.error('Failed to save scene:', err)
+      }
+    }
+
+    // Render Canvas
+    function renderCanvas() {
+      artboard.innerHTML = ''
+
+      // Sort elements by zIndex
+      const sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+
+      sortedElements.forEach(el => {
+        const div = document.createElement('div')
+        div.id = `el-node-${el.id}`
+        div.className = `absolute cursor-move ${el.id === selectedElementId ? 'element-selected' : ''}`
+        div.style.left = `${el.x}px`
+        div.style.top = `${el.y}px`
+        div.style.width = `${el.width}px`
+        div.style.height = `${el.height}px`
+        div.style.zIndex = el.zIndex || 1
+        div.style.opacity = el.opacity !== undefined ? el.opacity : 1
+        div.style.backgroundColor = el.style?.backgroundColor || 'transparent'
+        div.style.borderRadius = `${el.style?.borderRadius || 0}px`
+        div.style.borderWidth = `${el.style?.borderWidth || 0}px`
+        div.style.borderStyle = el.style?.borderWidth ? 'solid' : 'none'
+        div.style.borderColor = el.style?.borderColor || 'transparent'
+        div.style.boxSizing = 'border-box'
+        div.style.overflow = 'hidden'
+
+        if (el.type === 'text' || el.style?.text) {
+          const textP = document.createElement('div')
+          textP.style.width = '100%'
+          textP.style.height = '100%'
+          textP.style.display = 'flex'
+          textP.style.alignItems = 'center'
+          textP.style.fontSize = `${el.style?.fontSize || 18}px`
+          textP.style.fontWeight = el.style?.fontWeight || 'normal'
+          textP.style.color = el.style?.color || '#ffffff'
+          textP.style.padding = `${el.style?.padding || 0}px`
+          textP.style.textAlign = el.style?.textAlign || 'left'
+          textP.textContent = el.style?.text || 'Text'
+          div.appendChild(textP)
+        }
+
+        // Selection & Drag Start
+        div.addEventListener('mousedown', (e) => {
+          if (e.target.classList.contains('resize-handle')) return
+          e.stopPropagation()
+          selectElement(el.id)
+          isDragging = true
+          dragStartX = e.clientX
+          dragStartY = e.clientY
+          elementStartX = el.x
+          elementStartY = el.y
+        })
+
+        // Add resize handles if selected
+        if (el.id === selectedElementId) {
+          const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
+          handles.forEach(h => {
+            const handle = document.createElement('div')
+            handle.className = `resize-handle handle-${h}`
+            handle.dataset.handle = h
+            handle.addEventListener('mousedown', (e) => {
+              e.stopPropagation()
+              isResizing = true
+              activeResizeHandle = h
+              dragStartX = e.clientX
+              dragStartY = e.clientY
+              elementStartX = el.x
+              elementStartY = el.y
+              elementStartW = el.width
+              elementStartH = el.height
+            })
+            div.appendChild(handle)
+          })
+        }
+
+        artboard.appendChild(div)
+      })
+    }
+
+    // Global Mouse Handlers for Dragging & Resizing
+    window.addEventListener('mousemove', (e) => {
+      if (!selectedElementId) return
+
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      if (!el) return
+
+      if (isDragging) {
+        const dx = (e.clientX - dragStartX) / zoom
+        const dy = (e.clientY - dragStartY) / zoom
+        el.x = Math.round(elementStartX + dx)
+        el.y = Math.round(elementStartY + dy)
+        renderCanvas()
+        updateInspectorValues()
+      } else if (isResizing && activeResizeHandle) {
+        const dx = (e.clientX - dragStartX) / zoom
+        const dy = (e.clientY - dragStartY) / zoom
+
+        if (activeResizeHandle.includes('e')) {
+          el.width = Math.max(20, Math.round(elementStartW + dx))
+        }
+        if (activeResizeHandle.includes('s')) {
+          el.height = Math.max(20, Math.round(elementStartH + dy))
+        }
+        if (activeResizeHandle.includes('w')) {
+          const newW = Math.max(20, Math.round(elementStartW - dx))
+          el.x = Math.round(elementStartX + (elementStartW - newW))
+          el.width = newW
+        }
+        if (activeResizeHandle.includes('n')) {
+          const newH = Math.max(20, Math.round(elementStartH - dy))
+          el.y = Math.round(elementStartY + (elementStartH - newH))
+          el.height = newH
+        }
+
+        renderCanvas()
+        updateInspectorValues()
       }
     })
 
-    document.addEventListener('DOMContentLoaded', loadSettings)
+    window.addEventListener('mouseup', () => {
+      if (isDragging || isResizing) {
+        isDragging = false
+        isResizing = false
+        activeResizeHandle = null
+      }
+    })
+
+    artboard.addEventListener('mousedown', (e) => {
+      if (e.target === artboard) {
+        selectElement(null)
+      }
+    })
+
+    // Layer List Rendering
+    function renderLayers() {
+      layersListEl.innerHTML = ''
+      const reversedElements = [...scene.elements].reverse()
+
+      reversedElements.forEach(el => {
+        const item = document.createElement('div')
+        item.className = `px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer border transition ${
+          el.id === selectedElementId 
+            ? 'bg-indigo-600/20 border-indigo-500/60 text-white' 
+            : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+        }`
+
+        item.innerHTML = `
+          <div class="flex items-center space-x-2 truncate">
+            <span>${el.type === 'text' ? '🔤' : '⬛'}</span>
+            <span class="truncate font-medium">${el.name || el.id}</span>
+          </div>
+          <span class="text-[10px] text-slate-500 font-mono">z:${el.zIndex || 1}</span>
+        `
+
+        item.addEventListener('click', (e) => {
+          e.stopPropagation()
+          selectElement(el.id)
+        })
+
+        layersListEl.appendChild(item)
+      })
+    }
+
+    // Select Element
+    function selectElement(id) {
+      selectedElementId = id
+      renderCanvas()
+      renderLayers()
+
+      if (!id) {
+        noSelectionEl.classList.remove('hidden')
+        selectionFormEl.classList.add('hidden')
+        return
+      }
+
+      noSelectionEl.classList.add('hidden')
+      selectionFormEl.classList.remove('hidden')
+      updateInspectorValues()
+    }
+
+    // Update Form Inspector
+    function updateInspectorValues() {
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      if (!el) return
+
+      document.getElementById('prop-type-badge').textContent = el.type.toUpperCase()
+      document.getElementById('prop-name').value = el.name || el.id
+      document.getElementById('prop-x').value = el.x
+      document.getElementById('prop-y').value = el.y
+      document.getElementById('prop-width').value = el.width
+      document.getElementById('prop-height').value = el.height
+      document.getElementById('prop-opacity').value = Math.round((el.opacity !== undefined ? el.opacity : 1) * 100)
+      document.getElementById('prop-zindex').value = el.zIndex || 1
+
+      // Text Section
+      const textSection = document.getElementById('text-props-section')
+      if (el.type === 'text' || el.style?.text !== undefined) {
+        textSection.classList.remove('hidden')
+        document.getElementById('prop-text-content').value = el.style?.text || ''
+        document.getElementById('prop-font-size').value = el.style?.fontSize || 18
+        document.getElementById('prop-font-weight').value = el.style?.fontWeight || 'normal'
+        document.getElementById('prop-text-color').value = el.style?.color || '#ffffff'
+        document.getElementById('prop-text-color-picker').value = el.style?.color?.startsWith('#') ? el.style.color : '#ffffff'
+      } else {
+        textSection.classList.add('hidden')
+      }
+
+      // Styling
+      document.getElementById('prop-bg-color').value = el.style?.backgroundColor || 'transparent'
+      document.getElementById('prop-bg-color-picker').value = el.style?.backgroundColor?.startsWith('#') ? el.style.backgroundColor : '#090d16'
+      document.getElementById('prop-border-radius').value = el.style?.borderRadius || 0
+      document.getElementById('prop-border-width').value = el.style?.borderWidth || 0
+      document.getElementById('prop-border-color').value = el.style?.borderColor || 'transparent'
+      document.getElementById('prop-border-color-picker').value = el.style?.borderColor?.startsWith('#') ? el.style.borderColor : '#334155'
+    }
+
+    // Attach Property Input Change Listeners
+    function attachPropertyListeners() {
+      const getSelected = () => scene.elements.find(item => item.id === selectedElementId)
+
+      document.getElementById('prop-name').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.name = e.target.value; renderLayers(); }
+      })
+
+      document.getElementById('prop-x').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.x = parseInt(e.target.value) || 0; renderCanvas(); }
+      })
+
+      document.getElementById('prop-y').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.y = parseInt(e.target.value) || 0; renderCanvas(); }
+      })
+
+      document.getElementById('prop-width').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.width = Math.max(10, parseInt(e.target.value) || 10); renderCanvas(); }
+      })
+
+      document.getElementById('prop-height').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.height = Math.max(10, parseInt(e.target.value) || 10); renderCanvas(); }
+      })
+
+      document.getElementById('prop-opacity').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.opacity = (parseInt(e.target.value) || 0) / 100; renderCanvas(); }
+      })
+
+      document.getElementById('prop-zindex').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.zIndex = parseInt(e.target.value) || 1; renderCanvas(); renderLayers(); }
+      })
+
+      // Text properties
+      document.getElementById('prop-text-content').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.text = e.target.value; renderCanvas(); }
+      })
+
+      document.getElementById('prop-font-size').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.fontSize = parseInt(e.target.value) || 18; renderCanvas(); }
+      })
+
+      document.getElementById('prop-font-weight').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el) { el.style.fontWeight = e.target.value; renderCanvas(); }
+      })
+
+      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderCanvas(); }
+      })
+
+      document.getElementById('prop-text-color').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.color = e.target.value; renderCanvas(); }
+      })
+
+      // BG Color
+      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderCanvas(); }
+      })
+
+      document.getElementById('prop-bg-color').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.backgroundColor = e.target.value; renderCanvas(); }
+      })
+
+      // Border & Radius
+      document.getElementById('prop-border-radius').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderCanvas(); }
+      })
+
+      document.getElementById('prop-border-width').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderCanvas(); }
+      })
+
+      document.getElementById('prop-border-color-picker').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderCanvas(); }
+      })
+
+      document.getElementById('prop-border-color').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) { el.style.borderColor = e.target.value; renderCanvas(); }
+      })
+
+      // Delete Button
+      document.getElementById('delete-element-btn').addEventListener('click', () => {
+        if (!selectedElementId) return
+        scene.elements = scene.elements.filter(item => item.id !== selectedElementId)
+        selectElement(null)
+      })
+
+      // Duplicate Button
+      document.getElementById('duplicate-btn').addEventListener('click', () => {
+        const el = getSelected()
+        if (!el) return
+        const cloned = JSON.parse(JSON.stringify(el))
+        cloned.id = 'el_' + Date.now().toString(36)
+        cloned.name = (el.name || 'Element') + ' Copy'
+        cloned.x += 30
+        cloned.y += 30
+        cloned.zIndex = (el.zIndex || 1) + 1
+        scene.elements.push(cloned)
+        selectElement(cloned.id)
+      })
+    }
+
+    // Add Element Buttons
+    document.getElementById('add-text-btn').addEventListener('click', () => {
+      const newEl = {
+        id: 'txt_' + Date.now().toString(36),
+        type: 'text',
+        name: 'Heading Text',
+        x: 100,
+        y: 100,
+        width: 350,
+        height: 50,
+        zIndex: scene.elements.length + 1,
+        opacity: 1,
+        style: {
+          text: 'New Stream Heading',
+          fontSize: 26,
+          fontWeight: 'bold',
+          color: '#ffffff',
+          backgroundColor: 'transparent',
+          padding: 0,
+          borderRadius: 0,
+          borderWidth: 0
+        }
+      }
+      scene.elements.push(newEl)
+      selectElement(newEl.id)
+    })
+
+    document.getElementById('add-shape-btn').addEventListener('click', () => {
+      const newEl = {
+        id: 'shp_' + Date.now().toString(36),
+        type: 'shape',
+        name: 'Card Container',
+        x: 120,
+        y: 120,
+        width: 400,
+        height: 120,
+        zIndex: scene.elements.length + 1,
+        opacity: 0.9,
+        style: {
+          backgroundColor: '#0f172a',
+          borderRadius: 16,
+          borderWidth: 2,
+          borderColor: '#6366f1'
+        }
+      }
+      scene.elements.push(newEl)
+      selectElement(newEl.id)
+    })
+
+    document.getElementById('add-badge-btn').addEventListener('click', () => {
+      const newEl = {
+        id: 'bdg_' + Date.now().toString(36),
+        type: 'text',
+        name: 'Social Badge',
+        x: 60,
+        y: 860,
+        width: 260,
+        height: 55,
+        zIndex: scene.elements.length + 1,
+        opacity: 0.95,
+        style: {
+          text: '🎵 @creator_id',
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: '#ec4899',
+          backgroundColor: '#18181b',
+          borderRadius: 16,
+          padding: 14,
+          borderWidth: 1.5,
+          borderColor: '#ec4899'
+        }
+      }
+      scene.elements.push(newEl)
+      selectElement(newEl.id)
+    })
+
+    document.getElementById('add-banner-btn').addEventListener('click', () => {
+      const newEl = {
+        id: 'bnr_' + Date.now().toString(36),
+        type: 'text',
+        name: 'Stream Announcement',
+        x: 60,
+        y: 935,
+        width: 600,
+        height: 60,
+        zIndex: scene.elements.length + 1,
+        opacity: 0.95,
+        style: {
+          text: '✨ Follow & Subscribe for daily live streams!',
+          fontSize: 18,
+          fontWeight: '600',
+          color: '#f8fafc',
+          backgroundColor: '#090d16',
+          borderRadius: 18,
+          padding: 18,
+          borderWidth: 1.5,
+          borderColor: '#334155'
+        }
+      }
+      scene.elements.push(newEl)
+      selectElement(newEl.id)
+    })
+
+    // Layer Up / Down
+    document.getElementById('layer-up-btn').addEventListener('click', () => {
+      if (!selectedElementId) return
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      if (el) {
+        el.zIndex = (el.zIndex || 1) + 1
+        renderCanvas()
+        renderLayers()
+        updateInspectorValues()
+      }
+    })
+
+    document.getElementById('layer-down-btn').addEventListener('click', () => {
+      if (!selectedElementId) return
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      if (el) {
+        el.zIndex = Math.max(0, (el.zIndex || 1) - 1)
+        renderCanvas()
+        renderLayers()
+        updateInspectorValues()
+      }
+    })
+
+    // Zoom Buttons
+    document.getElementById('zoom-in-btn').addEventListener('click', () => setZoom(zoom + 0.1))
+    document.getElementById('zoom-out-btn').addEventListener('click', () => setZoom(zoom - 0.1))
+    document.getElementById('zoom-fit-btn').addEventListener('click', fitZoom)
+
+    // Save Button
+    document.getElementById('save-scene-btn').addEventListener('click', saveScene)
+
+    // Window Resize / Auto fit
+    window.addEventListener('resize', fitZoom)
+
+    // Keyboard Shortcuts (Delete / Backspace / Escape)
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedElementId) {
+          scene.elements = scene.elements.filter(item => item.id !== selectedElementId)
+          selectElement(null)
+        }
+      }
+      if (e.key === 'Escape') {
+        selectElement(null)
+      }
+    })
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      attachPropertyListeners()
+      loadScene()
+      fitZoom()
+    })
   </script>
 </body>
 </html>

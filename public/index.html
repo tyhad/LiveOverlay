@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiveOverlay - Bun + Elysia + Tailwind + GSAP</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/js/app.js"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 antialiased selection:bg-indigo-500 selection:text-white">
+  <main id="hero-card" class="max-w-xl w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-md">
+    <div class="flex items-center space-x-3 mb-6">
+      <div class="h-3 w-3 rounded-full bg-emerald-500 animate-ping"></div>
+      <span class="text-xs uppercase tracking-widest font-semibold text-emerald-400">Live & Ready</span>
+    </div>
+
+    <h1 class="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+      LiveOverlay Stack
+    </h1>
+    <p class="text-slate-400 text-base leading-relaxed mb-8">
+      Full-stack starter project built with high-performance runtime and modern developer tooling.
+    </p>
+
+    <div class="grid grid-cols-2 gap-3 mb-8">
+      <div class="badge-item flex items-center p-3.5 bg-slate-800/80 border border-slate-700/50 rounded-2xl">
+        <span class="text-2xl mr-3">🥟</span>
+        <div>
+          <div class="text-sm font-semibold text-white">Bun</div>
+          <div class="text-xs text-slate-400">Runtime & Bundler</div>
+        </div>
+      </div>
+
+      <div class="badge-item flex items-center p-3.5 bg-slate-800/80 border border-slate-700/50 rounded-2xl">
+        <span class="text-2xl mr-3">🦊</span>
+        <div>
+          <div class="text-sm font-semibold text-white">ElysiaJS</div>
+          <div class="text-xs text-slate-400">Fast Backend API</div>
+        </div>
+      </div>
+
+      <div class="badge-item flex items-center p-3.5 bg-slate-800/80 border border-slate-700/50 rounded-2xl">
+        <span class="text-2xl mr-3">🎨</span>
+        <div>
+          <div class="text-sm font-semibold text-white">Tailwind CSS</div>
+          <div class="text-xs text-slate-400">Utility-first CSS</div>
+        </div>
+      </div>
+
+      <div class="badge-item flex items-center p-3.5 bg-slate-800/80 border border-slate-700/50 rounded-2xl">
+        <span class="text-2xl mr-3">✨</span>
+        <div>
+          <div class="text-sm font-semibold text-white">GSAP</div>
+          <div class="text-xs text-slate-400">Fluid Animations</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between border-t border-slate-800 pt-6">
+      <span class="text-xs text-slate-500 font-mono">Port: 3000</span>
+      <button id="animate-btn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium text-sm transition-all duration-200 shadow-lg shadow-indigo-500/25 active:scale-95 cursor-pointer">
+        Trigger Animation ✨
+      </button>
+    </div>
+  </main>
+</body>
+</html>

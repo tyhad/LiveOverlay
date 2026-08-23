@@ -5,19 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiveOverlay Studio - Canvas Editor</title>
   <link rel="stylesheet" href="/styles.css">
+  <!-- Google Fonts for Stream Overlays & Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+
   <style>
-    /* Custom checkered background for canvas workspace */
+    /* Canvas workspace checkerboard background */
     .canvas-workspace {
-      background-color: #0b0f19;
+      background-color: #080c14;
       background-image: 
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
       background-size: 24px 24px;
     }
     
     /* Selection bounding box and resize handles */
     .element-selected {
       outline: 2px solid #6366f1 !important;
-      outline-offset: 1px;
+      outline-offset: 2px;
+    }
+    .element-locked {
+      outline: 2px dashed #f59e0b !important;
+      cursor: not-allowed !important;
     }
 
     .resize-handle {
@@ -28,7 +37,7 @@
       border: 2px solid #4f46e5;
       border-radius: 2px;
       z-index: 9999;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.6);
     }
     .handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
     .handle-n  { top: -6px; left: calc(50% - 5px); cursor: ns-resize; }
@@ -39,39 +48,40 @@
     .handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
     .handle-w  { top: calc(50% - 5px); left: -6px; cursor: ew-resize; }
 
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
   </style>
 </head>
 <body class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
 
-  <!-- TOP NAVIGATION / HEADER -->
-  <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30">
+  <!-- TOP HEADER -->
+  <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30 shadow-md">
     <div class="flex items-center space-x-3">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white font-black text-base shadow-lg shadow-indigo-500/20">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/20">
         ⚡
       </div>
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-sm font-bold tracking-tight text-white">LiveOverlay Studio</h1>
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Fase 1</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">PROPERTIES V2</span>
         </div>
-        <p class="text-[11px] text-slate-400 font-mono" id="scene-title">Canvas: 1920 × 1080 (16:9)</p>
+        <p class="text-[11px] text-slate-400 font-mono" id="scene-info">Scene: 1920 × 1080 (16:9 Full HD)</p>
       </div>
     </div>
 
-    <!-- Zoom & Canvas Controls -->
-    <div class="flex items-center space-x-2 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+    <!-- Zoom Controls -->
+    <div class="flex items-center space-x-1.5 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
       <button id="zoom-out-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom Out">−</button>
-      <span id="zoom-level" class="text-xs font-mono px-2 text-slate-300">50%</span>
+      <span id="zoom-level" class="text-xs font-mono px-2 text-slate-300 min-w-[45px] text-center">45%</span>
       <button id="zoom-in-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom In">+</button>
       <button id="zoom-fit-btn" class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">Fit</button>
+      <button id="zoom-100-btn" class="px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">100%</button>
     </div>
 
-    <!-- Actions: Save & Open Overlay -->
+    <!-- Save & OBS Actions -->
     <div class="flex items-center space-x-3">
       <div id="save-status" class="text-xs font-medium text-emerald-400 opacity-0 transition-opacity duration-200 flex items-center gap-1">
         <span>✓</span><span>Saved</span>
@@ -94,42 +104,44 @@
   <!-- MAIN WORKSPACE -->
   <div class="flex-1 flex overflow-hidden">
 
-    <!-- LEFT SIDEBAR: Tools & Layers -->
+    <!-- LEFT SIDEBAR: Add Elements & Layers Hierarchy -->
     <aside class="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 z-20">
       
-      <!-- Section 1: Add Elements -->
-      <div class="p-4 border-b border-slate-800">
-        <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-3">Add Elements</h2>
+      <!-- Section 1: Quick Add Elements -->
+      <div class="p-3.5 border-b border-slate-800">
+        <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5">Add Elements</h2>
         <div class="grid grid-cols-2 gap-2">
-          <button id="add-text-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-text-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">🔤</span>
-            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Text</span>
+            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Text</span>
           </button>
 
-          <button id="add-shape-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-shape-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">⬛</span>
-            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Shape Box</span>
+            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Shape Box</span>
           </button>
 
-          <button id="add-badge-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-badge-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">🎵</span>
-            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Badge</span>
+            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Social Badge</span>
           </button>
 
-          <button id="add-banner-btn" class="p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-banner-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">📢</span>
-            <span class="text-xs font-medium text-slate-200 group-hover:text-indigo-300">Banner</span>
+            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Banner</span>
           </button>
         </div>
       </div>
 
-      <!-- Section 2: Layers Hierarchy -->
+      <!-- Section 2: Layers List -->
       <div class="flex-1 flex flex-col min-h-0">
         <div class="p-3 border-b border-slate-800 flex items-center justify-between">
-          <h2 class="text-xs uppercase tracking-wider font-semibold text-slate-400">Layers</h2>
+          <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
           <div class="flex items-center space-x-1">
-            <button id="layer-up-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs" title="Move Up">▲</button>
-            <button id="layer-down-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs" title="Move Down">▼</button>
+            <button id="layer-top-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Bring to Top">⏫</button>
+            <button id="layer-up-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Move Up">▲</button>
+            <button id="layer-down-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Move Down">▼</button>
+            <button id="layer-bottom-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Send to Bottom">⏬</button>
           </div>
         </div>
 
@@ -139,49 +151,73 @@
       </div>
     </aside>
 
-    <!-- CENTER: Visual Canvas Artboard -->
+    <!-- CENTER: Canvas Workspace -->
     <main id="canvas-container" class="flex-1 canvas-workspace overflow-auto relative flex items-center justify-center p-8">
-      <!-- Artboard Outer Box -->
-      <div id="artboard-scaler" style="transform-origin: center center; transition: transform 0.15s ease-out;">
+      <div id="artboard-scaler" style="transform-origin: center center; transition: transform 0.1s ease-out;">
         <div
           id="artboard"
           class="relative bg-transparent border-2 border-dashed border-slate-700/80 shadow-2xl overflow-hidden"
-          style="width: 1920px; height: 1080px; background-size: cover;"
+          style="width: 1920px; height: 1080px;"
         >
-          <!-- Canvas Elements injected dynamically -->
+          <!-- Elements injected dynamically -->
         </div>
       </div>
     </main>
 
-    <!-- RIGHT SIDEBAR: Properties Inspector -->
-    <aside id="properties-panel" class="w-72 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-20">
+    <!-- RIGHT SIDEBAR: Comprehensive Properties Panel -->
+    <aside id="properties-panel" class="w-80 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-20">
       
-      <!-- Empty State -->
+      <!-- Empty Selection State -->
       <div id="no-selection" class="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500">
         <span class="text-4xl mb-3">🎯</span>
-        <p class="text-sm font-medium text-slate-400">No element selected</p>
-        <p class="text-xs text-slate-500 mt-1">Click an element on the canvas to inspect & edit its properties.</p>
+        <p class="text-sm font-semibold text-slate-300">No element selected</p>
+        <p class="text-xs text-slate-500 mt-1">Select an element on the canvas to configure detailed properties & styling.</p>
       </div>
 
-      <!-- Active Properties Form -->
+      <!-- Properties Form -->
       <div id="selection-form" class="hidden p-4 space-y-5">
         
-        <!-- Header Info -->
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div>
-            <span id="prop-type-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">TEXT</span>
-            <input type="text" id="prop-name" class="mt-1.5 text-sm font-bold text-white bg-transparent border-b border-transparent hover:border-slate-700 focus:border-indigo-500 focus:outline-none w-full">
+        <!-- Header Info & Quick Element Actions -->
+        <div class="pb-3 border-b border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span id="prop-type-badge" class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">TEXT</span>
+            <div class="flex items-center space-x-1">
+              <button id="lock-toggle-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-amber-400 transition" title="Toggle Lock">
+                <span id="lock-icon">🔓</span>
+              </button>
+              <button id="visibility-toggle-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition" title="Toggle Visibility">
+                <span id="visibility-icon">👁️</span>
+              </button>
+              <button id="duplicate-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition" title="Duplicate">
+                <span>📋</span>
+              </button>
+              <button id="delete-element-btn" class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition" title="Delete">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <button id="delete-element-btn" class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition" title="Delete Element">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-          </button>
+          <input type="text" id="prop-name" placeholder="Layer Name" class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none w-full">
         </div>
 
-        <!-- Transform: Position & Dimensions -->
-        <div class="space-y-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Transform</h3>
+        <!-- Alignment Controls -->
+        <div class="space-y-2">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Canvas Alignment</h3>
+          <div class="grid grid-cols-6 gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+            <button id="align-left-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Left">⬅️</button>
+            <button id="align-center-h-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Center Horizontal">↔️</button>
+            <button id="align-right-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Right">➡️</button>
+            <button id="align-top-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Top">⬆️</button>
+            <button id="align-center-v-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Center Vertical">↕️</button>
+            <button id="align-bottom-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Bottom">⬇️</button>
+          </div>
+        </div>
+
+        <!-- Transform: Dimensions, Position & Rotation -->
+        <div class="space-y-3 pt-2 border-t border-slate-800">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Transform & Position</h3>
+          
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">X (px)</label>
@@ -201,56 +237,119 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Opacity (%)</label>
-              <input type="number" id="prop-opacity" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          <!-- Rotation & Opacity -->
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Rotation (Deg)</span>
+              <span id="prop-rotation-val" class="font-mono text-white">0°</span>
             </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Z-Index</label>
-              <input type="number" id="prop-zindex" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-rotation-num" min="-180" max="180" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Opacity</span>
+              <span id="prop-opacity-val" class="font-mono text-white">100%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-opacity" min="0" max="100" value="100" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-opacity-num" min="0" max="100" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
           </div>
         </div>
 
-        <!-- Text Properties (If applicable) -->
+        <!-- Typography Section (Text Elements) -->
         <div id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800">
-          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Text Content</h3>
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Typography</h3>
+          
           <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Text Content</label>
             <textarea id="prop-text-content" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Font Family</label>
+            <select id="prop-font-family" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="Inter, sans-serif">Inter (Clean UI)</option>
+              <option value="Poppins, sans-serif">Poppins (Modern Rounded)</option>
+              <option value="Outfit, sans-serif">Outfit (Geometric Stream)</option>
+              <option value="Montserrat, sans-serif">Montserrat (Bold Header)</option>
+              <option value="Bebas Neue, sans-serif">Bebas Neue (Impact Display)</option>
+              <option value="Plus Jakarta Sans, sans-serif">Plus Jakarta Sans</option>
+              <option value="Roboto, sans-serif">Roboto</option>
+            </select>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Font Size (px)</label>
-              <input type="number" id="prop-font-size" min="8" max="140" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-font-size" min="8" max="180" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Font Weight</label>
+              <label class="block text-[11px] text-slate-400 mb-1">Weight</label>
               <select id="prop-font-weight" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                <option value="normal">Normal</option>
-                <option value="500">Medium</option>
-                <option value="600">Semibold</option>
-                <option value="bold">Bold</option>
-                <option value="900">Black</option>
+                <option value="300">Light (300)</option>
+                <option value="400">Regular (400)</option>
+                <option value="500">Medium (500)</option>
+                <option value="600">Semibold (600)</option>
+                <option value="700">Bold (700)</option>
+                <option value="800">Extra Bold (800)</option>
+                <option value="900">Black (900)</option>
               </select>
             </div>
           </div>
 
-          <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
-            <div class="flex items-center gap-2">
-              <input type="color" id="prop-text-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
-              <input type="text" id="prop-text-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+          <!-- Text Align & Transform -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Align</label>
+              <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <button type="button" id="align-t-left" class="py-1 text-xs rounded text-slate-300 hover:text-white">◀</button>
+                <button type="button" id="align-t-center" class="py-1 text-xs rounded text-slate-300 hover:text-white">■</button>
+                <button type="button" id="align-t-right" class="py-1 text-xs rounded text-slate-300 hover:text-white">▶</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Transform</label>
+              <select id="prop-text-transform" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="none">Normal</option>
+                <option value="uppercase">UPPERCASE</option>
+                <option value="lowercase">lowercase</option>
+                <option value="capitalize">Capitalize</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
+              <input type="number" id="prop-letter-spacing" step="0.5" min="-5" max="30" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
+              <div class="flex items-center gap-1.5">
+                <input type="color" id="prop-text-color-picker" class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-text-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Styling & Appearance (Background, Border, Radius) -->
+        <!-- Fill & Gradient Section -->
         <div class="space-y-3 pt-2 border-t border-slate-800">
-          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Styling</h3>
-          
-          <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fill & Background</h3>
+            <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300">
+              <input type="checkbox" id="prop-gradient-toggle" class="rounded accent-indigo-500">
+              <span class="text-[10px]">Gradient</span>
+            </label>
+          </div>
+
+          <!-- Solid BG Color -->
+          <div id="solid-fill-section">
             <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
             <div class="flex items-center gap-2">
               <input type="color" id="prop-bg-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
@@ -258,31 +357,100 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Border Radius (px)</label>
-              <input type="number" id="prop-border-radius" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          <!-- Gradient Controls -->
+          <div id="gradient-fill-section" class="hidden space-y-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Color From</label>
+                <div class="flex items-center gap-1">
+                  <input type="color" id="prop-grad-from-picker" class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+                  <input type="text" id="prop-grad-from" class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Color To</label>
+                <div class="flex items-center gap-1">
+                  <input type="color" id="prop-grad-to-picker" class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+                  <input type="text" id="prop-grad-to" class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+                </div>
+              </div>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Border Width (px)</label>
-              <input type="number" id="prop-border-width" min="0" max="20" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                <span>Angle</span>
+                <span id="prop-grad-angle-val" class="font-mono text-white">90°</span>
+              </div>
+              <input type="range" id="prop-grad-angle" min="0" max="360" value="90" class="w-full accent-indigo-500">
             </div>
           </div>
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Border Color</label>
-            <div class="flex items-center gap-2">
-              <input type="color" id="prop-border-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
-              <input type="text" id="prop-border-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            <label class="block text-[11px] text-slate-400 mb-1">Internal Padding (px)</label>
+            <input type="number" id="prop-padding" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <!-- Borders & Corners Section -->
+        <div class="space-y-3 pt-2 border-t border-slate-800">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Borders & Corners</h3>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Border Radius (px)</label>
+              <input type="number" id="prop-border-radius" min="0" max="200" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Border Width (px)</label>
+              <input type="number" id="prop-border-width" min="0" max="30" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Border Style</label>
+              <select id="prop-border-style" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <option value="none">None</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Border Color</label>
+              <div class="flex items-center gap-1.5">
+                <input type="color" id="prop-border-color-picker" class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-border-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono">
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Quick Element Actions -->
-        <div class="pt-2 border-t border-slate-800 flex gap-2">
-          <button id="duplicate-btn" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg transition">
-            Duplicate
-          </button>
+        <!-- Shadow & Glow Section -->
+        <div class="space-y-3 pt-2 border-t border-slate-800">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow & Glow</h3>
+          
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="prop-shadow-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="prop-shadow-color" placeholder="rgba(0,0,0,0.5)" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Blur (px)</label>
+              <input type="number" id="prop-shadow-blur" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Offset X</label>
+              <input type="number" id="prop-shadow-x" min="-100" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1">Offset Y</label>
+              <input type="number" id="prop-shadow-y" min="-100" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+            </div>
+          </div>
         </div>
 
       </div>
@@ -290,7 +458,7 @@
 
   </div>
 
-  <!-- STUDIO CLIENT JAVASCRIPT -->
+  <!-- STUDIO SCRIPT -->
   <script>
     // State management
     let scene = {
@@ -301,7 +469,7 @@
     }
 
     let selectedElementId = null
-    let zoom = 0.45 // default zoom scale
+    let zoom = 0.45
     let isDragging = false
     let isResizing = false
     let activeResizeHandle = null
@@ -335,7 +503,7 @@
       setZoom(Math.min(scaleX, scaleY, 0.85))
     }
 
-    // Fetch initial Scene from Backend
+    // Load Scene from Backend
     async function loadScene() {
       try {
         const res = await fetch('/api/scene')
@@ -373,48 +541,77 @@
     // Render Canvas
     function renderCanvas() {
       artboard.innerHTML = ''
-
-      // Sort elements by zIndex
       const sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
 
       sortedElements.forEach(el => {
+        if (el.hidden && el.id !== selectedElementId) {
+          return // Skip hidden elements from active rendering unless selected in layers
+        }
+
         const div = document.createElement('div')
         div.id = `el-node-${el.id}`
-        div.className = `absolute cursor-move ${el.id === selectedElementId ? 'element-selected' : ''}`
+        div.className = `absolute ${el.locked ? 'element-locked cursor-not-allowed' : 'cursor-move'} ${el.id === selectedElementId ? 'element-selected' : ''}`
         div.style.left = `${el.x}px`
         div.style.top = `${el.y}px`
         div.style.width = `${el.width}px`
         div.style.height = `${el.height}px`
         div.style.zIndex = el.zIndex || 1
-        div.style.opacity = el.opacity !== undefined ? el.opacity : 1
-        div.style.backgroundColor = el.style?.backgroundColor || 'transparent'
+        div.style.opacity = el.hidden ? 0.3 : (el.opacity !== undefined ? el.opacity : 1)
+        div.style.transform = `rotate(${el.rotation || 0}deg)`
         div.style.borderRadius = `${el.style?.borderRadius || 0}px`
         div.style.borderWidth = `${el.style?.borderWidth || 0}px`
-        div.style.borderStyle = el.style?.borderWidth ? 'solid' : 'none'
+        div.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
         div.style.borderColor = el.style?.borderColor || 'transparent'
         div.style.boxSizing = 'border-box'
         div.style.overflow = 'hidden'
 
-        if (el.type === 'text' || el.style?.text) {
+        // Background Fill: Gradient vs Solid
+        if (el.style?.gradient?.enabled) {
+          const from = el.style.gradient.from || '#0f172a'
+          const to = el.style.gradient.to || '#020617'
+          const angle = el.style.gradient.angle || 90
+          div.style.background = `linear-gradient(${angle}deg, ${from}, ${to})`
+        } else {
+          div.style.backgroundColor = el.style?.backgroundColor || 'transparent'
+        }
+
+        // Shadow
+        if (el.style?.shadowColor) {
+          const sx = el.style.shadowOffsetX || 0
+          const sy = el.style.shadowOffsetY || 4
+          const sb = el.style.shadowBlur || 16
+          div.style.boxShadow = `${sx}px ${sy}px ${sb}px ${el.style.shadowColor}`
+        } else {
+          div.style.boxShadow = 'none'
+        }
+
+        // Text rendering
+        if (el.type === 'text' || el.style?.text !== undefined) {
           const textP = document.createElement('div')
           textP.style.width = '100%'
           textP.style.height = '100%'
           textP.style.display = 'flex'
           textP.style.alignItems = 'center'
+          textP.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
           textP.style.fontSize = `${el.style?.fontSize || 18}px`
           textP.style.fontWeight = el.style?.fontWeight || 'normal'
           textP.style.color = el.style?.color || '#ffffff'
           textP.style.padding = `${el.style?.padding || 0}px`
           textP.style.textAlign = el.style?.textAlign || 'left'
-          textP.textContent = el.style?.text || 'Text'
+          textP.style.textTransform = el.style?.textTransform || 'none'
+          textP.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
+          textP.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
+          textP.textContent = el.style?.text || ''
           div.appendChild(textP)
         }
 
-        // Selection & Drag Start
+        // Selection & Drag Handlers
         div.addEventListener('mousedown', (e) => {
           if (e.target.classList.contains('resize-handle')) return
           e.stopPropagation()
           selectElement(el.id)
+          if (el.locked) return // Prevent dragging if locked
+
           isDragging = true
           dragStartX = e.clientX
           dragStartY = e.clientY
@@ -422,8 +619,8 @@
           elementStartY = el.y
         })
 
-        // Add resize handles if selected
-        if (el.id === selectedElementId) {
+        // Resize handles if selected and not locked
+        if (el.id === selectedElementId && !el.locked) {
           const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
           handles.forEach(h => {
             const handle = document.createElement('div')
@@ -448,12 +645,11 @@
       })
     }
 
-    // Global Mouse Handlers for Dragging & Resizing
+    // Global Mouse Handlers
     window.addEventListener('mousemove', (e) => {
       if (!selectedElementId) return
-
       const el = scene.elements.find(item => item.id === selectedElementId)
-      if (!el) return
+      if (!el || el.locked) return
 
       if (isDragging) {
         const dx = (e.clientX - dragStartX) / zoom
@@ -497,12 +693,10 @@
     })
 
     artboard.addEventListener('mousedown', (e) => {
-      if (e.target === artboard) {
-        selectElement(null)
-      }
+      if (e.target === artboard) selectElement(null)
     })
 
-    // Layer List Rendering
+    // Render Layers
     function renderLayers() {
       layersListEl.innerHTML = ''
       const reversedElements = [...scene.elements].reverse()
@@ -511,16 +705,20 @@
         const item = document.createElement('div')
         item.className = `px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer border transition ${
           el.id === selectedElementId 
-            ? 'bg-indigo-600/20 border-indigo-500/60 text-white' 
+            ? 'bg-indigo-600/25 border-indigo-500/70 text-white shadow-md' 
             : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
         }`
 
         item.innerHTML = `
           <div class="flex items-center space-x-2 truncate">
             <span>${el.type === 'text' ? '🔤' : '⬛'}</span>
-            <span class="truncate font-medium">${el.name || el.id}</span>
+            <span class="truncate font-semibold ${el.hidden ? 'line-through opacity-50' : ''}">${el.name || el.id}</span>
           </div>
-          <span class="text-[10px] text-slate-500 font-mono">z:${el.zIndex || 1}</span>
+          <div class="flex items-center space-x-1.5">
+            <span class="text-[10px] text-slate-500 font-mono">z:${el.zIndex || 1}</span>
+            <span>${el.locked ? '🔒' : ''}</span>
+            <span>${el.hidden ? '🚫' : ''}</span>
+          </div>
         `
 
         item.addEventListener('click', (e) => {
@@ -549,7 +747,7 @@
       updateInspectorValues()
     }
 
-    // Update Form Inspector
+    // Update Properties Inspector Controls
     function updateInspectorValues() {
       const el = scene.elements.find(item => item.id === selectedElementId)
       if (!el) return
@@ -560,136 +758,190 @@
       document.getElementById('prop-y').value = el.y
       document.getElementById('prop-width').value = el.width
       document.getElementById('prop-height').value = el.height
-      document.getElementById('prop-opacity').value = Math.round((el.opacity !== undefined ? el.opacity : 1) * 100)
-      document.getElementById('prop-zindex').value = el.zIndex || 1
+      
+      const rot = el.rotation || 0
+      document.getElementById('prop-rotation').value = rot
+      document.getElementById('prop-rotation-num').value = rot
+      document.getElementById('prop-rotation-val').textContent = `${rot}°`
 
-      // Text Section
+      const op = Math.round((el.opacity !== undefined ? el.opacity : 1) * 100)
+      document.getElementById('prop-opacity').value = op
+      document.getElementById('prop-opacity-num').value = op
+      document.getElementById('prop-opacity-val').textContent = `${op}%`
+
+      // Lock & Visibility status icons
+      document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
+      document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
+
+      // Typography
       const textSection = document.getElementById('text-props-section')
       if (el.type === 'text' || el.style?.text !== undefined) {
         textSection.classList.remove('hidden')
         document.getElementById('prop-text-content').value = el.style?.text || ''
+        document.getElementById('prop-font-family').value = el.style?.fontFamily || 'Inter, sans-serif'
         document.getElementById('prop-font-size').value = el.style?.fontSize || 18
         document.getElementById('prop-font-weight').value = el.style?.fontWeight || 'normal'
+        document.getElementById('prop-text-transform').value = el.style?.textTransform || 'none'
+        document.getElementById('prop-letter-spacing').value = el.style?.letterSpacing || 0
         document.getElementById('prop-text-color').value = el.style?.color || '#ffffff'
         document.getElementById('prop-text-color-picker').value = el.style?.color?.startsWith('#') ? el.style.color : '#ffffff'
       } else {
         textSection.classList.add('hidden')
       }
 
-      // Styling
+      // Fill & Gradient
+      const isGrad = !!el.style?.gradient?.enabled
+      document.getElementById('prop-gradient-toggle').checked = isGrad
+      document.getElementById('solid-fill-section').classList.toggle('hidden', isGrad)
+      document.getElementById('gradient-fill-section').classList.toggle('hidden', !isGrad)
+
       document.getElementById('prop-bg-color').value = el.style?.backgroundColor || 'transparent'
       document.getElementById('prop-bg-color-picker').value = el.style?.backgroundColor?.startsWith('#') ? el.style.backgroundColor : '#090d16'
+      
+      const grad = el.style?.gradient || { from: '#0f172a', to: '#020617', angle: 90 }
+      document.getElementById('prop-grad-from').value = grad.from || '#0f172a'
+      document.getElementById('prop-grad-from-picker').value = grad.from?.startsWith('#') ? grad.from : '#0f172a'
+      document.getElementById('prop-grad-to').value = grad.to || '#020617'
+      document.getElementById('prop-grad-to-picker').value = grad.to?.startsWith('#') ? grad.to : '#020617'
+      document.getElementById('prop-grad-angle').value = grad.angle || 90
+      document.getElementById('prop-grad-angle-val').textContent = `${grad.angle || 90}°`
+      document.getElementById('prop-padding').value = el.style?.padding || 0
+
+      // Borders
       document.getElementById('prop-border-radius').value = el.style?.borderRadius || 0
       document.getElementById('prop-border-width').value = el.style?.borderWidth || 0
+      document.getElementById('prop-border-style').value = el.style?.borderStyle || 'solid'
       document.getElementById('prop-border-color').value = el.style?.borderColor || 'transparent'
       document.getElementById('prop-border-color-picker').value = el.style?.borderColor?.startsWith('#') ? el.style.borderColor : '#334155'
+
+      // Shadow
+      document.getElementById('prop-shadow-color').value = el.style?.shadowColor || ''
+      document.getElementById('prop-shadow-color-picker').value = el.style?.shadowColor?.startsWith('#') ? el.style.shadowColor : '#000000'
+      document.getElementById('prop-shadow-blur').value = el.style?.shadowBlur || 0
+      document.getElementById('prop-shadow-x').value = el.style?.shadowOffsetX || 0
+      document.getElementById('prop-shadow-y').value = el.style?.shadowOffsetY || 0
     }
 
-    // Attach Property Input Change Listeners
+    // Attach Property Change Listeners
     function attachPropertyListeners() {
       const getSelected = () => scene.elements.find(item => item.id === selectedElementId)
 
+      // Name
       document.getElementById('prop-name').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.name = e.target.value; renderLayers(); }
+        const el = getSelected(); if (el) { el.name = e.target.value; renderLayers(); }
       })
 
-      document.getElementById('prop-x').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.x = parseInt(e.target.value) || 0; renderCanvas(); }
+      // Lock / Unlock
+      document.getElementById('lock-toggle-btn').addEventListener('click', () => {
+        const el = getSelected(); if (el) { el.locked = !el.locked; renderCanvas(); renderLayers(); updateInspectorValues(); }
       })
 
-      document.getElementById('prop-y').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.y = parseInt(e.target.value) || 0; renderCanvas(); }
+      // Visibility
+      document.getElementById('visibility-toggle-btn').addEventListener('click', () => {
+        const el = getSelected(); if (el) { el.hidden = !el.hidden; renderCanvas(); renderLayers(); updateInspectorValues(); }
       })
 
-      document.getElementById('prop-width').addEventListener('input', (e) => {
+      // Alignments
+      document.getElementById('align-left-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = 0; renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-center-h-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = Math.round((1920 - el.width) / 2); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-right-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = 1920 - el.width; renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-top-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = 0; renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-center-v-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = Math.round((1080 - el.height) / 2); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-bottom-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = 1080 - el.height; renderCanvas(); updateInspectorValues(); } })
+
+      // Transforms
+      document.getElementById('prop-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.x = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.y = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-width').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.width = Math.max(10, parseInt(e.target.value) || 10); renderCanvas(); } })
+      document.getElementById('prop-height').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.height = Math.max(10, parseInt(e.target.value) || 10); renderCanvas(); } })
+
+      // Rotation
+      const handleRotationChange = (val) => {
         const el = getSelected()
-        if (el) { el.width = Math.max(10, parseInt(e.target.value) || 10); renderCanvas(); }
+        if (el) {
+          const deg = parseInt(val) || 0
+          el.rotation = deg
+          document.getElementById('prop-rotation').value = deg
+          document.getElementById('prop-rotation-num').value = deg
+          document.getElementById('prop-rotation-val').textContent = `${deg}°`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-rotation').addEventListener('input', (e) => handleRotationChange(e.target.value))
+      document.getElementById('prop-rotation-num').addEventListener('input', (e) => handleRotationChange(e.target.value))
+
+      // Opacity
+      const handleOpacityChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const pct = Math.max(0, Math.min(100, parseInt(val) || 0))
+          el.opacity = pct / 100
+          document.getElementById('prop-opacity').value = pct
+          document.getElementById('prop-opacity-num').value = pct
+          document.getElementById('prop-opacity-val').textContent = `${pct}%`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-opacity').addEventListener('input', (e) => handleOpacityChange(e.target.value))
+      document.getElementById('prop-opacity-num').addEventListener('input', (e) => handleOpacityChange(e.target.value))
+
+      // Typography
+      document.getElementById('prop-text-content').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.text = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-font-family').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.fontFamily = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-font-size').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.fontSize = parseInt(e.target.value) || 18; renderCanvas(); } })
+      document.getElementById('prop-font-weight').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.fontWeight = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-transform').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.textTransform = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-letter-spacing').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.letterSpacing = parseFloat(e.target.value) || 0; renderCanvas(); } })
+
+      document.getElementById('align-t-left').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'left'; renderCanvas(); } })
+      document.getElementById('align-t-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'center'; renderCanvas(); } })
+      document.getElementById('align-t-right').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'right'; renderCanvas(); } })
+
+      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderCanvas(); } })
+
+      // Gradient Toggle & Fill
+      document.getElementById('prop-gradient-toggle').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el) {
+          if (!el.style.gradient) el.style.gradient = { from: '#0f172a', to: '#020617', angle: 90 }
+          el.style.gradient.enabled = e.target.checked
+          updateInspectorValues()
+          renderCanvas()
+        }
       })
 
-      document.getElementById('prop-height').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.height = Math.max(10, parseInt(e.target.value) || 10); renderCanvas(); }
-      })
+      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-bg-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; renderCanvas(); } })
 
-      document.getElementById('prop-opacity').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.opacity = (parseInt(e.target.value) || 0) / 100; renderCanvas(); }
-      })
+      document.getElementById('prop-grad-from-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; document.getElementById('prop-grad-from').value = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-grad-from').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-grad-to-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; document.getElementById('prop-grad-to').value = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-grad-to').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-grad-angle').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.angle = parseInt(e.target.value) || 90; document.getElementById('prop-grad-angle-val').textContent = `${el.style.gradient.angle}°`; renderCanvas(); } })
+      document.getElementById('prop-padding').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.padding = parseInt(e.target.value) || 0; renderCanvas(); } })
 
-      document.getElementById('prop-zindex').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.zIndex = parseInt(e.target.value) || 1; renderCanvas(); renderLayers(); }
-      })
+      // Borders & Corners
+      document.getElementById('prop-border-radius').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-border-width').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-border-style').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.borderStyle = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-border-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-border-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; renderCanvas(); } })
 
-      // Text properties
-      document.getElementById('prop-text-content').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.text = e.target.value; renderCanvas(); }
-      })
+      // Shadow & Glow
+      document.getElementById('prop-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; document.getElementById('prop-shadow-color').value = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowBlur = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetX = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetY = parseInt(e.target.value) || 0; renderCanvas(); } })
 
-      document.getElementById('prop-font-size').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.fontSize = parseInt(e.target.value) || 18; renderCanvas(); }
-      })
-
-      document.getElementById('prop-font-weight').addEventListener('change', (e) => {
-        const el = getSelected()
-        if (el) { el.style.fontWeight = e.target.value; renderCanvas(); }
-      })
-
-      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderCanvas(); }
-      })
-
-      document.getElementById('prop-text-color').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.color = e.target.value; renderCanvas(); }
-      })
-
-      // BG Color
-      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderCanvas(); }
-      })
-
-      document.getElementById('prop-bg-color').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.backgroundColor = e.target.value; renderCanvas(); }
-      })
-
-      // Border & Radius
-      document.getElementById('prop-border-radius').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderCanvas(); }
-      })
-
-      document.getElementById('prop-border-width').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderCanvas(); }
-      })
-
-      document.getElementById('prop-border-color-picker').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderCanvas(); }
-      })
-
-      document.getElementById('prop-border-color').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) { el.style.borderColor = e.target.value; renderCanvas(); }
-      })
-
-      // Delete Button
+      // Delete & Duplicate
       document.getElementById('delete-element-btn').addEventListener('click', () => {
         if (!selectedElementId) return
         scene.elements = scene.elements.filter(item => item.id !== selectedElementId)
         selectElement(null)
       })
 
-      // Duplicate Button
       document.getElementById('duplicate-btn').addEventListener('click', () => {
         const el = getSelected()
         if (!el) return
@@ -704,7 +956,7 @@
       })
     }
 
-    // Add Element Buttons
+    // Add Elements Preset Buttons
     document.getElementById('add-text-btn').addEventListener('click', () => {
       const newEl = {
         id: 'txt_' + Date.now().toString(36),
@@ -712,14 +964,16 @@
         name: 'Heading Text',
         x: 100,
         y: 100,
-        width: 350,
-        height: 50,
-        zIndex: scene.elements.length + 1,
+        width: 400,
+        height: 60,
+        rotation: 0,
         opacity: 1,
+        zIndex: scene.elements.length + 1,
         style: {
-          text: 'New Stream Heading',
-          fontSize: 26,
-          fontWeight: 'bold',
+          text: 'STREAM HEADLINE',
+          fontFamily: 'Montserrat',
+          fontSize: 32,
+          fontWeight: '800',
           color: '#ffffff',
           backgroundColor: 'transparent',
           padding: 0,
@@ -735,18 +989,23 @@
       const newEl = {
         id: 'shp_' + Date.now().toString(36),
         type: 'shape',
-        name: 'Card Container',
+        name: 'Glow Card',
         x: 120,
         y: 120,
-        width: 400,
-        height: 120,
+        width: 420,
+        height: 140,
+        rotation: 0,
+        opacity: 0.95,
         zIndex: scene.elements.length + 1,
-        opacity: 0.9,
         style: {
           backgroundColor: '#0f172a',
-          borderRadius: 16,
+          borderRadius: 20,
           borderWidth: 2,
-          borderColor: '#6366f1'
+          borderStyle: 'solid',
+          borderColor: '#6366f1',
+          shadowColor: 'rgba(99,102,241,0.35)',
+          shadowBlur: 24,
+          gradient: { enabled: true, from: '#1e1b4b', to: '#0f172a', angle: 135 }
         }
       }
       scene.elements.push(newEl)
@@ -757,23 +1016,29 @@
       const newEl = {
         id: 'bdg_' + Date.now().toString(36),
         type: 'text',
-        name: 'Social Badge',
+        name: 'TikTok Badge',
         x: 60,
         y: 860,
-        width: 260,
-        height: 55,
-        zIndex: scene.elements.length + 1,
+        width: 280,
+        height: 60,
+        rotation: -2,
         opacity: 0.95,
+        zIndex: scene.elements.length + 1,
         style: {
-          text: '🎵 @creator_id',
+          text: '🎵 @your_channel',
+          fontFamily: 'Outfit',
           fontSize: 20,
-          fontWeight: 'bold',
-          color: '#ec4899',
+          fontWeight: '800',
+          color: '#f43f5e',
           backgroundColor: '#18181b',
-          borderRadius: 16,
-          padding: 14,
-          borderWidth: 1.5,
-          borderColor: '#ec4899'
+          borderRadius: 18,
+          padding: 16,
+          borderWidth: 2,
+          borderColor: '#ec4899',
+          borderStyle: 'solid',
+          shadowColor: 'rgba(236,72,153,0.4)',
+          shadowBlur: 20,
+          gradient: { enabled: true, from: '#27272a', to: '#09090b', angle: 90 }
         }
       }
       scene.elements.push(newEl)
@@ -784,38 +1049,62 @@
       const newEl = {
         id: 'bnr_' + Date.now().toString(36),
         type: 'text',
-        name: 'Stream Announcement',
+        name: 'Stream Banner',
         x: 60,
         y: 935,
-        width: 600,
-        height: 60,
-        zIndex: scene.elements.length + 1,
+        width: 680,
+        height: 65,
+        rotation: 0,
         opacity: 0.95,
+        zIndex: scene.elements.length + 1,
         style: {
-          text: '✨ Follow & Subscribe for daily live streams!',
-          fontSize: 18,
+          text: '✨ Follow & Subscribe for daily live stream content!',
+          fontFamily: 'Poppins',
+          fontSize: 17,
           fontWeight: '600',
           color: '#f8fafc',
           backgroundColor: '#090d16',
-          borderRadius: 18,
-          padding: 18,
+          borderRadius: 20,
+          padding: 20,
           borderWidth: 1.5,
-          borderColor: '#334155'
+          borderColor: '#334155',
+          borderStyle: 'solid',
+          shadowColor: 'rgba(0,0,0,0.6)',
+          shadowBlur: 24,
+          gradient: { enabled: true, from: '#0f172a', to: '#020617', angle: 135 }
         }
       }
       scene.elements.push(newEl)
       selectElement(newEl.id)
     })
 
-    // Layer Up / Down
+    // Layer Reorder Buttons
+    document.getElementById('layer-top-btn').addEventListener('click', () => {
+      if (!selectedElementId) return
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      if (el) {
+        const maxZ = Math.max(...scene.elements.map(item => item.zIndex || 0), 0)
+        el.zIndex = maxZ + 1
+        renderCanvas(); renderLayers(); updateInspectorValues();
+      }
+    })
+
+    document.getElementById('layer-bottom-btn').addEventListener('click', () => {
+      if (!selectedElementId) return
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      if (el) {
+        const minZ = Math.min(...scene.elements.map(item => item.zIndex || 0), 0)
+        el.zIndex = Math.max(0, minZ - 1)
+        renderCanvas(); renderLayers(); updateInspectorValues();
+      }
+    })
+
     document.getElementById('layer-up-btn').addEventListener('click', () => {
       if (!selectedElementId) return
       const el = scene.elements.find(item => item.id === selectedElementId)
       if (el) {
         el.zIndex = (el.zIndex || 1) + 1
-        renderCanvas()
-        renderLayers()
-        updateInspectorValues()
+        renderCanvas(); renderLayers(); updateInspectorValues();
       }
     })
 
@@ -824,34 +1113,33 @@
       const el = scene.elements.find(item => item.id === selectedElementId)
       if (el) {
         el.zIndex = Math.max(0, (el.zIndex || 1) - 1)
-        renderCanvas()
-        renderLayers()
-        updateInspectorValues()
+        renderCanvas(); renderLayers(); updateInspectorValues();
       }
     })
 
-    // Zoom Buttons
+    // Zoom Controls
     document.getElementById('zoom-in-btn').addEventListener('click', () => setZoom(zoom + 0.1))
     document.getElementById('zoom-out-btn').addEventListener('click', () => setZoom(zoom - 0.1))
     document.getElementById('zoom-fit-btn').addEventListener('click', fitZoom)
+    document.getElementById('zoom-100-btn').addEventListener('click', () => setZoom(1.0))
 
-    // Save Button
+    // Save & Resize
     document.getElementById('save-scene-btn').addEventListener('click', saveScene)
-
-    // Window Resize / Auto fit
     window.addEventListener('resize', fitZoom)
 
-    // Keyboard Shortcuts (Delete / Backspace / Escape)
+    // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedElementId) {
           scene.elements = scene.elements.filter(item => item.id !== selectedElementId)
           selectElement(null)
         }
       }
-      if (e.key === 'Escape') {
-        selectElement(null)
+      if (e.key === 'Escape') selectElement(null)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        saveScene()
       }
     })
 

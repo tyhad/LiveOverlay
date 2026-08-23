@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiveOverlay - Stream Overlay Renderer</title>
+  <!-- Google Fonts for Stream Overlays -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
@@ -42,7 +46,6 @@
     const viewport = document.getElementById('overlay-viewport')
     let lastSceneHash = ''
 
-    // Scale viewport to fit browser source window size if OBS window dimensions differ from 1920x1080
     function scaleViewport() {
       const windowW = window.innerWidth
       const windowH = window.innerHeight
@@ -56,7 +59,6 @@
       }
     }
 
-    // Render Scene Elements
     function renderScene(scene) {
       viewport.innerHTML = ''
       if (!scene || !scene.elements) return
@@ -64,6 +66,8 @@
       const sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
 
       sortedElements.forEach(el => {
+        if (el.hidden) return // Do not render hidden elements on live stream
+
         const div = document.createElement('div')
         div.className = 'overlay-element'
         div.id = `render-el-${el.id}`
@@ -73,27 +77,46 @@
         div.style.height = `${el.height}px`
         div.style.zIndex = el.zIndex || 1
         div.style.opacity = el.opacity !== undefined ? el.opacity : 1
-        div.style.backgroundColor = el.style?.backgroundColor || 'transparent'
+        div.style.transform = `rotate(${el.rotation || 0}deg)`
         div.style.borderRadius = `${el.style?.borderRadius || 0}px`
         div.style.borderWidth = `${el.style?.borderWidth || 0}px`
-        div.style.borderStyle = el.style?.borderWidth ? 'solid' : 'none'
+        div.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
         div.style.borderColor = el.style?.borderColor || 'transparent'
 
-        if (el.style?.shadowColor) {
-          div.style.boxShadow = `0 4px ${el.style.shadowBlur || 16}px ${el.style.shadowColor}`
+        // Fill & Gradients
+        if (el.style?.gradient?.enabled) {
+          const from = el.style.gradient.from || '#0f172a'
+          const to = el.style.gradient.to || '#020617'
+          const angle = el.style.gradient.angle || 90
+          div.style.background = `linear-gradient(${angle}deg, ${from}, ${to})`
+        } else {
+          div.style.backgroundColor = el.style?.backgroundColor || 'transparent'
         }
 
-        if (el.type === 'text' || el.style?.text) {
+        // Shadows
+        if (el.style?.shadowColor) {
+          const sx = el.style.shadowOffsetX || 0
+          const sy = el.style.shadowOffsetY || 4
+          const sb = el.style.shadowBlur || 16
+          div.style.boxShadow = `${sx}px ${sy}px ${sb}px ${el.style.shadowColor}`
+        }
+
+        // Typography
+        if (el.type === 'text' || el.style?.text !== undefined) {
           const textEl = document.createElement('div')
           textEl.style.width = '100%'
           textEl.style.height = '100%'
           textEl.style.display = 'flex'
           textEl.style.alignItems = 'center'
+          textEl.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
           textEl.style.fontSize = `${el.style?.fontSize || 18}px`
           textEl.style.fontWeight = el.style?.fontWeight || 'normal'
           textEl.style.color = el.style?.color || '#ffffff'
           textEl.style.padding = `${el.style?.padding || 0}px`
           textEl.style.textAlign = el.style?.textAlign || 'left'
+          textEl.style.textTransform = el.style?.textTransform || 'none'
+          textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
+          textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
           textEl.textContent = el.style?.text || ''
           div.appendChild(textEl)
         }
@@ -102,7 +125,6 @@
       })
     }
 
-    // Fetch and Sync Scene
     async function syncScene() {
       try {
         const res = await fetch('/api/scene')
@@ -124,7 +146,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       scaleViewport()
       syncScene()
-      // Polling for live sync from studio editor
       setInterval(syncScene, 2000)
     })
   </script>

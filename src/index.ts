@@ -12,20 +12,35 @@ interface Settings {
   runningText: string
 }
 
+interface GradientStyle {
+  enabled?: boolean
+  from?: string
+  to?: string
+  angle?: number
+}
+
 interface ElementStyle {
   text?: string
   fontSize?: number
   fontFamily?: string
   fontWeight?: string
   color?: string
+  textAlign?: 'left' | 'center' | 'right'
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'
+  letterSpacing?: number
+  lineHeight?: number
+  textShadow?: string
   backgroundColor?: string
+  gradient?: GradientStyle
   borderRadius?: number
   borderWidth?: number
   borderColor?: string
+  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none'
   padding?: number
-  textAlign?: string
   shadowColor?: string
   shadowBlur?: number
+  shadowOffsetX?: number
+  shadowOffsetY?: number
 }
 
 interface SceneElement {
@@ -39,6 +54,8 @@ interface SceneElement {
   rotation?: number
   opacity?: number
   zIndex?: number
+  hidden?: boolean
+  locked?: boolean
   style: ElementStyle
 }
 
@@ -123,32 +140,7 @@ async function getScene(): Promise<SceneData> {
       height: 1080,
       backgroundColor: 'transparent',
     },
-    elements: [
-      {
-        id: 'el-welcome-text',
-        type: 'text',
-        name: 'Welcome Text',
-        x: 100,
-        y: 900,
-        width: 500,
-        height: 50,
-        rotation: 0,
-        opacity: 1,
-        zIndex: 1,
-        style: {
-          text: '✨ Live Stream Starting Soon!',
-          fontSize: 24,
-          fontWeight: 'bold',
-          color: '#ffffff',
-          backgroundColor: '#1e1b4b',
-          borderRadius: 12,
-          padding: 10,
-          textAlign: 'left',
-          borderColor: '#6366f1',
-          borderWidth: 2,
-        },
-      },
-    ],
+    elements: [],
   }
 
   await Bun.write(SCENE_FILE, JSON.stringify(fallbackScene, null, 2))

@@ -43,6 +43,33 @@ interface ElementStyle {
   shadowOffsetY?: number
 }
 
+interface EntranceAnimation {
+  type?: 'none' | 'fadeIn' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'zoomIn' | 'bounceIn' | 'flipX' | 'flipY' | 'elasticIn'
+  duration?: number
+  delay?: number
+  ease?: string
+}
+
+interface ExitAnimation {
+  type?: 'none' | 'fadeOut' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'zoomOut' | 'bounceOut' | 'flipX'
+  duration?: number
+  delay?: number
+  ease?: string
+}
+
+interface LoopAnimation {
+  type?: 'none' | 'pulse' | 'float' | 'shake' | 'glow' | 'bounce' | 'spin' | 'swing' | 'heartbeat'
+  duration?: number
+  intensity?: number
+  ease?: string
+}
+
+interface AnimationConfig {
+  entrance?: EntranceAnimation
+  exit?: ExitAnimation
+  loop?: LoopAnimation
+}
+
 interface SceneElement {
   id: string
   type: 'text' | 'shape' | 'badge' | 'image'
@@ -57,6 +84,7 @@ interface SceneElement {
   hidden?: boolean
   locked?: boolean
   style: ElementStyle
+  animation?: AnimationConfig
 }
 
 interface SceneData {

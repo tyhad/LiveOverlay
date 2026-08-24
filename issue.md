@@ -48,8 +48,10 @@ Saat elemen dipilih di kanvas, muncul panel untuk atur:
 ### 3.4 Asset Management
 User bisa upload SVG/PNG hasil desain dari Illustrator, tersimpan di server, lalu dipakai berulang sebagai elemen di kanvas manapun.
 
-### 3.5 Scene / Preset Management
-Karena overlay dipakai untuk konteks beda-beda (mis. "Scene Gaming", "Scene Just Chatting", "Scene Ending"), user bisa simpan beberapa komposisi kanvas sebagai preset terpisah dan switch di antaranya tanpa harus desain ulang dari nol.
+### 3.5 Scene / Preset Management & Multi-Output
+Karena overlay dipakai untuk konteks beda-beda (mis. "Scene Gaming", "Scene Just Chatting", "Scene Ending"), user bisa simpan beberapa komposisi kanvas sebagai preset terpisah tanpa harus desain ulang dari nol.
+
+Scene tidak terbatas pada satu scene aktif yang harus di-switch bergantian. Beberapa scene harus bisa dijalankan dan dirender secara bersamaan untuk output yang berbeda-beda, misalnya setup portrait dan landscape di TikTok Live Studio, atau live multi-platform seperti TikTok dan YouTube dengan layout masing-masing. Setiap scene memiliki identifier sendiri, dan overlay renderer dapat dimuat dengan parameter yang menunjuk ke scene spesifik. Dengan begitu, tiap OBS Browser Source atau instance overlay menampilkan scene pilihannya secara independen dan tetap tersinkron secara real-time tanpa saling mengganggu.
 
 ### 3.6 Live Sync & Output
 Overlay page (yang di-load sebagai browser source) merender scene yang aktif secara real-time, termasuk animasinya, dan otomatis update kalau user mengedit dari GUI editor (mirip behavior polling yang sudah ada sekarang, tapi sekarang me-render seluruh komposisi visual, bukan cuma 2 field teks).
@@ -79,11 +81,16 @@ Tambahkan pilihan animasi (preset GSAP) per elemen — animasi masuk, animasi id
 ### Fase 4 — Asset & SVG Import
 Fitur upload SVG/gambar dari user, elemen tipe "Image/SVG" bisa dipakai di kanvas seperti elemen lain (posisi, ukuran, animasi tetap berlaku).
 
-### Fase 5 — Data Binding Dinamis
-Hubungkan elemen Text tertentu ke variabel dinamis (username TikTok, running text, dan kemungkinan data live lain ke depannya) — supaya kombinasi "desain visual bebas" + "data yang update real-time" tetap jalan bareng.
+### Fase 5a — Platform Live Stats
+Hubungkan elemen Text tertentu ke data yang berasal dari platform streaming itu sendiri, seperti username, viewer count, follower count, live chat, dan data platform relevan lainnya. Tujuannya agar kombinasi "desain visual bebas" + "data yang update real-time" tetap jalan bareng.
 
-### Fase 6 — Multi-Scene / Preset
-Kemampuan simpan banyak Scene, kasih nama, switch aktif dari GUI tanpa reset desain lain.
+### Fase 5b — External Data Source (Generic API Binding)
+Tambahkan sistem data source yang fleksibel agar user dapat mengonfigurasi API eksternal apa pun dan memilih field dari response API tersebut untuk ditampilkan pada elemen overlay. Contoh use case-nya adalah data F1, seperti track condition dari API publik semacam FastF1, maupun API free-to-use lainnya.
+
+Polling API eksternal sebaiknya dilakukan di sisi backend dengan caching, bukan langsung dari overlay browser source, supaya latency atau rate-limit API luar tidak mengganggu kecepatan render overlay.
+
+### Fase 6 — Multi-Scene & Multi-Output
+Kemampuan menyimpan banyak Scene, memberi nama dan identifier pada tiap scene, serta menjalankan beberapa scene secara concurrent pada output atau URL overlay yang berbeda. Setiap OBS Browser Source atau instance overlay dapat memilih scene spesifik secara independen, sehingga beberapa layout untuk stance, orientasi, atau platform live yang berbeda dapat tampil dan tersinkron pada waktu yang sama tanpa reset atau saling mengganggu.
 
 ### Fase 7 — Polish UX Editor
 Snap-to-grid, alignment guide, keyboard shortcut, undo/redo, dsb — hal-hal yang bikin proses desain di dalam tool ini terasa senyaman software desain sungguhan.
@@ -94,7 +101,6 @@ Supaya model implementasi gak melebar:
 - Bukan produk multi-user/SaaS — tetap single-user, local-first.
 - Bukan real-time collaborative editing.
 - Bukan full vector editor (gak perlu reimplement fitur Illustrator secara penuh) — cukup bisa **menampilkan & mengatur** SVG yang sudah didesain dari luar (Illustrator), bukan menggambar vector dari nol di dalam tool.
-- Integrasi live data lanjutan (follower count real-time, chat overlay, dsb) belum masuk prioritas awal — itu perluasan setelah fondasi Scene/Element system solid.
 
 ## 7. Prinsip Desain yang Harus Dipegang
 

@@ -47,6 +47,7 @@
     const viewport = document.getElementById('overlay-viewport')
     let lastSceneHash = ''
     const renderedElements = new Map()
+    const loopAnimations = new Map()
 
     function scaleViewport() {
       const windowW = window.innerWidth
@@ -61,42 +62,58 @@
       }
     }
 
+    function stopLoopAnimation(node) {
+      const animation = loopAnimations.get(node)
+      if (animation) animation.kill()
+      loopAnimations.delete(node)
+    }
+
     function playLoopAnimation(node, loop) {
+      stopLoopAnimation(node)
       if (!node || !loop || loop.type === 'none') return
       const dur = loop.duration || 2.5
+      let animation
 
       switch (loop.type) {
         case 'pulse':
-          gsap.to(node, { scale: 1.04, duration: dur / 2, repeat: -1, yoyo: true, ease: 'power1.inOut' })
+          animation = gsap.to(node, { scale: 1.04, duration: dur / 2, repeat: -1, yoyo: true, ease: 'power1.inOut' })
           break
         case 'float':
-          gsap.to(node, { y: '-=10', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
+          animation = gsap.to(node, { y: '-=10', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
           break
         case 'glow':
-          gsap.to(node, { filter: 'drop-shadow(0 0 16px rgba(99,102,241,0.8))', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
+          animation = gsap.to(node, { filter: 'drop-shadow(0 0 16px rgba(99,102,241,0.8))', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
           break
         case 'swing':
-          gsap.to(node, { rotation: '+=4', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
+          animation = gsap.to(node, { rotation: '+=4', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
           break
         case 'heartbeat':
-          const htl = gsap.timeline({ repeat: -1, repeatDelay: dur - 0.6 })
-          htl.to(node, { scale: 1.08, duration: 0.15, ease: 'power1.out' })
+          animation = gsap.timeline({ repeat: -1, repeatDelay: Math.max(0, dur - 0.6) })
+          animation.to(node, { scale: 1.08, duration: 0.15, ease: 'power1.out' })
              .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
              .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
              .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
           break
         case 'bounce':
-          gsap.to(node, { y: '-=14', duration: dur / 2, repeat: -1, yoyo: true, ease: 'power2.out' })
+          animation = gsap.to(node, { y: '-=14', duration: dur / 2, repeat: -1, yoyo: true, ease: 'power2.out' })
           break
         case 'shake':
-          const stl = gsap.timeline({ repeat: -1, repeatDelay: dur })
-          stl.to(node, { x: '+=5', duration: 0.08 })
+          animation = gsap.timeline({ repeat: -1, repeatDelay: dur })
+          animation.to(node, { x: '+=5', duration: 0.08 })
              .to(node, { x: '-=10', duration: 0.08 })
              .to(node, { x: '+=8', duration: 0.08 })
              .to(node, { x: '-=6', duration: 0.08 })
              .to(node, { x: 0, duration: 0.08 })
           break
       }
+
+      if (animation) loopAnimations.set(node, animation)
+    }
+
+    function restartLoopAnimation(node, loop, rotation) {
+      stopLoopAnimation(node)
+      gsap.set(node, { x: 0, y: 0, scale: 1, rotation, clearProps: 'filter' })
+      playLoopAnimation(node, loop)
     }
 
     function playExitAnimation(node, config, onComplete) {
@@ -104,6 +121,7 @@
       const duration = exit.duration || 0.5
       const delay = exit.delay || 0
       const ease = exit.ease || 'power2.in'
+      stopLoopAnimation(node)
       gsap.killTweensOf(node)
       const complete = onComplete || (() => {})
 
@@ -174,11 +192,13 @@
 
     function playEntranceAnimation(node, config) {
       const entrance = config?.entrance || {}
-      const loop = config?.loop || {}
       const duration = entrance.duration || 0.8
       const delay = entrance.delay || 0
       const ease = entrance.ease || 'power3.out'
-      const finish = () => playLoopAnimation(node, loop)
+      const finish = () => {
+        const latestConfig = renderedElements.get(node.dataset.elementId)?.config || config
+        playLoopAnimation(node, latestConfig?.loop || {})
+      }
       const options = { opacity: 0, duration, delay, ease, onComplete: finish }
 
       switch (entrance.type) {
@@ -210,18 +230,30 @@
         const existing = renderedElements.get(el.id)
         if (existing) {
           applyElement(existing.node, el)
-          gsap.set(existing.node, { rotation: el.rotation || 0 })
+          const nextLoop = el.animation?.loop || {}
+          const loopChanged = JSON.stringify(existing.config?.loop || {}) !== JSON.stringify(nextLoop)
+          const rotation = el.rotation || 0
+          const rotationChanged = existing.rotation !== rotation
+
+          if (loopChanged || (rotationChanged && nextLoop.type === 'swing')) {
+            restartLoopAnimation(existing.node, nextLoop, rotation)
+          } else if (nextLoop.type !== 'swing') {
+            gsap.set(existing.node, { rotation })
+          }
+
           existing.config = el.animation
+          existing.rotation = rotation
           return
         }
 
         const div = document.createElement('div')
         div.className = 'overlay-element'
         div.id = `render-el-${el.id}`
+        div.dataset.elementId = el.id
         applyElement(div, el)
         gsap.set(div, { rotation: el.rotation || 0, transformPerspective: 800 })
         viewport.appendChild(div)
-        renderedElements.set(el.id, { node: div, config: el.animation })
+        renderedElements.set(el.id, { node: div, config: el.animation, rotation: el.rotation || 0 })
         playEntranceAnimation(div, el.animation)
       })
     }

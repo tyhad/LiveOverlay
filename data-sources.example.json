@@ -1,0 +1,12 @@
+[
+  {
+    "id": "weather-jakarta",
+    "name": "Open-Meteo Jakarta",
+    "url": "https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,weather_code",
+    "enabled": false,
+    "method": "GET",
+    "pollIntervalMs": 30000,
+    "timeoutMs": 5000,
+    "rootPath": "current"
+  }
+]

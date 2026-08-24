@@ -46,8 +46,43 @@
   <script>
     const viewport = document.getElementById('overlay-viewport')
     let lastSceneHash = ''
+    let lastLiveStatsHash = ''
+    let currentScene = null
+    let liveStats = {
+      platform: 'TikTok Live',
+      username: '@creator',
+      displayName: 'Creator Stream',
+      viewerCount: 0,
+      followerCount: 0,
+      likeCount: 0,
+      latestChatAuthor: '',
+      latestChatMessage: '',
+      isLive: false,
+      lastUpdatedAt: '',
+      chatMessages: []
+    }
+    let externalData = { sources: [] }
+    let lastExternalDataHash = ''
     const renderedElements = new Map()
     const loopAnimations = new Map()
+
+    function getPathSegments(path) {
+      return String(path || '').match(/[^.[\]]+/g) || []
+    }
+
+    function getValueAtPath(data, path) {
+      if (!path) return data
+      return getPathSegments(path).reduce((current, segment) => {
+        if (current === null || current === undefined) return undefined
+        if (Array.isArray(current)) return current[Number(segment)]
+        if (typeof current === 'object') return current[segment]
+        return undefined
+      }, data)
+    }
+
+    function getExternalSourceSnapshot(sourceId) {
+      return externalData.sources.find(source => source.id === sourceId)
+    }
 
     function scaleViewport() {
       const windowW = window.innerWidth
@@ -138,6 +173,34 @@
       }
     }
 
+    function formatBoundValue(value, format) {
+      if (value === undefined || value === null || value === '') return ''
+      if (format === 'number') {
+        const numeric = Number(value)
+        return Number.isFinite(numeric) ? new Intl.NumberFormat().format(numeric) : String(value)
+      }
+      if (format === 'uppercase') return String(value).toUpperCase()
+      if (format === 'lowercase') return String(value).toLowerCase()
+      return String(value)
+    }
+
+    function resolveElementText(el) {
+      const binding = el?.textBinding
+      const fallback = binding?.fallback || el?.style?.text || ''
+      if (!binding?.enabled) return el?.style?.text || fallback
+
+      let rawValue
+      if (binding.source === 'external') {
+        rawValue = getValueAtPath(getExternalSourceSnapshot(binding.externalSourceId)?.data, binding.fieldPath)
+      } else {
+        rawValue = liveStats?.[binding.field]
+      }
+
+      const formatted = formatBoundValue(rawValue, binding.format || 'raw')
+      const value = formatted || fallback
+      return `${binding.prefix || ''}${value}${binding.suffix || ''}`
+    }
+
     function applyElement(node, el) {
       node.style.left = `${el.x}px`
       node.style.top = `${el.y}px`
@@ -199,7 +262,7 @@
         textEl.style.textTransform = el.style?.textTransform || 'none'
         textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
         textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
-        textEl.textContent = el.style?.text || ''
+        textEl.textContent = resolveElementText(el)
       } else {
         node.replaceChildren()
       }
@@ -280,8 +343,8 @@
           const text = await res.text()
           if (text !== lastSceneHash || isInitial) {
             lastSceneHash = text
-            const scene = JSON.parse(text)
-            renderScene(scene)
+            currentScene = JSON.parse(text)
+            renderScene(currentScene)
           }
         }
       } catch (err) {
@@ -289,12 +352,46 @@
       }
     }
 
+    async function syncLiveStats(isInitial = false) {
+      try {
+        const res = await fetch('/api/live-stats')
+        if (!res.ok) return
+        const text = await res.text()
+        if (text !== lastLiveStatsHash || isInitial) {
+          lastLiveStatsHash = text
+          liveStats = JSON.parse(text)
+          if (currentScene) renderScene(currentScene)
+        }
+      } catch (err) {
+        console.error('Failed to sync live stats:', err)
+      }
+    }
+
+    async function syncExternalData(isInitial = false) {
+      try {
+        const res = await fetch('/api/external-data')
+        if (!res.ok) return
+        const text = await res.text()
+        if (text !== lastExternalDataHash || isInitial) {
+          lastExternalDataHash = text
+          externalData = JSON.parse(text)
+          if (currentScene) renderScene(currentScene)
+        }
+      } catch (err) {
+        console.error('Failed to sync external data:', err)
+      }
+    }
+
     window.addEventListener('resize', scaleViewport)
 
     document.addEventListener('DOMContentLoaded', () => {
       scaleViewport()
+      syncLiveStats(true)
+      syncExternalData(true)
       syncScene(true)
       setInterval(() => syncScene(false), 2000)
+      setInterval(() => syncLiveStats(false), 2000)
+      setInterval(() => syncExternalData(false), 5000)
     })
   </script>
 </body>

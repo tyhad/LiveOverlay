@@ -6,10 +6,16 @@ const SETTINGS_FILE = 'settings.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENE_FILE = 'scene.json'
 const EXAMPLE_SCENE_FILE = 'scene.example.json'
+const LIVE_STATS_FILE = 'live-stats.json'
+const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
+const DATA_SOURCES_FILE = 'data-sources.json'
+const EXAMPLE_DATA_SOURCES_FILE = 'data-sources.example.json'
 const ASSET_DIRECTORY = 'public/uploads'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
 const PORT = Number(process.env.PORT || 3000)
 const MAX_ASSET_SIZE = 10 * 1024 * 1024
+const DEFAULT_EXTERNAL_POLL_INTERVAL_MS = 15_000
+const DEFAULT_EXTERNAL_TIMEOUT_MS = 5_000
 const ASSET_MIME_TYPES = new Map([
   ['image/svg+xml', 'svg'],
   ['image/png', 'png'],
@@ -81,6 +87,40 @@ interface AnimationConfig {
   loop?: LoopAnimation
 }
 
+type PlatformTextBindingField =
+  | 'platform'
+  | 'username'
+  | 'displayName'
+  | 'viewerCount'
+  | 'followerCount'
+  | 'likeCount'
+  | 'latestChatAuthor'
+  | 'latestChatMessage'
+  | 'isLive'
+
+interface PlatformTextBinding {
+  enabled?: boolean
+  source: 'platform'
+  field: PlatformTextBindingField
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+interface ExternalTextBinding {
+  enabled?: boolean
+  source: 'external'
+  externalSourceId?: string
+  fieldPath?: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+type TextBinding = PlatformTextBinding | ExternalTextBinding
+
 interface SceneElement {
   id: string
   type: 'text' | 'shape' | 'badge' | 'image'
@@ -98,6 +138,7 @@ interface SceneElement {
   objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
   style: ElementStyle
   animation?: AnimationConfig
+  textBinding?: TextBinding
 }
 
 interface SceneData {
@@ -109,6 +150,72 @@ interface SceneData {
     backgroundColor?: string
   }
   elements: SceneElement[]
+}
+
+interface ChatMessage {
+  id: string
+  author: string
+  message: string
+  receivedAt: string
+}
+
+interface ChatMessageInput {
+  id?: string
+  author: string
+  message: string
+  receivedAt?: string
+}
+
+interface LiveStatsData {
+  platform: string
+  username: string
+  displayName: string
+  viewerCount: number
+  followerCount: number
+  likeCount: number
+  latestChatAuthor: string
+  latestChatMessage: string
+  isLive: boolean
+  lastUpdatedAt: string
+  chatMessages: ChatMessage[]
+}
+
+interface LiveStatsUpdate {
+  platform?: string
+  username?: string
+  displayName?: string
+  viewerCount?: number
+  followerCount?: number
+  likeCount?: number
+  latestChatAuthor?: string
+  latestChatMessage?: string
+  isLive?: boolean
+  lastUpdatedAt?: string
+  chatMessages?: ChatMessageInput[]
+}
+
+interface ExternalDataSourceConfig {
+  id: string
+  name: string
+  url: string
+  enabled?: boolean
+  method?: 'GET'
+  headers?: Record<string, string>
+  pollIntervalMs?: number
+  timeoutMs?: number
+  rootPath?: string
+}
+
+interface ExternalDataSourceCacheEntry {
+  id: string
+  name: string
+  status: 'idle' | 'success' | 'error' | 'disabled'
+  pollIntervalMs: number
+  lastFetchedAt: string | null
+  lastSuccessAt: string | null
+  lastError: string | null
+  fieldPaths: string[]
+  data: unknown
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -193,6 +300,321 @@ async function saveScene(scene: SceneData): Promise<SceneData> {
   return scene
 }
 
+const DEFAULT_LIVE_STATS: LiveStatsData = {
+  platform: 'TikTok Live',
+  username: '@creator',
+  displayName: 'Creator Stream',
+  viewerCount: 128,
+  followerCount: 12450,
+  likeCount: 98320,
+  latestChatAuthor: 'setyo.design',
+  latestChatMessage: 'Overlay baru ini clean banget!',
+  isLive: true,
+  lastUpdatedAt: new Date().toISOString(),
+  chatMessages: [
+    {
+      id: 'chat_1',
+      author: 'setyo.design',
+      message: 'Overlay baru ini clean banget!',
+      receivedAt: new Date().toISOString(),
+    },
+  ],
+}
+
+function normalizeLiveStats(data: LiveStatsUpdate | Partial<LiveStatsData>): LiveStatsData {
+  const nextChatMessages = Array.isArray(data.chatMessages)
+    ? data.chatMessages
+        .filter((message): message is ChatMessage => !!message && typeof message === 'object')
+        .slice(-25)
+        .map((message, index) => ({
+          id: message.id || `chat_${index + 1}`,
+          author: message.author || 'viewer',
+          message: message.message || '',
+          receivedAt: message.receivedAt || new Date().toISOString(),
+        }))
+    : DEFAULT_LIVE_STATS.chatMessages
+
+  return {
+    platform: data.platform || DEFAULT_LIVE_STATS.platform,
+    username: data.username || DEFAULT_LIVE_STATS.username,
+    displayName: data.displayName || DEFAULT_LIVE_STATS.displayName,
+    viewerCount: Number.isFinite(data.viewerCount) ? Number(data.viewerCount) : DEFAULT_LIVE_STATS.viewerCount,
+    followerCount: Number.isFinite(data.followerCount) ? Number(data.followerCount) : DEFAULT_LIVE_STATS.followerCount,
+    likeCount: Number.isFinite(data.likeCount) ? Number(data.likeCount) : DEFAULT_LIVE_STATS.likeCount,
+    latestChatAuthor: data.latestChatAuthor || nextChatMessages.at(-1)?.author || DEFAULT_LIVE_STATS.latestChatAuthor,
+    latestChatMessage: data.latestChatMessage || nextChatMessages.at(-1)?.message || DEFAULT_LIVE_STATS.latestChatMessage,
+    isLive: typeof data.isLive === 'boolean' ? data.isLive : DEFAULT_LIVE_STATS.isLive,
+    lastUpdatedAt: data.lastUpdatedAt || new Date().toISOString(),
+    chatMessages: nextChatMessages,
+  }
+}
+
+async function getLiveStats(): Promise<LiveStatsData> {
+  const file = Bun.file(LIVE_STATS_FILE)
+  if (await file.exists()) {
+    try {
+      const text = await file.text()
+      return normalizeLiveStats(JSON.parse(text))
+    } catch {
+      // Fallback if parsing fails
+    }
+  }
+
+  const exampleFile = Bun.file(EXAMPLE_LIVE_STATS_FILE)
+  if (await exampleFile.exists()) {
+    try {
+      const initialStats = normalizeLiveStats(JSON.parse(await exampleFile.text()))
+      await Bun.write(LIVE_STATS_FILE, JSON.stringify(initialStats, null, 2))
+      return initialStats
+    } catch {
+      // Fallback
+    }
+  }
+
+  await Bun.write(LIVE_STATS_FILE, JSON.stringify(DEFAULT_LIVE_STATS, null, 2))
+  return DEFAULT_LIVE_STATS
+}
+
+async function saveLiveStats(data: LiveStatsUpdate): Promise<LiveStatsData> {
+  const current = await getLiveStats()
+  const nextChatMessages = Array.isArray(data.chatMessages) && data.chatMessages.length > 0
+    ? data.chatMessages
+    : current.chatMessages
+
+  const updated = normalizeLiveStats({
+    ...current,
+    ...data,
+    chatMessages: nextChatMessages,
+    lastUpdatedAt: new Date().toISOString(),
+  })
+
+  if (data.latestChatMessage || data.latestChatAuthor) {
+    const author = data.latestChatAuthor || updated.latestChatAuthor
+    const message = data.latestChatMessage || updated.latestChatMessage
+    updated.latestChatAuthor = author
+    updated.latestChatMessage = message
+    updated.chatMessages = [
+      ...updated.chatMessages,
+      {
+        id: `chat_${Date.now()}`,
+        author,
+        message,
+        receivedAt: updated.lastUpdatedAt,
+      },
+    ].slice(-25)
+  }
+
+  await Bun.write(LIVE_STATS_FILE, JSON.stringify(updated, null, 2))
+  return updated
+}
+
+const DEFAULT_EXTERNAL_DATA_SOURCES: ExternalDataSourceConfig[] = [
+  {
+    id: 'weather-jakarta',
+    name: 'Open-Meteo Jakarta',
+    url: 'https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,weather_code',
+    enabled: false,
+    method: 'GET',
+    pollIntervalMs: 30000,
+    timeoutMs: 5000,
+    rootPath: 'current',
+  },
+]
+
+const externalDataCache = new Map<string, ExternalDataSourceCacheEntry>()
+const externalDataInflight = new Map<string, Promise<ExternalDataSourceCacheEntry>>()
+
+function normalizeExternalDataSourceConfig(source: Partial<ExternalDataSourceConfig>, index: number): ExternalDataSourceConfig {
+  const safeId = String(source.id || `source_${index + 1}`)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '') || `source_${index + 1}`
+
+  return {
+    id: safeId,
+    name: String(source.name || `External Source ${index + 1}`).trim() || `External Source ${index + 1}`,
+    url: String(source.url || '').trim(),
+    enabled: source.enabled !== false,
+    method: 'GET',
+    headers: source.headers && typeof source.headers === 'object'
+      ? Object.fromEntries(
+          Object.entries(source.headers)
+            .filter(([key, value]) => key && value !== undefined && value !== null)
+            .map(([key, value]) => [String(key).trim(), String(value)])
+        )
+      : {},
+    pollIntervalMs: Math.max(5_000, Math.min(300_000, Number(source.pollIntervalMs) || DEFAULT_EXTERNAL_POLL_INTERVAL_MS)),
+    timeoutMs: Math.max(1_000, Math.min(30_000, Number(source.timeoutMs) || DEFAULT_EXTERNAL_TIMEOUT_MS)),
+    rootPath: String(source.rootPath || '').trim(),
+  }
+}
+
+async function getExternalDataSources(): Promise<ExternalDataSourceConfig[]> {
+  const file = Bun.file(DATA_SOURCES_FILE)
+  if (await file.exists()) {
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text)
+      if (Array.isArray(parsed)) {
+        return parsed.map((source, index) => normalizeExternalDataSourceConfig(source, index))
+      }
+    } catch {
+      // Fallback if parsing fails
+    }
+  }
+
+  const exampleFile = Bun.file(EXAMPLE_DATA_SOURCES_FILE)
+  let initialData = DEFAULT_EXTERNAL_DATA_SOURCES
+  if (await exampleFile.exists()) {
+    try {
+      const parsed = JSON.parse(await exampleFile.text())
+      if (Array.isArray(parsed)) {
+        initialData = parsed.map((source, index) => normalizeExternalDataSourceConfig(source, index))
+      }
+    } catch {
+      initialData = DEFAULT_EXTERNAL_DATA_SOURCES
+    }
+  }
+
+  await Bun.write(DATA_SOURCES_FILE, JSON.stringify(initialData, null, 2))
+  return initialData
+}
+
+async function saveExternalDataSources(data: Partial<ExternalDataSourceConfig>[]): Promise<ExternalDataSourceConfig[]> {
+  const normalized = data.map((source, index) => normalizeExternalDataSourceConfig(source, index))
+  await Bun.write(DATA_SOURCES_FILE, JSON.stringify(normalized, null, 2))
+
+  const validIds = new Set(normalized.map((source) => source.id))
+  for (const id of externalDataCache.keys()) {
+    if (!validIds.has(id)) {
+      externalDataCache.delete(id)
+      externalDataInflight.delete(id)
+    }
+  }
+
+  return normalized
+}
+
+function pathSegments(path: string): string[] {
+  return String(path || '').match(/[^.[\]]+/g) || []
+}
+
+function getValueAtPath(data: unknown, path?: string): unknown {
+  if (!path) return data
+  return pathSegments(path).reduce<unknown>((current, segment) => {
+    if (current === null || current === undefined) return undefined
+    if (Array.isArray(current)) {
+      const index = Number(segment)
+      return Number.isInteger(index) ? current[index] : undefined
+    }
+    if (typeof current === 'object') {
+      return (current as Record<string, unknown>)[segment]
+    }
+    return undefined
+  }, data)
+}
+
+function collectFieldPaths(data: unknown, prefix = ''): string[] {
+  if (data === null || data === undefined) return []
+  if (Array.isArray(data)) {
+    return data.flatMap((value, index) => collectFieldPaths(value, prefix ? `${prefix}.${index}` : String(index)))
+  }
+  if (typeof data === 'object') {
+    const entries = Object.entries(data as Record<string, unknown>)
+    if (entries.length === 0 && prefix) return [prefix]
+    return entries.flatMap(([key, value]) => collectFieldPaths(value, prefix ? `${prefix}.${key}` : key))
+  }
+  return prefix ? [prefix] : []
+}
+
+async function refreshExternalDataSource(source: ExternalDataSourceConfig, force = false): Promise<ExternalDataSourceCacheEntry> {
+  const current = externalDataCache.get(source.id)
+  const now = Date.now()
+  const pollIntervalMs = source.pollIntervalMs || DEFAULT_EXTERNAL_POLL_INTERVAL_MS
+
+  if (!source.enabled) {
+    const disabledEntry: ExternalDataSourceCacheEntry = {
+      id: source.id,
+      name: source.name,
+      status: 'disabled',
+      pollIntervalMs,
+      lastFetchedAt: current?.lastFetchedAt || null,
+      lastSuccessAt: current?.lastSuccessAt || null,
+      lastError: null,
+      fieldPaths: current?.fieldPaths || [],
+      data: current?.data ?? null,
+    }
+    externalDataCache.set(source.id, disabledEntry)
+    return disabledEntry
+  }
+
+  if (!force && current?.status === 'success' && current.lastFetchedAt) {
+    const age = now - new Date(current.lastFetchedAt).getTime()
+    if (age < pollIntervalMs) return current
+  }
+
+  const existingFetch = externalDataInflight.get(source.id)
+  if (existingFetch) return existingFetch
+
+  const requestPromise = (async () => {
+    const fetchedAt = new Date().toISOString()
+    try {
+      const response = await fetch(source.url, {
+        method: 'GET',
+        headers: source.headers,
+        signal: AbortSignal.timeout(source.timeoutMs || DEFAULT_EXTERNAL_TIMEOUT_MS),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`)
+      }
+
+      const payload = await response.json()
+      const selectedData = source.rootPath ? getValueAtPath(payload, source.rootPath) : payload
+      const nextEntry: ExternalDataSourceCacheEntry = {
+        id: source.id,
+        name: source.name,
+        status: 'success',
+        pollIntervalMs,
+        lastFetchedAt: fetchedAt,
+        lastSuccessAt: fetchedAt,
+        lastError: null,
+        fieldPaths: collectFieldPaths(selectedData),
+        data: selectedData ?? null,
+      }
+      externalDataCache.set(source.id, nextEntry)
+      return nextEntry
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown fetch error'
+      const failedEntry: ExternalDataSourceCacheEntry = {
+        id: source.id,
+        name: source.name,
+        status: 'error',
+        pollIntervalMs,
+        lastFetchedAt: fetchedAt,
+        lastSuccessAt: current?.lastSuccessAt || null,
+        lastError: message,
+        fieldPaths: current?.fieldPaths || [],
+        data: current?.data ?? null,
+      }
+      externalDataCache.set(source.id, failedEntry)
+      return failedEntry
+    } finally {
+      externalDataInflight.delete(source.id)
+    }
+  })()
+
+  externalDataInflight.set(source.id, requestPromise)
+  return requestPromise
+}
+
+async function getExternalDataSnapshot(force = false) {
+  const sources = await getExternalDataSources()
+  const entries = await Promise.all(sources.map((source) => refreshExternalDataSource(source, force)))
+  return { sources, cache: entries }
+}
+
 async function listAssets() {
   try {
     const names = await readdir(ASSET_DIRECTORY)
@@ -255,9 +677,34 @@ const app = new Elysia()
   .get('/api/scene', async () => {
     return await getScene()
   })
+  .get('/api/live-stats', async () => {
+    return await getLiveStats()
+  })
   .get('/api/assets', async () => {
     return { assets: await listAssets() }
   })
+  .get(
+    '/api/data-sources',
+    async () => {
+      return { sources: await getExternalDataSources() }
+    }
+  )
+  .get(
+    '/api/external-data',
+    async ({ query }) => {
+      const forceRefresh = query.refresh === '1' || query.refresh === 'true'
+      const snapshot = await getExternalDataSnapshot(forceRefresh)
+      return {
+        sources: snapshot.cache,
+        updatedAt: new Date().toISOString(),
+      }
+    },
+    {
+      query: t.Object({
+        refresh: t.Optional(t.String()),
+      }),
+    }
+  )
   .post(
     '/api/assets',
     async ({ request, headers, set }) => {
@@ -300,6 +747,88 @@ const app = new Elysia()
           url: `/uploads/${encodeURIComponent(filename)}`,
         },
       }
+    }
+  )
+  .post(
+    '/api/data-sources',
+    async ({ body, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
+      const updated = await saveExternalDataSources(body.sources)
+      await getExternalDataSnapshot(true)
+
+      return {
+        success: true,
+        message: 'External data sources saved successfully',
+        data: updated,
+      }
+    },
+    {
+      body: t.Object({
+        sources: t.Array(
+          t.Object({
+            id: t.Optional(t.String()),
+            name: t.Optional(t.String()),
+            url: t.Optional(t.String()),
+            enabled: t.Optional(t.Boolean()),
+            method: t.Optional(t.Literal('GET')),
+            headers: t.Optional(t.Record(t.String(), t.String())),
+            pollIntervalMs: t.Optional(t.Numeric()),
+            timeoutMs: t.Optional(t.Numeric()),
+            rootPath: t.Optional(t.String()),
+          })
+        ),
+      }),
+    }
+  )
+  .post(
+    '/api/live-stats',
+    async ({ body, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
+      const updated = await saveLiveStats(body)
+      return {
+        success: true,
+        message: 'Live stats updated successfully',
+        data: updated,
+      }
+    },
+    {
+      body: t.Object({
+        platform: t.Optional(t.String()),
+        username: t.Optional(t.String()),
+        displayName: t.Optional(t.String()),
+        viewerCount: t.Optional(t.Numeric()),
+        followerCount: t.Optional(t.Numeric()),
+        likeCount: t.Optional(t.Numeric()),
+        latestChatAuthor: t.Optional(t.String()),
+        latestChatMessage: t.Optional(t.String()),
+        isLive: t.Optional(t.Boolean()),
+        chatMessages: t.Optional(
+          t.Array(
+            t.Object({
+              id: t.Optional(t.String()),
+              author: t.String(),
+              message: t.String(),
+              receivedAt: t.Optional(t.String()),
+            })
+          )
+        ),
+      }),
     }
   )
   .post(

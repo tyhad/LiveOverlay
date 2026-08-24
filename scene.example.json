@@ -69,8 +69,8 @@
       "hidden": false,
       "locked": false,
       "style": {
-        "text": "✨ Welcome to the stream! Jangan lupa Tap-tap layar & Follow!",
-        "fontFamily": "Poppins",
+        "text": "Welcome to the stream! Jangan lupa Tap-tap layar & Follow!",
+        "fontFamily": "Poppins, sans-serif",
         "fontSize": 17,
         "fontWeight": "600",
         "color": "#f8fafc",
@@ -82,6 +82,14 @@
         "borderRadius": 0,
         "borderWidth": 0,
         "borderColor": "transparent"
+      },
+      "textBinding": {
+        "enabled": true,
+        "source": "platform",
+        "field": "latestChatMessage",
+        "prefix": "CHAT: ",
+        "fallback": "Welcome to the stream! Jangan lupa Tap-tap layar & Follow!",
+        "format": "raw"
       },
       "animation": {
         "entrance": {
@@ -163,8 +171,8 @@
       "hidden": false,
       "locked": false,
       "style": {
-        "text": "🎵 @creator_stream",
-        "fontFamily": "Outfit",
+        "text": "@creator_stream",
+        "fontFamily": "Outfit, sans-serif",
         "fontSize": 20,
         "fontWeight": "800",
         "color": "#f43f5e",
@@ -176,6 +184,14 @@
         "borderRadius": 0,
         "borderWidth": 0,
         "borderColor": "transparent"
+      },
+      "textBinding": {
+        "enabled": true,
+        "source": "platform",
+        "field": "username",
+        "prefix": "LIVE ",
+        "fallback": "@creator_stream",
+        "format": "raw"
       },
       "animation": {
         "entrance": {

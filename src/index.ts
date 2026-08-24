@@ -1,11 +1,22 @@
 import { Elysia, t } from 'elysia'
 import { staticPlugin } from '@elysiajs/static'
+import { mkdir, readdir } from 'node:fs/promises'
 
 const SETTINGS_FILE = 'settings.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENE_FILE = 'scene.json'
 const EXAMPLE_SCENE_FILE = 'scene.example.json'
+const ASSET_DIRECTORY = 'public/uploads'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
+const PORT = Number(process.env.PORT || 3000)
+const MAX_ASSET_SIZE = 10 * 1024 * 1024
+const ASSET_MIME_TYPES = new Map([
+  ['image/svg+xml', 'svg'],
+  ['image/png', 'png'],
+  ['image/jpeg', 'jpg'],
+  ['image/webp', 'webp'],
+  ['image/gif', 'gif'],
+])
 
 interface Settings {
   tiktokUsername: string
@@ -83,6 +94,8 @@ interface SceneElement {
   zIndex?: number
   hidden?: boolean
   locked?: boolean
+  src?: string
+  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
   style: ElementStyle
   animation?: AnimationConfig
 }
@@ -180,13 +193,23 @@ async function saveScene(scene: SceneData): Promise<SceneData> {
   return scene
 }
 
+async function listAssets() {
+  try {
+    const names = await readdir(ASSET_DIRECTORY)
+    return names
+      .filter((name) => !name.startsWith('.'))
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({
+        id: name,
+        name: name.replace(/^[a-f0-9-]+_/i, ''),
+        url: `/uploads/${encodeURIComponent(name)}`,
+      }))
+  } catch {
+    return []
+  }
+}
+
 const app = new Elysia()
-  .use(
-    staticPlugin({
-      assets: 'public',
-      prefix: '',
-    })
-  )
   .get('/', () => Bun.file('public/index.html'))
   .get('/gui.html', ({ set }) => {
     set.redirect = '/'
@@ -232,6 +255,53 @@ const app = new Elysia()
   .get('/api/scene', async () => {
     return await getScene()
   })
+  .get('/api/assets', async () => {
+    return { assets: await listAssets() }
+  })
+  .post(
+    '/api/assets',
+    async ({ request, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
+      const formData = await request.formData()
+      const uploadedFile = formData.get('file')
+      if (!(uploadedFile instanceof File)) {
+        set.status = 400
+        return { success: false, message: 'A multipart file field named "file" is required' }
+      }
+
+      const extension = ASSET_MIME_TYPES.get(uploadedFile.type)
+      if (!extension) {
+        set.status = 415
+        return { success: false, message: 'Only SVG, PNG, JPEG, WEBP, and GIF assets are supported' }
+      }
+      if (uploadedFile.size === 0 || uploadedFile.size > MAX_ASSET_SIZE) {
+        set.status = 413
+        return { success: false, message: 'Asset must be between 1 byte and 10 MB' }
+      }
+
+      await mkdir(ASSET_DIRECTORY, { recursive: true })
+      const originalName = uploadedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^[-.]+/, '') || `asset.${extension}`
+      const filename = `${crypto.randomUUID()}_${originalName.replace(/\.[^.]+$/, '')}.${extension}`
+      await Bun.write(`${ASSET_DIRECTORY}/${filename}`, uploadedFile)
+
+      return {
+        success: true,
+        asset: {
+          id: filename,
+          name: originalName,
+          url: `/uploads/${encodeURIComponent(filename)}`,
+        },
+      }
+    }
+  )
   .post(
     '/api/scene',
     async ({ body, headers, set }) => {
@@ -252,8 +322,14 @@ const app = new Elysia()
       }
     }
   )
+  .use(
+    staticPlugin({
+      assets: 'public',
+      prefix: '',
+    })
+  )
   .listen({
-    port: 3000,
+    port: PORT,
     hostname: '127.0.0.1',
   })
 

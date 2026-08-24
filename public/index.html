@@ -135,10 +135,26 @@
             <span class="text-lg">📢</span>
             <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Banner</span>
           </button>
+          <button id="upload-asset-btn" class="p-2.5 bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/40 hover:border-indigo-500/70 rounded-xl text-left transition flex flex-col gap-1 group">
+            <span class="text-lg">🖼️</span>
+            <span class="text-xs font-semibold text-indigo-200">Upload Asset</span>
+          </button>
+          <input id="asset-file-input" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif" class="hidden">
         </div>
       </div>
 
-      <!-- Section 2: Layers List -->
+      <!-- Section 2: Uploaded Assets -->
+      <div class="p-3 border-b border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Assets</h2>
+          <span class="text-[10px] text-slate-500">Click to add</span>
+        </div>
+        <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
+          <p class="col-span-3 text-[11px] text-slate-500">No uploaded assets yet.</p>
+        </div>
+      </div>
+
+      <!-- Section 3: Layers List -->
       <div class="flex-1 flex flex-col min-h-0">
         <div class="p-3 border-b border-slate-800 flex items-center justify-between">
           <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
@@ -442,6 +458,25 @@
           </div>
         </div>
 
+        <!-- Image / SVG Section -->
+        <div id="image-props-section" class="hidden space-y-3 pt-2 border-t border-slate-800">
+          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Image / SVG</h3>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Asset URL</label>
+            <input type="text" id="prop-image-src" readonly class="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 font-mono truncate">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Fit</label>
+            <select id="prop-image-fit" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="contain">Contain (show whole asset)</option>
+              <option value="cover">Cover (crop to fill)</option>
+              <option value="fill">Fill (stretch)</option>
+              <option value="none">None (native size)</option>
+              <option value="scale-down">Scale Down</option>
+            </select>
+          </div>
+        </div>
+
         <!-- Fill & Gradient Section -->
         <div class="space-y-3 pt-2 border-t border-slate-800">
           <div class="flex items-center justify-between">
@@ -589,6 +624,9 @@
     const noSelectionEl = document.getElementById('no-selection')
     const selectionFormEl = document.getElementById('selection-form')
     const saveStatusEl = document.getElementById('save-status')
+    const assetListEl = document.getElementById('asset-list')
+    const assetFileInput = document.getElementById('asset-file-input')
+    let assets = []
 
     function setZoom(val) {
       zoom = Math.max(0.15, Math.min(1.5, val))
@@ -616,6 +654,86 @@
       } catch (err) {
         console.error('Failed to load scene:', err)
       }
+    }
+
+    function createImageElement(asset) {
+      const newEl = {
+        id: 'img_' + Date.now().toString(36),
+        type: 'image',
+        name: asset.name || 'Image Asset',
+        x: 180,
+        y: 180,
+        width: 360,
+        height: 240,
+        rotation: 0,
+        opacity: 1,
+        zIndex: scene.elements.length + 1,
+        src: asset.url,
+        objectFit: 'contain',
+        style: {
+          backgroundColor: 'transparent',
+          borderRadius: 0,
+          borderWidth: 0,
+          borderColor: 'transparent',
+        },
+        animation: {
+          entrance: { type: 'fadeIn', duration: 0.6, delay: 0, ease: 'power2.out' },
+          exit: { type: 'fadeOut', duration: 0.35, delay: 0 },
+          loop: { type: 'none', duration: 2.5 },
+        },
+      }
+      scene.elements.push(newEl)
+      selectElement(newEl.id)
+    }
+
+    function renderAssetList() {
+      assetListEl.replaceChildren()
+      if (!assets.length) {
+        const empty = document.createElement('p')
+        empty.className = 'col-span-3 text-[11px] text-slate-500'
+        empty.textContent = 'No uploaded assets yet.'
+        assetListEl.appendChild(empty)
+        return
+      }
+
+      assets.forEach(asset => {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'group relative aspect-square overflow-hidden rounded-lg border border-slate-700 bg-slate-800 hover:border-indigo-400 focus:outline-none focus:border-indigo-400'
+        button.title = `Add ${asset.name}`
+        const image = document.createElement('img')
+        image.src = asset.url
+        image.alt = asset.name
+        image.className = 'h-full w-full object-contain p-1'
+        image.loading = 'lazy'
+        button.appendChild(image)
+        button.addEventListener('click', () => createImageElement(asset))
+        assetListEl.appendChild(button)
+      })
+    }
+
+    async function loadAssets() {
+      try {
+        const res = await fetch('/api/assets')
+        if (!res.ok) throw new Error('Could not load assets')
+        const data = await res.json()
+        assets = data.assets || []
+      } catch (err) {
+        console.error('Failed to load assets:', err)
+        assets = []
+      }
+      renderAssetList()
+    }
+
+    async function uploadAsset(file) {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/assets', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Upload failed')
+      assets.unshift(data.asset)
+      renderAssetList()
+      createImageElement(data.asset)
     }
 
     async function saveScene() {
@@ -792,7 +910,18 @@
           div.style.boxShadow = `${sx}px ${sy}px ${sb}px ${el.style.shadowColor}`
         }
 
-        if (el.type === 'text' || el.style?.text !== undefined) {
+        if (el.type === 'image' && el.src) {
+          const image = document.createElement('img')
+          image.src = el.src
+          image.alt = el.name || 'Image asset'
+          image.draggable = false
+          image.style.width = '100%'
+          image.style.height = '100%'
+          image.style.display = 'block'
+          image.style.objectFit = el.objectFit || 'contain'
+          image.style.pointerEvents = 'none'
+          div.appendChild(image)
+        } else if (el.type === 'text' || el.style?.text !== undefined) {
           const textP = document.createElement('div')
           textP.style.width = '100%'
           textP.style.height = '100%'
@@ -1006,6 +1135,15 @@
         textSection.classList.add('hidden')
       }
 
+      const imageSection = document.getElementById('image-props-section')
+      if (el.type === 'image') {
+        imageSection.classList.remove('hidden')
+        document.getElementById('prop-image-src').value = el.src || ''
+        document.getElementById('prop-image-fit').value = el.objectFit || 'contain'
+      } else {
+        imageSection.classList.add('hidden')
+      }
+
       // Fill & Gradient
       const isGrad = !!el.style?.gradient?.enabled
       document.getElementById('prop-gradient-toggle').checked = isGrad
@@ -1112,6 +1250,14 @@
       document.getElementById('prop-anim-exit-delay').addEventListener('input', (e) => {
         const el = getSelected()
         if (el) ensureAnimation(el).exit.delay = parseFloat(e.target.value) || 0
+      })
+
+      document.getElementById('prop-image-fit').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el?.type === 'image') {
+          el.objectFit = e.target.value
+          renderCanvas()
+        }
       })
 
       // Name
@@ -1252,6 +1398,20 @@
           playElementAnimation(node, el.animation)
         }
       })
+    })
+
+    document.getElementById('upload-asset-btn').addEventListener('click', () => assetFileInput.click())
+    assetFileInput.addEventListener('change', async () => {
+      const [file] = assetFileInput.files
+      if (!file) return
+      try {
+        await uploadAsset(file)
+      } catch (err) {
+        console.error('Failed to upload asset:', err)
+        alert(err.message || 'Failed to upload asset')
+      } finally {
+        assetFileInput.value = ''
+      }
     })
 
     // Add Elements
@@ -1456,6 +1616,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       attachPropertyListeners()
       loadScene()
+      loadAssets()
       fitZoom()
     })
   </script>

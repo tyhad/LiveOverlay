@@ -165,7 +165,22 @@
         node.style.boxShadow = 'none'
       }
 
-      if (el.type === 'text' || el.style?.text !== undefined) {
+      if (el.type === 'image' && el.src) {
+        let image = node.querySelector('img[data-asset-image]')
+        if (!image) {
+          node.replaceChildren()
+          image = document.createElement('img')
+          image.dataset.assetImage = 'true'
+          image.draggable = false
+          node.appendChild(image)
+        }
+        image.src = el.src
+        image.alt = el.name || 'Image asset'
+        image.style.width = '100%'
+        image.style.height = '100%'
+        image.style.display = 'block'
+        image.style.objectFit = el.objectFit || 'contain'
+      } else if (el.type === 'text' || el.style?.text !== undefined) {
         let textEl = node.firstElementChild
         if (!textEl) {
           textEl = document.createElement('div')

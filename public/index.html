@@ -154,7 +154,23 @@
         </div>
       </div>
 
-      <!-- Section 3: Layers List -->
+      <!-- Section 3: External Data Sources -->
+      <div class="p-3 border-b border-slate-800 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">External API Sources</h2>
+            <p class="text-[10px] text-slate-500 mt-1">Isi array JSON source API. Renderer overlay akan membaca cache backend, bukan request langsung ke API luar.</p>
+          </div>
+          <button id="refresh-external-data-btn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-200 transition">Refresh</button>
+        </div>
+        <textarea id="external-sources-json" rows="9" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-[11px] text-slate-200 font-mono focus:outline-none focus:border-indigo-500 resize-none" spellcheck="false"></textarea>
+        <div class="flex items-center justify-between gap-2">
+          <button id="save-external-sources-btn" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition">Save Sources</button>
+          <p id="external-sources-status" class="text-[10px] text-slate-500 text-right">Belum ada source eksternal.</p>
+        </div>
+      </div>
+
+      <!-- Section 4: Layers List -->
       <div class="flex-1 flex flex-col min-h-0">
         <div class="p-3 border-b border-slate-800 flex items-center justify-between">
           <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
@@ -388,6 +404,84 @@
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Text Content</label>
             <textarea id="prop-text-content" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+          </div>
+
+          <div class="space-y-2 rounded-xl border border-indigo-500/20 bg-indigo-600/15 p-3">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-indigo-300">Data Binding</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                <input id="prop-text-binding-enabled" type="checkbox" class="accent-indigo-500">
+                <span>Enable</span>
+              </label>
+            </div>
+            <p id="prop-text-binding-status" class="text-[10px] text-slate-400">Source: platform stats</p>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Binding Source</label>
+                <select id="prop-text-binding-source" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="platform">Platform Stats</option>
+                  <option value="external">External API Cache</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Format</label>
+                <select id="prop-text-binding-format" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="raw">Raw</option>
+                  <option value="number">Number</option>
+                  <option value="uppercase">UPPERCASE</option>
+                  <option value="lowercase">lowercase</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="platform-binding-group">
+              <label class="block text-[11px] text-slate-400 mb-1">Platform Field</label>
+              <select id="prop-text-binding-field" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="username">Username</option>
+                <option value="displayName">Display Name</option>
+                <option value="viewerCount">Viewer Count</option>
+                <option value="followerCount">Follower Count</option>
+                <option value="likeCount">Like Count</option>
+                <option value="latestChatAuthor">Latest Chat Author</option>
+                <option value="latestChatMessage">Latest Chat Message</option>
+                <option value="platform">Platform Name</option>
+                <option value="isLive">Live Status</option>
+              </select>
+            </div>
+
+            <div id="external-binding-group" class="hidden grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">External Source</label>
+                <select id="prop-text-binding-external-source" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Field Path</label>
+                <input type="text" id="prop-text-binding-field-path" list="external-field-paths" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" placeholder="current.temperature_2m">
+                <datalist id="external-field-paths"></datalist>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Prefix</label>
+                <input type="text" id="prop-text-binding-prefix" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Suffix</label>
+                <input type="text" id="prop-text-binding-suffix" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Fallback</label>
+              <input type="text" id="prop-text-binding-fallback" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Preview</label>
+              <div id="prop-text-binding-preview" class="rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-2 text-xs text-slate-200 font-mono truncate">-</div>
+            </div>
           </div>
 
           <div>
@@ -627,6 +721,173 @@
     const assetListEl = document.getElementById('asset-list')
     const assetFileInput = document.getElementById('asset-file-input')
     let assets = []
+    let liveStats = {
+      platform: 'TikTok Live',
+      username: '@creator',
+      displayName: 'Creator Stream',
+      viewerCount: 0,
+      followerCount: 0,
+      likeCount: 0,
+      latestChatAuthor: '',
+      latestChatMessage: '',
+      isLive: false,
+      lastUpdatedAt: '',
+      chatMessages: []
+    }
+    let lastLiveStatsHash = ''
+    let externalData = { sources: [] }
+    let lastExternalDataHash = ''
+
+    function ensureTextBinding(el) {
+      if (!el.textBinding) {
+        el.textBinding = {
+          enabled: false,
+          source: 'platform',
+          field: 'username',
+          format: 'raw',
+          prefix: '',
+          suffix: '',
+          fallback: el.style?.text || '',
+          externalSourceId: '',
+          fieldPath: ''
+        }
+      }
+      return el.textBinding
+    }
+
+    function getPathSegments(path) {
+      return String(path || '').match(/[^.[\]]+/g) || []
+    }
+
+    function getValueAtPath(data, path) {
+      if (!path) return data
+      return getPathSegments(path).reduce((current, segment) => {
+        if (current === null || current === undefined) return undefined
+        if (Array.isArray(current)) return current[Number(segment)]
+        if (typeof current === 'object') return current[segment]
+        return undefined
+      }, data)
+    }
+
+    function getExternalSourceSnapshot(sourceId) {
+      return externalData.sources.find(source => source.id === sourceId)
+    }
+
+    function formatBindingStatus(binding) {
+      if (binding?.source === 'external') {
+        const source = getExternalSourceSnapshot(binding.externalSourceId)
+        if (!source) return 'Source: external cache | source belum dipilih'
+        const stamp = source.lastSuccessAt ? new Date(source.lastSuccessAt).toLocaleString() : 'never'
+        const errorText = source.lastError ? ` | Error: ${source.lastError}` : ''
+        return `Source: ${source.name} | Status: ${source.status} | Updated: ${stamp}${errorText}`
+      }
+
+      const stamp = liveStats.lastUpdatedAt ? new Date(liveStats.lastUpdatedAt).toLocaleString() : 'never'
+      return `Source: ${liveStats.platform || 'platform'} | Updated: ${stamp}`
+    }
+
+    function populateExternalFieldOptions(binding) {
+      const datalist = document.getElementById('external-field-paths')
+      if (!datalist) return
+      datalist.replaceChildren()
+
+      const source = getExternalSourceSnapshot(binding?.externalSourceId)
+      const fieldPaths = source?.fieldPaths || []
+      fieldPaths.forEach(path => {
+        const option = document.createElement('option')
+        option.value = path
+        datalist.appendChild(option)
+      })
+    }
+
+    function populateExternalSourceOptions(selectedId = '') {
+      const select = document.getElementById('prop-text-binding-external-source')
+      if (!select) return
+      select.replaceChildren()
+
+      if (!externalData.sources.length) {
+        const option = document.createElement('option')
+        option.value = ''
+        option.textContent = 'No external sources'
+        select.appendChild(option)
+        return
+      }
+
+      externalData.sources.forEach(source => {
+        const option = document.createElement('option')
+        option.value = source.id
+        option.textContent = `${source.name} (${source.status})`
+        select.appendChild(option)
+      })
+
+      select.value = selectedId || externalData.sources[0].id
+    }
+
+    function updateBindingControls() {
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      const binding = el ? ensureTextBinding(el) : null
+      const isExternal = binding?.source === 'external'
+      const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
+
+      document.getElementById('platform-binding-group').classList.toggle('hidden', isExternal)
+      document.getElementById('external-binding-group').classList.toggle('hidden', !isExternal)
+
+      ;[
+        'prop-text-binding-source',
+        'prop-text-binding-field',
+        'prop-text-binding-format',
+        'prop-text-binding-prefix',
+        'prop-text-binding-suffix',
+        'prop-text-binding-fallback',
+        'prop-text-binding-external-source',
+        'prop-text-binding-field-path'
+      ].forEach(id => {
+        const input = document.getElementById(id)
+        if (input) input.disabled = !isEnabled
+      })
+
+      populateExternalFieldOptions(binding)
+    }
+
+    function formatBoundValue(value, format) {
+      if (value === undefined || value === null || value === '') return ''
+      if (format === 'number') {
+        const numeric = Number(value)
+        return Number.isFinite(numeric) ? new Intl.NumberFormat().format(numeric) : String(value)
+      }
+      if (format === 'uppercase') return String(value).toUpperCase()
+      if (format === 'lowercase') return String(value).toLowerCase()
+      return String(value)
+    }
+
+    function resolveElementText(el) {
+      const binding = el?.textBinding
+      const fallback = binding?.fallback || el?.style?.text || ''
+      if (!binding?.enabled) return el?.style?.text || fallback
+
+      let rawValue
+      if (binding.source === 'external') {
+        rawValue = getValueAtPath(getExternalSourceSnapshot(binding.externalSourceId)?.data, binding.fieldPath)
+      } else {
+        rawValue = liveStats?.[binding.field]
+      }
+
+      const formattedValue = formatBoundValue(rawValue, binding.format || 'raw')
+      const finalValue = formattedValue || fallback
+      return `${binding.prefix || ''}${finalValue}${binding.suffix || ''}`
+    }
+
+    function updateBindingPreview() {
+      const previewEl = document.getElementById('prop-text-binding-preview')
+      const statusEl = document.getElementById('prop-text-binding-status')
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      if (!previewEl || !statusEl || !el) return
+
+      const binding = ensureTextBinding(el)
+      previewEl.textContent = resolveElementText(el) || '-'
+      statusEl.textContent = formatBindingStatus(binding)
+      updateBindingControls()
+    }
 
     function setZoom(val) {
       zoom = Math.max(0.15, Math.min(1.5, val))
@@ -650,9 +911,85 @@
           scene = await res.json()
           renderCanvas()
           renderLayers()
+          updateBindingPreview()
         }
       } catch (err) {
         console.error('Failed to load scene:', err)
+      }
+    }
+
+    async function loadLiveStats() {
+      try {
+        const res = await fetch('/api/live-stats')
+        if (!res.ok) return
+        const text = await res.text()
+        if (!text || text === lastLiveStatsHash) return
+        lastLiveStatsHash = text
+        liveStats = JSON.parse(text)
+        renderCanvas()
+        updateInspectorValues()
+      } catch (err) {
+        console.error('Failed to load live stats:', err)
+      }
+    }
+
+    async function loadDataSources() {
+      try {
+        const res = await fetch('/api/data-sources')
+        if (!res.ok) return
+        const payload = await res.json()
+        const sources = Array.isArray(payload?.sources) ? payload.sources : []
+        document.getElementById('external-sources-json').value = JSON.stringify(sources, null, 2)
+        document.getElementById('external-sources-status').textContent = sources.length
+          ? `${sources.length} source configured`
+          : 'Belum ada source eksternal.'
+      } catch (err) {
+        console.error('Failed to load data sources:', err)
+        document.getElementById('external-sources-status').textContent = 'Gagal memuat data source.'
+      }
+    }
+
+    async function loadExternalData(force = false) {
+      try {
+        const res = await fetch(`/api/external-data${force ? '?refresh=1' : ''}`)
+        if (!res.ok) return
+        const text = await res.text()
+        if (!text || text === lastExternalDataHash) return
+        lastExternalDataHash = text
+        externalData = JSON.parse(text)
+        const selectedBinding = scene.elements.find(item => item.id === selectedElementId)?.textBinding
+        populateExternalSourceOptions(selectedBinding?.externalSourceId || '')
+        populateExternalFieldOptions(selectedBinding)
+        renderCanvas()
+        updateBindingPreview()
+      } catch (err) {
+        console.error('Failed to load external data:', err)
+      }
+    }
+
+    async function saveDataSources() {
+      const statusEl = document.getElementById('external-sources-status')
+      try {
+        const parsed = JSON.parse(document.getElementById('external-sources-json').value || '[]')
+        if (!Array.isArray(parsed)) throw new Error('JSON harus berupa array')
+
+        const res = await fetch('/api/data-sources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sources: parsed })
+        })
+
+        if (!res.ok) {
+          const error = await res.text()
+          throw new Error(error || 'Failed to save external data sources')
+        }
+
+        statusEl.textContent = 'Data sources tersimpan.'
+        await loadDataSources()
+        await loadExternalData(true)
+      } catch (err) {
+        console.error('Failed to save data sources:', err)
+        statusEl.textContent = `Gagal simpan: ${err.message || err}`
       }
     }
 
@@ -936,7 +1273,7 @@
           textP.style.textTransform = el.style?.textTransform || 'none'
           textP.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
           textP.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
-          textP.textContent = el.style?.text || ''
+          textP.textContent = resolveElementText(el)
           div.appendChild(textP)
         }
 
@@ -1131,6 +1468,18 @@
         document.getElementById('prop-letter-spacing').value = el.style?.letterSpacing || 0
         document.getElementById('prop-text-color').value = el.style?.color || '#ffffff'
         document.getElementById('prop-text-color-picker').value = el.style?.color?.startsWith('#') ? el.style.color : '#ffffff'
+        const binding = ensureTextBinding(el)
+        document.getElementById('prop-text-binding-enabled').checked = !!binding.enabled
+        document.getElementById('prop-text-binding-source').value = binding.source || 'platform'
+        document.getElementById('prop-text-binding-field').value = binding.field || 'username'
+        document.getElementById('prop-text-binding-format').value = binding.format || 'raw'
+        document.getElementById('prop-text-binding-prefix').value = binding.prefix || ''
+        document.getElementById('prop-text-binding-suffix').value = binding.suffix || ''
+        document.getElementById('prop-text-binding-fallback').value = binding.fallback || el.style?.text || ''
+        populateExternalSourceOptions(binding.externalSourceId || '')
+        document.getElementById('prop-text-binding-external-source').value = binding.externalSourceId || document.getElementById('prop-text-binding-external-source').value
+        document.getElementById('prop-text-binding-field-path').value = binding.fieldPath || ''
+        updateBindingPreview()
       } else {
         textSection.classList.add('hidden')
       }
@@ -1321,6 +1670,77 @@
 
       // Typography
       document.getElementById('prop-text-content').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.text = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-binding-enabled').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        const binding = ensureTextBinding(el)
+        binding.enabled = e.target.checked
+        if (!binding.fallback) binding.fallback = el.style?.text || ''
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-source').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        const binding = ensureTextBinding(el)
+        binding.source = e.target.value
+        if (binding.source === 'external' && !binding.externalSourceId && externalData.sources.length) {
+          binding.externalSourceId = externalData.sources[0].id
+        }
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-field').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).field = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-external-source').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        const binding = ensureTextBinding(el)
+        binding.externalSourceId = e.target.value
+        populateExternalFieldOptions(binding)
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-field-path').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).fieldPath = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-format').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).format = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-prefix').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).prefix = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-suffix').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).suffix = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-fallback').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).fallback = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
       document.getElementById('prop-font-family').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.fontFamily = e.target.value; renderCanvas(); } })
       document.getElementById('prop-font-size').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.fontSize = parseInt(e.target.value) || 18; renderCanvas(); } })
       document.getElementById('prop-font-weight').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.fontWeight = e.target.value; renderCanvas(); } })
@@ -1401,6 +1821,8 @@
     })
 
     document.getElementById('upload-asset-btn').addEventListener('click', () => assetFileInput.click())
+    document.getElementById('save-external-sources-btn').addEventListener('click', saveDataSources)
+    document.getElementById('refresh-external-data-btn').addEventListener('click', () => loadExternalData(true))
     assetFileInput.addEventListener('change', async () => {
       const [file] = assetFileInput.files
       if (!file) return
@@ -1615,9 +2037,14 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       attachPropertyListeners()
+      loadDataSources()
+      loadExternalData(true)
       loadScene()
+      loadLiveStats()
       loadAssets()
       fitZoom()
+      setInterval(loadLiveStats, 2000)
+      setInterval(loadExternalData, 5000)
     })
   </script>
 </body>

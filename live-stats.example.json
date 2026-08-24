@@ -1,0 +1,20 @@
+{
+  "platform": "TikTok Live",
+  "username": "@creator_stream",
+  "displayName": "Creator Stream",
+  "viewerCount": 284,
+  "followerCount": 12540,
+  "likeCount": 98421,
+  "latestChatAuthor": "setyo.design",
+  "latestChatMessage": "Visual badge-nya mantap, lanjut bang.",
+  "isLive": true,
+  "lastUpdatedAt": "2026-08-24T00:00:00.000Z",
+  "chatMessages": [
+    {
+      "id": "chat_1",
+      "author": "setyo.design",
+      "message": "Visual badge-nya mantap, lanjut bang.",
+      "receivedAt": "2026-08-24T00:00:00.000Z"
+    }
+  ]
+}

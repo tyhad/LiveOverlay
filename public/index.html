@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LiveOverlay Studio - Canvas Editor</title>
+  <title>LiveOverlay Studio - Canvas Editor & Animation Engine</title>
   <link rel="stylesheet" href="/styles.css">
+  <!-- GSAP Animation Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <!-- Google Fonts for Stream Overlays & Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 
   <style>
-    /* Canvas workspace checkerboard background */
     .canvas-workspace {
       background-color: #080c14;
       background-image: 
@@ -19,7 +20,6 @@
       background-size: 24px 24px;
     }
     
-    /* Selection bounding box and resize handles */
     .element-selected {
       outline: 2px solid #6366f1 !important;
       outline-offset: 2px;
@@ -48,7 +48,6 @@
     .handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
     .handle-w  { top: calc(50% - 5px); left: -6px; cursor: ew-resize; }
 
-    /* Custom scrollbars */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: #0b0f19; }
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
@@ -66,19 +65,25 @@
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-sm font-bold tracking-tight text-white">LiveOverlay Studio</h1>
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">PROPERTIES V2</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">GSAP ANIMATION</span>
         </div>
-        <p class="text-[11px] text-slate-400 font-mono" id="scene-info">Scene: 1920 × 1080 (16:9 Full HD)</p>
+        <p class="text-[11px] text-slate-400 font-mono" id="scene-info">1920 × 1080 Full HD</p>
       </div>
     </div>
 
-    <!-- Zoom Controls -->
-    <div class="flex items-center space-x-1.5 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
-      <button id="zoom-out-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom Out">−</button>
-      <span id="zoom-level" class="text-xs font-mono px-2 text-slate-300 min-w-[45px] text-center">45%</span>
-      <button id="zoom-in-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom In">+</button>
-      <button id="zoom-fit-btn" class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">Fit</button>
-      <button id="zoom-100-btn" class="px-2 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">100%</button>
+    <!-- Zoom & Animation Playback Controls -->
+    <div class="flex items-center space-x-2">
+      <button id="play-all-animations-btn" class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition">
+        <span>✨</span>
+        <span>Play All Animations</span>
+      </button>
+
+      <div class="flex items-center space-x-1.5 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
+        <button id="zoom-out-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom Out">−</button>
+        <span id="zoom-level" class="text-xs font-mono px-2 text-slate-300 min-w-[45px] text-center">45%</span>
+        <button id="zoom-in-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom In">+</button>
+        <button id="zoom-fit-btn" class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">Fit</button>
+      </div>
     </div>
 
     <!-- Save & OBS Actions -->
@@ -164,14 +169,14 @@
       </div>
     </main>
 
-    <!-- RIGHT SIDEBAR: Comprehensive Properties Panel -->
+    <!-- RIGHT SIDEBAR: Comprehensive Properties & Animation Panel -->
     <aside id="properties-panel" class="w-80 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-20">
       
       <!-- Empty Selection State -->
       <div id="no-selection" class="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500">
         <span class="text-4xl mb-3">🎯</span>
         <p class="text-sm font-semibold text-slate-300">No element selected</p>
-        <p class="text-xs text-slate-500 mt-1">Select an element on the canvas to configure detailed properties & styling.</p>
+        <p class="text-xs text-slate-500 mt-1">Select an element on the canvas to configure detailed properties & GSAP animations.</p>
       </div>
 
       <!-- Properties Form -->
@@ -199,6 +204,105 @@
             </div>
           </div>
           <input type="text" id="prop-name" placeholder="Layer Name" class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none w-full">
+        </div>
+
+        <!-- NEW: GSAP ANIMATION CONTROLS (FASE 3) -->
+        <div class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-1.5">
+              <span class="text-base">✨</span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300">GSAP Animations</h3>
+            </div>
+            <button id="test-element-animation-btn" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
+              <span>▶</span><span>Test</span>
+            </button>
+          </div>
+
+          <!-- Entrance Animation -->
+          <div class="space-y-2 pt-1 border-t border-indigo-500/20">
+            <label class="block text-[11px] font-semibold text-slate-300">Entrance Animation (Masuk)</label>
+            <select id="prop-anim-entrance-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="none">None (Instant)</option>
+              <option value="fadeIn">Fade In (Halus)</option>
+              <option value="slideUp">Slide Up (Dari Bawah)</option>
+              <option value="slideDown">Slide Down (Dari Atas)</option>
+              <option value="slideLeft">Slide Left (Dari Kanan)</option>
+              <option value="slideRight">Slide Right (Dari Kiri)</option>
+              <option value="zoomIn">Zoom / Pop In (Membal)</option>
+              <option value="bounceIn">Bounce In (Lentur)</option>
+              <option value="flipX">3D Flip In (Memutar)</option>
+              <option value="elasticIn">Elastic In (Kenyal)</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
+                <input type="number" id="prop-anim-entrance-duration" step="0.1" min="0.1" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
+                <input type="number" id="prop-anim-entrance-delay" step="0.1" min="0.0" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Easing Curve</label>
+              <select id="prop-anim-entrance-ease" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                <option value="power3.out">Smooth Ease Out (Power3)</option>
+                <option value="back.out(1.7)">Bouncy OverShoot (Back)</option>
+                <option value="elastic.out(1, 0.5)">Elastic Spring</option>
+                <option value="bounce.out">Bounce Drop</option>
+                <option value="circ.out">Circular Fast-Out</option>
+                <option value="none">Linear (Datar)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Loop / Idle Animation -->
+          <div class="space-y-2 pt-2 border-t border-indigo-500/20">
+            <label class="block text-[11px] font-semibold text-slate-300">Loop / Idle Animation (Berulang)</label>
+            <select id="prop-anim-loop-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="none">None (Statis)</option>
+              <option value="pulse">Pulse (Nafas Skala)</option>
+              <option value="float">Float (Melayang Santai)</option>
+              <option value="glow">Glow Pulse (Pendaran Cahaya)</option>
+              <option value="swing">Gentle Swing (Goyang Santai)</option>
+              <option value="heartbeat">Heartbeat (Degub Ganda)</option>
+              <option value="bounce">Bounce (Lompat Ringan)</option>
+              <option value="shake">Shake (Getar Perhatian)</option>
+            </select>
+
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">Loop Cycle Speed (s)</label>
+              <input type="number" id="prop-anim-loop-duration" step="0.2" min="0.5" max="10.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+            </div>
+          </div>
+
+          <!-- Exit Animation -->
+          <div class="space-y-2 pt-2 border-t border-indigo-500/20">
+            <label class="block text-[11px] font-semibold text-slate-300">Exit Animation (Keluar)</label>
+            <select id="prop-anim-exit-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="none">None (Instant)</option>
+              <option value="fadeOut">Fade Out (Halus)</option>
+              <option value="slideUp">Slide Up (Ke Atas)</option>
+              <option value="slideDown">Slide Down (Ke Bawah)</option>
+              <option value="slideLeft">Slide Left (Ke Kiri)</option>
+              <option value="slideRight">Slide Right (Ke Kanan)</option>
+              <option value="zoomOut">Zoom / Pop Out</option>
+              <option value="bounceOut">Bounce Out</option>
+              <option value="flipX">3D Flip Out</option>
+            </select>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
+                <input type="number" id="prop-anim-exit-duration" step="0.1" min="0.1" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
+                <input type="number" id="prop-anim-exit-delay" step="0.1" min="0.0" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Alignment Controls -->
@@ -458,9 +562,8 @@
 
   </div>
 
-  <!-- STUDIO SCRIPT -->
+  <!-- STUDIO SCRIPT WITH GSAP ENGINE -->
   <script>
-    // State management
     let scene = {
       id: 'default',
       name: 'Default Scene',
@@ -487,7 +590,6 @@
     const selectionFormEl = document.getElementById('selection-form')
     const saveStatusEl = document.getElementById('save-status')
 
-    // Set Zoom
     function setZoom(val) {
       zoom = Math.max(0.15, Math.min(1.5, val))
       artboardScaler.style.transform = `scale(${zoom})`
@@ -503,7 +605,6 @@
       setZoom(Math.min(scaleX, scaleY, 0.85))
     }
 
-    // Load Scene from Backend
     async function loadScene() {
       try {
         const res = await fetch('/api/scene')
@@ -517,7 +618,6 @@
       }
     }
 
-    // Save Scene to Backend
     async function saveScene() {
       try {
         const res = await fetch('/api/scene', {
@@ -538,15 +638,126 @@
       }
     }
 
+    // GSAP Animation Helper for Elements
+    function playElementAnimation(node, animConfig) {
+      if (!node || !animConfig) return
+      gsap.killTweensOf(node)
+      gsap.set(node, { clearProps: 'transform,opacity' })
+
+      const entrance = animConfig.entrance || {}
+      const loop = animConfig.loop || {}
+      const tl = gsap.timeline({
+        onComplete: () => {
+          // Trigger loop after entrance
+          playElementLoopAnimation(node, loop)
+        }
+      })
+
+      const duration = entrance.duration || 0.8
+      const delay = entrance.delay || 0
+      const ease = entrance.ease || 'power3.out'
+
+      switch (entrance.type) {
+        case 'fadeIn':
+          tl.from(node, { opacity: 0, duration, delay, ease })
+          break
+        case 'slideUp':
+          tl.from(node, { y: '+=60', opacity: 0, duration, delay, ease })
+          break
+        case 'slideDown':
+          tl.from(node, { y: '-=60', opacity: 0, duration, delay, ease })
+          break
+        case 'slideLeft':
+          tl.from(node, { x: '+=80', opacity: 0, duration, delay, ease })
+          break
+        case 'slideRight':
+          tl.from(node, { x: '-=80', opacity: 0, duration, delay, ease })
+          break
+        case 'zoomIn':
+          tl.from(node, { scale: 0.3, opacity: 0, duration, delay, ease: 'back.out(1.7)' })
+          break
+        case 'bounceIn':
+          tl.from(node, { y: '+=100', scale: 0.8, opacity: 0, duration, delay, ease: 'bounce.out' })
+          break
+        case 'flipX':
+          tl.from(node, { rotationX: 90, opacity: 0, duration, delay, ease })
+          break
+        case 'elasticIn':
+          tl.from(node, { scale: 0.1, opacity: 0, duration, delay, ease: 'elastic.out(1, 0.4)' })
+          break
+        default:
+          playElementLoopAnimation(node, loop)
+          break
+      }
+    }
+
+    function playElementLoopAnimation(node, loop) {
+      if (!node || !loop || loop.type === 'none') return
+      const dur = loop.duration || 2.5
+
+      switch (loop.type) {
+        case 'pulse':
+          gsap.to(node, { scale: 1.04, duration: dur / 2, repeat: -1, yoyo: true, ease: 'power1.inOut' })
+          break
+        case 'float':
+          gsap.to(node, { y: '-=10', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
+          break
+        case 'glow':
+          gsap.to(node, { filter: 'drop-shadow(0 0 16px rgba(99,102,241,0.8))', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
+          break
+        case 'swing':
+          gsap.to(node, { rotation: '+=4', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
+          break
+        case 'heartbeat':
+          const htl = gsap.timeline({ repeat: -1, repeatDelay: dur - 0.6 })
+          htl.to(node, { scale: 1.08, duration: 0.15, ease: 'power1.out' })
+             .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
+             .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
+             .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
+          break
+        case 'bounce':
+          gsap.to(node, { y: '-=14', duration: dur / 2, repeat: -1, yoyo: true, ease: 'power2.out' })
+          break
+        case 'shake':
+          const stl = gsap.timeline({ repeat: -1, repeatDelay: dur })
+          stl.to(node, { x: '+=5', duration: 0.08 })
+             .to(node, { x: '-=10', duration: 0.08 })
+             .to(node, { x: '+=8', duration: 0.08 })
+             .to(node, { x: '-=6', duration: 0.08 })
+             .to(node, { x: 0, duration: 0.08 })
+          break
+      }
+    }
+
+    function playElementExitAnimation(node, animConfig, onComplete) {
+      if (!node) return
+      const exit = animConfig?.exit || {}
+      const duration = exit.duration || 0.5
+      const delay = exit.delay || 0
+      const ease = exit.ease || 'power2.in'
+      gsap.killTweensOf(node)
+
+      const complete = onComplete || (() => {})
+      switch (exit.type) {
+        case 'fadeOut': return gsap.to(node, { opacity: 0, duration, delay, ease, onComplete: complete })
+        case 'slideUp': return gsap.to(node, { y: '-=60', opacity: 0, duration, delay, ease, onComplete: complete })
+        case 'slideDown': return gsap.to(node, { y: '+=60', opacity: 0, duration, delay, ease, onComplete: complete })
+        case 'slideLeft': return gsap.to(node, { x: '-=80', opacity: 0, duration, delay, ease, onComplete: complete })
+        case 'slideRight': return gsap.to(node, { x: '+=80', opacity: 0, duration, delay, ease, onComplete: complete })
+        case 'zoomOut': return gsap.to(node, { scale: 0.3, opacity: 0, duration, delay, ease: 'back.in(1.7)', onComplete: complete })
+        case 'bounceOut': return gsap.to(node, { y: '-=80', scale: 0.8, opacity: 0, duration, delay, ease: 'power2.in', onComplete: complete })
+        case 'flipX': return gsap.to(node, { rotationX: -90, opacity: 0, duration, delay, ease, onComplete: complete })
+        default: complete()
+      }
+    }
+
     // Render Canvas
     function renderCanvas() {
       artboard.innerHTML = ''
       const sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
 
       sortedElements.forEach(el => {
-        if (el.hidden && el.id !== selectedElementId) {
-          return // Skip hidden elements from active rendering unless selected in layers
-        }
+        if (el.hidden && el.id !== selectedElementId) return
 
         const div = document.createElement('div')
         div.id = `el-node-${el.id}`
@@ -565,7 +776,6 @@
         div.style.boxSizing = 'border-box'
         div.style.overflow = 'hidden'
 
-        // Background Fill: Gradient vs Solid
         if (el.style?.gradient?.enabled) {
           const from = el.style.gradient.from || '#0f172a'
           const to = el.style.gradient.to || '#020617'
@@ -575,17 +785,13 @@
           div.style.backgroundColor = el.style?.backgroundColor || 'transparent'
         }
 
-        // Shadow
         if (el.style?.shadowColor) {
           const sx = el.style.shadowOffsetX || 0
           const sy = el.style.shadowOffsetY || 4
           const sb = el.style.shadowBlur || 16
           div.style.boxShadow = `${sx}px ${sy}px ${sb}px ${el.style.shadowColor}`
-        } else {
-          div.style.boxShadow = 'none'
         }
 
-        // Text rendering
         if (el.type === 'text' || el.style?.text !== undefined) {
           const textP = document.createElement('div')
           textP.style.width = '100%'
@@ -605,12 +811,11 @@
           div.appendChild(textP)
         }
 
-        // Selection & Drag Handlers
         div.addEventListener('mousedown', (e) => {
           if (e.target.classList.contains('resize-handle')) return
           e.stopPropagation()
           selectElement(el.id)
-          if (el.locked) return // Prevent dragging if locked
+          if (el.locked) return
 
           isDragging = true
           dragStartX = e.clientX
@@ -619,7 +824,6 @@
           elementStartY = el.y
         })
 
-        // Resize handles if selected and not locked
         if (el.id === selectedElementId && !el.locked) {
           const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
           handles.forEach(h => {
@@ -662,12 +866,8 @@
         const dx = (e.clientX - dragStartX) / zoom
         const dy = (e.clientY - dragStartY) / zoom
 
-        if (activeResizeHandle.includes('e')) {
-          el.width = Math.max(20, Math.round(elementStartW + dx))
-        }
-        if (activeResizeHandle.includes('s')) {
-          el.height = Math.max(20, Math.round(elementStartH + dy))
-        }
+        if (activeResizeHandle.includes('e')) el.width = Math.max(20, Math.round(elementStartW + dx))
+        if (activeResizeHandle.includes('s')) el.height = Math.max(20, Math.round(elementStartH + dy))
         if (activeResizeHandle.includes('w')) {
           const newW = Math.max(20, Math.round(elementStartW - dx))
           el.x = Math.round(elementStartX + (elementStartW - newW))
@@ -709,12 +909,15 @@
             : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
         }`
 
+        const hasAnim = el.animation?.entrance?.type !== 'none' || el.animation?.loop?.type !== 'none'
+
         item.innerHTML = `
           <div class="flex items-center space-x-2 truncate">
             <span>${el.type === 'text' ? '🔤' : '⬛'}</span>
             <span class="truncate font-semibold ${el.hidden ? 'line-through opacity-50' : ''}">${el.name || el.id}</span>
           </div>
           <div class="flex items-center space-x-1.5">
+            ${hasAnim ? '<span title="Has Animation" class="text-purple-400">✨</span>' : ''}
             <span class="text-[10px] text-slate-500 font-mono">z:${el.zIndex || 1}</span>
             <span>${el.locked ? '🔒' : ''}</span>
             <span>${el.hidden ? '🚫' : ''}</span>
@@ -730,7 +933,6 @@
       })
     }
 
-    // Select Element
     function selectElement(id) {
       selectedElementId = id
       renderCanvas()
@@ -747,7 +949,6 @@
       updateInspectorValues()
     }
 
-    // Update Properties Inspector Controls
     function updateInspectorValues() {
       const el = scene.elements.find(item => item.id === selectedElementId)
       if (!el) return
@@ -769,9 +970,25 @@
       document.getElementById('prop-opacity-num').value = op
       document.getElementById('prop-opacity-val').textContent = `${op}%`
 
-      // Lock & Visibility status icons
       document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
       document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
+
+      // Animations Inspector
+      const anim = el.animation || {}
+      const entrance = anim.entrance || {}
+      const exit = anim.exit || {}
+      const loop = anim.loop || {}
+
+      document.getElementById('prop-anim-entrance-type').value = entrance.type || 'none'
+      document.getElementById('prop-anim-entrance-duration').value = entrance.duration || 0.8
+      document.getElementById('prop-anim-entrance-delay').value = entrance.delay || 0.0
+      document.getElementById('prop-anim-entrance-ease').value = entrance.ease || 'power3.out'
+
+      document.getElementById('prop-anim-loop-type').value = loop.type || 'none'
+      document.getElementById('prop-anim-loop-duration').value = loop.duration || 2.5
+      document.getElementById('prop-anim-exit-type').value = exit.type || 'none'
+      document.getElementById('prop-anim-exit-duration').value = exit.duration || 0.5
+      document.getElementById('prop-anim-exit-delay').value = exit.delay || 0
 
       // Typography
       const textSection = document.getElementById('text-props-section')
@@ -822,9 +1039,80 @@
       document.getElementById('prop-shadow-y').value = el.style?.shadowOffsetY || 0
     }
 
-    // Attach Property Change Listeners
     function attachPropertyListeners() {
       const getSelected = () => scene.elements.find(item => item.id === selectedElementId)
+
+      // Test Element Animation Button
+      document.getElementById('test-element-animation-btn').addEventListener('click', () => {
+        const el = getSelected()
+        if (el) {
+          const node = document.getElementById(`el-node-${el.id}`)
+          playElementAnimation(node, el.animation)
+        }
+      })
+
+      // Animation property change listeners
+      const ensureAnimation = (el) => {
+        if (!el.animation) el.animation = { entrance: { type: 'none' }, exit: { type: 'none' }, loop: { type: 'none' } }
+        if (!el.animation.entrance) el.animation.entrance = { type: 'none' }
+        if (!el.animation.exit) el.animation.exit = { type: 'none' }
+        if (!el.animation.loop) el.animation.loop = { type: 'none' }
+        return el.animation
+      }
+
+      document.getElementById('prop-anim-entrance-type').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el) {
+          ensureAnimation(el).entrance.type = e.target.value
+          renderLayers()
+        }
+      })
+
+      document.getElementById('prop-anim-entrance-duration').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) ensureAnimation(el).entrance.duration = parseFloat(e.target.value) || 0.8
+      })
+
+      document.getElementById('prop-anim-entrance-delay').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) ensureAnimation(el).entrance.delay = parseFloat(e.target.value) || 0.0
+      })
+
+      document.getElementById('prop-anim-entrance-ease').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el) ensureAnimation(el).entrance.ease = e.target.value
+      })
+
+      document.getElementById('prop-anim-loop-type').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el) {
+          ensureAnimation(el).loop.type = e.target.value
+          renderLayers()
+        }
+      })
+
+      document.getElementById('prop-anim-loop-duration').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) ensureAnimation(el).loop.duration = parseFloat(e.target.value) || 2.5
+      })
+
+      document.getElementById('prop-anim-exit-type').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el) {
+          ensureAnimation(el).exit.type = e.target.value
+          renderLayers()
+        }
+      })
+
+      document.getElementById('prop-anim-exit-duration').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) ensureAnimation(el).exit.duration = parseFloat(e.target.value) || 0.5
+      })
+
+      document.getElementById('prop-anim-exit-delay').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (el) ensureAnimation(el).exit.delay = parseFloat(e.target.value) || 0
+      })
 
       // Name
       document.getElementById('prop-name').addEventListener('input', (e) => {
@@ -921,14 +1209,14 @@
       document.getElementById('prop-grad-angle').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.angle = parseInt(e.target.value) || 90; document.getElementById('prop-grad-angle-val').textContent = `${el.style.gradient.angle}°`; renderCanvas(); } })
       document.getElementById('prop-padding').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.padding = parseInt(e.target.value) || 0; renderCanvas(); } })
 
-      // Borders & Corners
+      // Borders
       document.getElementById('prop-border-radius').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderCanvas(); } })
       document.getElementById('prop-border-width').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderCanvas(); } })
       document.getElementById('prop-border-style').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.borderStyle = e.target.value; renderCanvas(); } })
       document.getElementById('prop-border-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderCanvas(); } })
       document.getElementById('prop-border-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; renderCanvas(); } })
 
-      // Shadow & Glow
+      // Shadows
       document.getElementById('prop-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; document.getElementById('prop-shadow-color').value = e.target.value; renderCanvas(); } })
       document.getElementById('prop-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; renderCanvas(); } })
       document.getElementById('prop-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowBlur = parseInt(e.target.value) || 0; renderCanvas(); } })
@@ -956,7 +1244,17 @@
       })
     }
 
-    // Add Elements Preset Buttons
+    // Play All Scene Animations
+    document.getElementById('play-all-animations-btn').addEventListener('click', () => {
+      scene.elements.forEach(el => {
+        const node = document.getElementById(`el-node-${el.id}`)
+        if (node && !el.hidden) {
+          playElementAnimation(node, el.animation)
+        }
+      })
+    })
+
+    // Add Elements
     document.getElementById('add-text-btn').addEventListener('click', () => {
       const newEl = {
         id: 'txt_' + Date.now().toString(36),
@@ -979,6 +1277,10 @@
           padding: 0,
           borderRadius: 0,
           borderWidth: 0
+        },
+        animation: {
+          entrance: { type: 'fadeIn', duration: 0.7, delay: 0.2, ease: 'power2.out' },
+          loop: { type: 'none', duration: 2.5 }
         }
       }
       scene.elements.push(newEl)
@@ -1006,6 +1308,10 @@
           shadowColor: 'rgba(99,102,241,0.35)',
           shadowBlur: 24,
           gradient: { enabled: true, from: '#1e1b4b', to: '#0f172a', angle: 135 }
+        },
+        animation: {
+          entrance: { type: 'slideUp', duration: 0.8, delay: 0.1, ease: 'power3.out' },
+          loop: { type: 'pulse', duration: 3.0 }
         }
       }
       scene.elements.push(newEl)
@@ -1039,6 +1345,10 @@
           shadowColor: 'rgba(236,72,153,0.4)',
           shadowBlur: 20,
           gradient: { enabled: true, from: '#27272a', to: '#09090b', angle: 90 }
+        },
+        animation: {
+          entrance: { type: 'bounceIn', duration: 0.9, delay: 0.2, ease: 'back.out(1.7)' },
+          loop: { type: 'float', duration: 2.6 }
         }
       }
       scene.elements.push(newEl)
@@ -1072,6 +1382,10 @@
           shadowColor: 'rgba(0,0,0,0.6)',
           shadowBlur: 24,
           gradient: { enabled: true, from: '#0f172a', to: '#020617', angle: 135 }
+        },
+        animation: {
+          entrance: { type: 'slideUp', duration: 0.8, delay: 0.3, ease: 'power3.out' },
+          loop: { type: 'pulse', duration: 3.2 }
         }
       }
       scene.elements.push(newEl)
@@ -1117,17 +1431,13 @@
       }
     })
 
-    // Zoom Controls
     document.getElementById('zoom-in-btn').addEventListener('click', () => setZoom(zoom + 0.1))
     document.getElementById('zoom-out-btn').addEventListener('click', () => setZoom(zoom - 0.1))
     document.getElementById('zoom-fit-btn').addEventListener('click', fitZoom)
-    document.getElementById('zoom-100-btn').addEventListener('click', () => setZoom(1.0))
 
-    // Save & Resize
     document.getElementById('save-scene-btn').addEventListener('click', saveScene)
     window.addEventListener('resize', fitZoom)
 
-    // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -1143,7 +1453,6 @@
       }
     })
 
-    // Init
     document.addEventListener('DOMContentLoaded', () => {
       attachPropertyListeners()
       loadScene()

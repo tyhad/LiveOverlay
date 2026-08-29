@@ -45,6 +45,8 @@
 
   <script>
     const viewport = document.getElementById('overlay-viewport')
+    const overlayParams = new URLSearchParams(window.location.search)
+    const overlaySceneId = overlayParams.get('scene') || overlayParams.get('id') || 'default'
     let lastSceneHash = ''
     let lastLiveStatsHash = ''
     let currentScene = null
@@ -338,7 +340,7 @@
 
     async function syncScene(isInitial = false) {
       try {
-        const res = await fetch('/api/scene')
+        const res = await fetch(`/api/scenes/${encodeURIComponent(overlaySceneId)}`)
         if (res.ok) {
           const text = await res.text()
           if (text !== lastSceneHash || isInitial) {

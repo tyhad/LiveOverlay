@@ -6,6 +6,8 @@ const SETTINGS_FILE = 'settings.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENE_FILE = 'scene.json'
 const EXAMPLE_SCENE_FILE = 'scene.example.json'
+const SCENES_FILE = 'scenes.json'
+const EXAMPLE_SCENES_FILE = 'scenes.example.json'
 const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
 const DATA_SOURCES_FILE = 'data-sources.json'
@@ -258,31 +260,10 @@ async function saveSettings(data: Partial<Settings>): Promise<Settings> {
   return updated
 }
 
-async function getScene(): Promise<SceneData> {
-  const file = Bun.file(SCENE_FILE)
-  if (await file.exists()) {
-    try {
-      const text = await file.text()
-      return JSON.parse(text)
-    } catch {
-      // Fallback if parsing fails
-    }
-  }
-
-  const exampleFile = Bun.file(EXAMPLE_SCENE_FILE)
-  if (await exampleFile.exists()) {
-    try {
-      const initialScene: SceneData = JSON.parse(await exampleFile.text())
-      await Bun.write(SCENE_FILE, JSON.stringify(initialScene, null, 2))
-      return initialScene
-    } catch {
-      // Fallback
-    }
-  }
-
-  const fallbackScene: SceneData = {
-    id: 'default',
-    name: 'Live Streaming Scene',
+function createDefaultScene(id = 'default', name = 'Live Streaming Scene'): SceneData {
+  return {
+    id,
+    name,
     canvas: {
       width: 1920,
       height: 1080,
@@ -290,14 +271,134 @@ async function getScene(): Promise<SceneData> {
     },
     elements: [],
   }
+}
 
-  await Bun.write(SCENE_FILE, JSON.stringify(fallbackScene, null, 2))
-  return fallbackScene
+function normalizeSceneId(value: string, fallback: string): string {
+  return String(value || fallback)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '') || fallback
+}
+
+function normalizeScene(scene: Partial<SceneData>, index = 0): SceneData {
+  const safeIndex = index >= 0 ? index : 0
+  const fallbackId = safeIndex === 0 ? 'default' : `scene-${safeIndex + 1}`
+  const id = normalizeSceneId(scene.id || scene.name || fallbackId, fallbackId)
+  const name = String(scene.name || (safeIndex === 0 ? 'Live Streaming Scene' : `Scene ${safeIndex + 1}`)).trim() || `Scene ${safeIndex + 1}`
+  const canvas = scene.canvas || {}
+  const elements = Array.isArray(scene.elements) ? scene.elements : []
+
+  return {
+    ...(scene as SceneData),
+    id,
+    name,
+    canvas: {
+      width: Number(canvas.width) || 1920,
+      height: Number(canvas.height) || 1080,
+      backgroundColor: canvas.backgroundColor || 'transparent',
+    },
+    elements: elements as SceneElement[],
+  }
+}
+
+async function readSceneStore(): Promise<SceneData[]> {
+  const scenesFile = Bun.file(SCENES_FILE)
+  if (await scenesFile.exists()) {
+    try {
+      const parsed = JSON.parse(await scenesFile.text())
+      if (Array.isArray(parsed)) {
+        return parsed.map((scene, index) => normalizeScene(scene, index))
+      }
+    } catch {
+      // Fall back to legacy files
+    }
+  }
+
+  const legacyFile = Bun.file(SCENE_FILE)
+  if (await legacyFile.exists()) {
+    try {
+      const parsed = JSON.parse(await legacyFile.text())
+      if (parsed && typeof parsed === 'object') {
+        return [normalizeScene(parsed as Partial<SceneData>, 0)]
+      }
+    } catch {
+      // Fall back to example files
+    }
+  }
+
+  const exampleScenesFile = Bun.file(EXAMPLE_SCENES_FILE)
+  if (await exampleScenesFile.exists()) {
+    try {
+      const parsed = JSON.parse(await exampleScenesFile.text())
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((scene, index) => normalizeScene(scene, index))
+      }
+    } catch {
+      // Fall back to legacy example file
+    }
+  }
+
+  const exampleSceneFile = Bun.file(EXAMPLE_SCENE_FILE)
+  if (await exampleSceneFile.exists()) {
+    try {
+      const parsed = JSON.parse(await exampleSceneFile.text())
+      if (parsed && typeof parsed === 'object') {
+        return [normalizeScene(parsed as Partial<SceneData>, 0)]
+      }
+    } catch {
+      // Use built-in fallback
+    }
+  }
+
+  return [createDefaultScene()]
+}
+
+async function persistSceneStore(scenes: SceneData[]): Promise<SceneData[]> {
+  const normalized = scenes.length > 0
+    ? scenes.map((scene, index) => normalizeScene(scene, index))
+    : [createDefaultScene()]
+
+  await Bun.write(SCENES_FILE, JSON.stringify(normalized, null, 2))
+  await Bun.write(SCENE_FILE, JSON.stringify(normalized[0], null, 2))
+  return normalized
+}
+
+async function getScenes(): Promise<SceneData[]> {
+  const scenes = await readSceneStore()
+  if (scenes.length === 0) {
+    return await persistSceneStore([createDefaultScene()])
+  }
+  if (!(await Bun.file(SCENES_FILE).exists())) {
+    await persistSceneStore(scenes)
+  } else if (!(await Bun.file(SCENE_FILE).exists())) {
+    await Bun.write(SCENE_FILE, JSON.stringify(scenes[0], null, 2))
+  }
+  return scenes
+}
+
+async function getSceneById(sceneId?: string): Promise<SceneData> {
+  const scenes = await getScenes()
+  const normalizedId = sceneId ? normalizeSceneId(sceneId, scenes[0]?.id || 'default') : ''
+  const matched = normalizedId ? scenes.find((scene) => scene.id === normalizedId) : undefined
+  return matched || scenes[0] || createDefaultScene()
 }
 
 async function saveScene(scene: SceneData): Promise<SceneData> {
-  await Bun.write(SCENE_FILE, JSON.stringify(scene, null, 2))
-  return scene
+  const scenes = await getScenes()
+  const normalized = normalizeScene(scene, scenes.findIndex((item) => item.id === scene.id))
+  const nextScenes = scenes.some((item) => item.id === normalized.id)
+    ? scenes.map((item) => (item.id === normalized.id ? normalized : item))
+    : [...scenes, normalized]
+  await persistSceneStore(nextScenes)
+  return normalized
+}
+
+async function deleteScene(sceneId: string): Promise<SceneData[]> {
+  const scenes = await getScenes()
+  const normalizedId = normalizeSceneId(sceneId, '')
+  const nextScenes = scenes.filter((scene) => scene.id !== normalizedId)
+  return await persistSceneStore(nextScenes.length > 0 ? nextScenes : [createDefaultScene()])
 }
 
 const DEFAULT_LIVE_STATS: LiveStatsData = {
@@ -674,8 +775,25 @@ const app = new Elysia()
       }),
     }
   )
-  .get('/api/scene', async () => {
-    return await getScene()
+  .get('/api/scenes', async () => {
+    const scenes = await getScenes()
+    return {
+      scenes,
+      activeSceneId: scenes[0]?.id || null,
+      activeScene: scenes[0] || createDefaultScene(),
+    }
+  })
+  .get('/api/scenes/:id', async ({ params, set }) => {
+    const scene = await getSceneById(params.id)
+    if (!scene) {
+      set.status = 404
+      return { success: false, message: 'Scene not found' }
+    }
+    return scene
+  })
+  .get('/api/scene', async ({ query }) => {
+    const sceneId = query.scene || query.id
+    return await getSceneById(sceneId)
   })
   .get('/api/live-stats', async () => {
     return await getLiveStats()
@@ -848,6 +966,47 @@ const app = new Elysia()
         success: true,
         message: 'Scene saved successfully',
         data: updated,
+      }
+    }
+  )
+  .post(
+    '/api/scenes',
+    async ({ body, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
+      const payload = body as { scene?: SceneData }
+      const updated = await saveScene((payload.scene || body) as SceneData)
+      return {
+        success: true,
+        message: 'Scene saved successfully',
+        data: updated,
+      }
+    }
+  )
+  .delete(
+    '/api/scenes/:id',
+    async ({ params, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
+      const scenes = await deleteScene(params.id)
+      return {
+        success: true,
+        message: 'Scene deleted successfully',
+        data: scenes,
       }
     }
   )

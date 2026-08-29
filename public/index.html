@@ -67,7 +67,16 @@
           <h1 class="text-sm font-bold tracking-tight text-white">LiveOverlay Studio</h1>
           <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">GSAP ANIMATION</span>
         </div>
-        <p class="text-[11px] text-slate-400 font-mono" id="scene-info">1920 × 1080 Full HD</p>
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+          <select id="scene-selector" class="h-7 max-w-[180px] rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100">
+            <option value="default">default</option>
+          </select>
+          <input id="scene-name-input" type="text" value="Live Streaming Scene" class="h-7 w-52 rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100 focus:border-indigo-500 focus:outline-none">
+          <button id="new-scene-btn" class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">New</button>
+          <button id="duplicate-scene-btn" class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">Duplicate</button>
+          <button id="delete-scene-btn" class="h-7 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2.5 text-[11px] font-semibold text-rose-200 hover:bg-rose-500/20 transition">Delete</button>
+        </div>
+        <p class="text-[11px] text-slate-400 font-mono mt-1" id="scene-info">1920 × 1080 Full HD</p>
       </div>
     </div>
 
@@ -97,7 +106,7 @@
         <span>Save Scene</span>
       </button>
 
-      <a href="/overlay.html" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
+      <a id="overlay-preview-link" href="/overlay.html" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
         <span>Preview OBS</span>
         <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -700,6 +709,10 @@
       elements: []
     }
 
+    const sceneSearchParams = new URLSearchParams(window.location.search)
+    let currentSceneId = sceneSearchParams.get('scene') || scene.id
+    let availableScenes = []
+
     let selectedElementId = null
     let zoom = 0.45
     let isDragging = false
@@ -718,6 +731,12 @@
     const noSelectionEl = document.getElementById('no-selection')
     const selectionFormEl = document.getElementById('selection-form')
     const saveStatusEl = document.getElementById('save-status')
+    const sceneSelectorEl = document.getElementById('scene-selector')
+    const sceneNameInputEl = document.getElementById('scene-name-input')
+    const overlayPreviewLinkEl = document.getElementById('overlay-preview-link')
+    const newSceneBtn = document.getElementById('new-scene-btn')
+    const duplicateSceneBtn = document.getElementById('duplicate-scene-btn')
+    const deleteSceneBtn = document.getElementById('delete-scene-btn')
     const assetListEl = document.getElementById('asset-list')
     const assetFileInput = document.getElementById('asset-file-input')
     let assets = []
@@ -737,6 +756,17 @@
     let lastLiveStatsHash = ''
     let externalData = { sources: [] }
     let lastExternalDataHash = ''
+
+    function updateOverlayPreviewLink() {
+      const overlayUrl = `/overlay.html?scene=${encodeURIComponent(currentSceneId || scene.id || 'default')}`
+      overlayPreviewLinkEl.href = overlayUrl
+    }
+
+    function updateSceneUrl(sceneId) {
+      const url = new URL(window.location.href)
+      url.searchParams.set('scene', sceneId)
+      window.history.replaceState({}, '', url.toString())
+    }
 
     function ensureTextBinding(el) {
       if (!el.textBinding) {
@@ -904,18 +934,141 @@
       setZoom(Math.min(scaleX, scaleY, 0.85))
     }
 
-    async function loadScene() {
+    function normalizeSceneClient(nextScene) {
+      const fallback = {
+        id: 'default',
+        name: 'Default Scene',
+        canvas: { width: 1920, height: 1080, backgroundColor: 'transparent' },
+        elements: []
+      }
+      const base = nextScene && typeof nextScene === 'object' ? nextScene : fallback
+      return {
+        ...fallback,
+        ...base,
+        id: String(base.id || fallback.id).trim() || fallback.id,
+        name: String(base.name || fallback.name).trim() || fallback.name,
+        canvas: {
+          ...fallback.canvas,
+          ...(base.canvas || {})
+        },
+        elements: Array.isArray(base.elements) ? base.elements : []
+      }
+    }
+
+    function syncSceneControls() {
+      sceneSelectorEl.value = currentSceneId
+      sceneNameInputEl.value = scene.name || ''
+      updateOverlayPreviewLink()
+      deleteSceneBtn.disabled = currentSceneId === 'default' && availableScenes.length <= 1
+      deleteSceneBtn.classList.toggle('opacity-40', deleteSceneBtn.disabled)
+      deleteSceneBtn.classList.toggle('cursor-not-allowed', deleteSceneBtn.disabled)
+    }
+
+    function hydrateSceneEditor(nextScene, shouldUpdateUrl = true) {
+      scene = normalizeSceneClient(nextScene)
+      currentSceneId = scene.id
+      availableScenes = availableScenes.some((item) => item.id === scene.id)
+        ? availableScenes.map((item) => (item.id === scene.id ? scene : item))
+        : [...availableScenes, scene]
+      if (shouldUpdateUrl) updateSceneUrl(scene.id)
+      syncSceneControls()
+      renderCanvas()
+      renderLayers()
+      updateBindingPreview()
+      updateInspectorValues()
+      updateSceneInfo()
+    }
+
+    async function loadAvailableScenes() {
       try {
-        const res = await fetch('/api/scene')
+        const res = await fetch('/api/scenes')
+        if (!res.ok) return
+        const payload = await res.json()
+        availableScenes = Array.isArray(payload?.scenes) ? payload.scenes.map(normalizeSceneClient) : []
+        if (availableScenes.length === 0 && payload?.activeScene) {
+          availableScenes = [normalizeSceneClient(payload.activeScene)]
+        }
+        if (availableScenes.length === 0) {
+          availableScenes = [normalizeSceneClient(scene)]
+        }
+        sceneSelectorEl.replaceChildren(
+          ...availableScenes.map((item) => {
+            const option = document.createElement('option')
+            option.value = item.id
+            option.textContent = `${item.name} (${item.id})`
+            return option
+          })
+        )
+        if (!availableScenes.some((item) => item.id === currentSceneId)) {
+          currentSceneId = availableScenes[0].id
+        }
+        syncSceneControls()
+      } catch (err) {
+        console.error('Failed to load scenes:', err)
+      }
+    }
+
+    async function loadScene(sceneId = currentSceneId) {
+      try {
+        const res = await fetch(`/api/scenes/${encodeURIComponent(sceneId || 'default')}`)
         if (res.ok) {
-          scene = await res.json()
-          renderCanvas()
-          renderLayers()
-          updateBindingPreview()
+          const nextScene = normalizeSceneClient(await res.json())
+          hydrateSceneEditor(nextScene, false)
+          updateSceneUrl(nextScene.id)
+          return
+        }
+
+        const fallbackRes = await fetch('/api/scene')
+        if (fallbackRes.ok) {
+          const nextScene = normalizeSceneClient(await fallbackRes.json())
+          hydrateSceneEditor(nextScene, false)
+          updateSceneUrl(nextScene.id)
         }
       } catch (err) {
         console.error('Failed to load scene:', err)
       }
+    }
+
+    function slugifySceneId(value, fallback) {
+      return String(value || fallback)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '') || fallback
+    }
+
+    async function createSceneFromTemplate(templateScene, nextName, nextId) {
+      const nextScene = normalizeSceneClient({
+        ...templateScene,
+        id: nextId,
+        name: nextName,
+      })
+      availableScenes = [...availableScenes.filter((item) => item.id !== nextScene.id), nextScene]
+      hydrateSceneEditor(nextScene)
+      await saveScene()
+    }
+
+    async function deleteCurrentScene() {
+      if (currentSceneId === 'default' && availableScenes.length <= 1) return
+      const nextName = scene.name || currentSceneId
+      if (!window.confirm(`Delete scene "${nextName}"?`)) return
+      try {
+        const res = await fetch(`/api/scenes/${encodeURIComponent(currentSceneId)}`, { method: 'DELETE' })
+        if (!res.ok) return
+        await loadAvailableScenes()
+        const fallbackScene = availableScenes[0] || normalizeSceneClient(scene)
+        await loadScene(fallbackScene.id)
+      } catch (err) {
+        console.error('Failed to delete scene:', err)
+      }
+    }
+
+    async function duplicateCurrentScene() {
+      const nextName = window.prompt('Duplicate scene name', `${scene.name} Copy`)?.trim()
+      if (!nextName) return
+      const nextId = slugifySceneId(window.prompt('Duplicate scene id', `${currentSceneId}-copy`) || `${currentSceneId}-copy`, `${currentSceneId}-copy`)
+      await createSceneFromTemplate(scene, nextName, nextId)
+      updateSceneUrl(nextId)
     }
 
     async function loadLiveStats() {
@@ -1075,12 +1228,16 @@
 
     async function saveScene() {
       try {
-        const res = await fetch('/api/scene', {
+        scene.id = currentSceneId || scene.id || 'default'
+        scene.name = sceneNameInputEl.value.trim() || scene.name || 'Default Scene'
+        const res = await fetch('/api/scenes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(scene)
+          body: JSON.stringify({ scene })
         })
         if (res.ok) {
+          await loadAvailableScenes()
+          updateOverlayPreviewLink()
           saveStatusEl.classList.remove('opacity-0')
           saveStatusEl.classList.add('opacity-100')
           setTimeout(() => {
@@ -2018,6 +2175,33 @@
     document.getElementById('zoom-fit-btn').addEventListener('click', fitZoom)
 
     document.getElementById('save-scene-btn').addEventListener('click', saveScene)
+    sceneSelectorEl.addEventListener('change', async (e) => {
+      const nextId = e.target.value
+      currentSceneId = nextId
+      await loadScene(nextId)
+      updateSceneUrl(nextId)
+      updateOverlayPreviewLink()
+    })
+    sceneNameInputEl.addEventListener('input', () => {
+      scene.name = sceneNameInputEl.value.trim() || scene.name || 'Default Scene'
+      availableScenes = availableScenes.map((item) => (item.id === currentSceneId ? { ...item, name: scene.name } : item))
+      syncSceneControls()
+    })
+    newSceneBtn.addEventListener('click', async () => {
+      const nextName = window.prompt('New scene name', 'New Scene')?.trim()
+      if (!nextName) return
+      const nextId = slugifySceneId(window.prompt('New scene id', nextName) || nextName, slugifySceneId(nextName, 'scene-new'))
+      await createSceneFromTemplate(normalizeSceneClient({
+        id: nextId,
+        name: nextName,
+        canvas: scene.canvas,
+        elements: [],
+      }), nextName, nextId)
+      await loadAvailableScenes()
+      await loadScene(nextId)
+    })
+    duplicateSceneBtn.addEventListener('click', duplicateCurrentScene)
+    deleteSceneBtn.addEventListener('click', deleteCurrentScene)
     window.addEventListener('resize', fitZoom)
 
     window.addEventListener('keydown', (e) => {
@@ -2035,11 +2219,12 @@
       }
     })
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       attachPropertyListeners()
       loadDataSources()
       loadExternalData(true)
-      loadScene()
+      await loadAvailableScenes()
+      await loadScene(currentSceneId)
       loadLiveStats()
       loadAssets()
       fitZoom()

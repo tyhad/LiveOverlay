@@ -73,7 +73,7 @@ Buka web browser Anda dan akses:
 2. Pada panel **Sources**, klik tombol **`+`** lalu pilih **Browser** (Browser Source).
 3. Beri nama source (misalnya: `LiveOverlay Widget`).
 4. Atur properti Browser Source sebagai berikut:
-   - **URL**: `http://localhost:3000/overlay.html`
+   - **URL**: `http://localhost:3000/overlay.html?scene=default`
    - **Width**: `800` (atau sesuaikan dengan layout stream Anda)
    - **Height**: `300`
    - **Custom CSS**: *(Biarkan kosong atau default)*
@@ -98,13 +98,19 @@ Buka web browser Anda dan akses:
 ## 🔒 Konfigurasi & Keamanan
 
 ### Template Konfigurasi
-Aplikasi membaca dan menulis data ke `settings.json` (diabaikan oleh git). Anda dapat melihat contoh format di [`settings.example.json`](./settings.example.json):
+Aplikasi membaca dan menulis data ke `settings.json` (diabaikan oleh git). Scene sekarang disimpan di `scenes.json` dengan contoh format di [`scenes.example.json`](./scenes.example.json). Anda dapat melihat contoh format settings di [`settings.example.json`](./settings.example.json):
 
 ```json
 {
   "tiktokUsername": "@creator",
   "runningText": "Welcome to my stream! Jangan lupa follow & share ✨"
 }
+```
+
+Contoh URL overlay untuk scene lain:
+
+```text
+http://localhost:3000/overlay.html?scene=portrait-chat
 ```
 
 ### Opsi Token Rahasia (Shared Secret)

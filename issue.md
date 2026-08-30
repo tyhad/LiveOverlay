@@ -116,7 +116,7 @@ Kandidat item tambahan (technical debt yang sudah terkumpul, belum urgent):
 - Verifikasi & fix concurrent rendering multi-scene + race condition `persistSceneStore` (lihat catatan di Fase 6 di atas).
 - Config source Fase 5b masih via raw JSON textarea di editor, belum form UI per-field.
 - Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`.
-- Google Fonts di-load all-upfront (7 keluarga font) padahal biasanya cuma 1-2 dipakai per scene.
+- Google Fonts di-load all-upfront (7 keluarga font) padahal biasanya cuma 1-2 dipakai per scene. Font yang paling sering dipakai user: **Manrope, Quicksand, Limelight** — pastikan 3 ini tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
 - `gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).
 - `/api/settings` (sistem lama, `settings.json`) sudah dead code sejak scene system jalan — perlu di-consolidate/dihapus (juga disebutkan sebagai to-do di Fase 5a).
 

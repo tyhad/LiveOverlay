@@ -81,10 +81,19 @@ Tambahkan pilihan animasi (preset GSAP) per elemen — animasi masuk, animasi id
 ### Fase 4 — Asset & SVG Import — ✅ SELESAI
 Fitur upload SVG/gambar dari user, elemen tipe "Image/SVG" bisa dipakai di kanvas seperti elemen lain (posisi, ukuran, animasi tetap berlaku). Verified end-to-end: backend upload (`POST /api/assets`, whitelist MIME, 10MB limit, sanitized filename) → editor (grid thumbnail, klik jadi elemen) → overlay (render `src` + `objectFit` sama persis).
 
-### Fase 5a — Platform Live Stats — ⚠️ BELUM CLEAR (infrastruktur selesai, konektor belum ada)
-Hubungkan elemen Text tertentu ke data yang berasal dari platform streaming itu sendiri, seperti username, viewer count, follower count, live chat, dan data platform relevan lainnya. Tujuannya agar kombinasi "desain visual bebas" + "data yang update real-time" tetap jalan bareng.
+### Fase 5a — Platform Live Stats — ⚠️ BELUM CLEAR (lanjutan)
 
-Sudah ada: model data, `POST/GET /api/live-stats`, binding UI di editor, overlay poll tiap 2 detik. **Belum ada**: kode yang benar-benar narik data dari TikTok/YouTube Live — endpoint saat ini cuma "penerima" pasif, nunggu didorong data dari luar. Riset teknis pendekatan sudah dilakukan (YouTube: API resmi Google; TikTok: gak ada API resmi, harus pakai pendekatan unofficial semacam `TikTok-Live-Connector`). Brief eksekusi tersedia di `fase-5a-finishing-brief.md`. Juga perlu bereskan dead code `/api/settings` (sistem lama, sudah gak dipakai) saat masuk fase ini.
+Progress terbaru di branch `feat/live-platform-connectors-fase-5a` (belum di-merge, perlu revisi):
+
+**Sudah benar:**
+- YouTube connector: pakai YouTube Data API v3 resmi (search live broadcast → videos.list untuk viewer count → liveChatMessages untuk chat). Sesuai riset awal.
+- Dead code `/api/settings` sudah dihapus.
+
+**Perlu direvisi sebelum merge:**
+1. **TikTok connector menyimpang dari rencana awal** — implementasi saat ini pakai REST polling sederhana ke endpoint `webcast.tiktok.com/webcast/room/info/` (bukan `TikTok-Live-Connector` / WebSocket push service yang sudah diriset). Konsekuensi: TIDAK ADA live chat TikTok sama sekali (cuma viewer count, like count, status live). Perlu diputuskan: lanjut pakai pendekatan simpel ini (trade-off: gak ada chat, tapi lebih ringan, no extra dependency), atau ganti ke `TikTok-Live-Connector` sesuai riset awal supaya dapat chat real-time.
+2. **Follower count belum diimplementasi** di kedua platform (YouTube maupun TikTok) — field `followerCount` gak pernah di-set dari connector manapun, padahal ini bagian dari requirement awal Fase 5a.
+3. **Potensi boros kuota YouTube** — kalau pakai Channel ID (bukan Video ID langsung), tiap polling cycle manggil `search.list` (100 unit/call) tanpa caching video ID yang ketemu. Bisa habis kuota harian (10.000 unit) dalam hitungan menit kalau poll interval terlalu pendek. Perlu cache video ID hasil resolve, refresh cuma kalau live berakhir.
+4. **Belum ada retry/backoff saat error** — kalau API TikTok/YouTube gagal terus, polling tetap jalan di interval sama tanpa backoff, berisiko makin kena rate limit.
 
 ### Fase 5b — External Data Source (Generic API Binding) — ✅ SELESAI
 Tambahkan sistem data source yang fleksibel agar user dapat mengonfigurasi API eksternal apa pun dan memilih field dari response API tersebut untuk ditampilkan pada elemen overlay. Contoh use case-nya adalah data F1, seperti track condition dari API publik semacam FastF1, maupun API free-to-use lainnya.

@@ -26,6 +26,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 settings.json
 scene.json
 scenes.json
+data-sources.json
+live-stats.json
+platform-config.json
 public/uploads/
 
 # caches

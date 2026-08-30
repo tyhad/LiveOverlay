@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,20 +11,23 @@
   <!-- Google Fonts for Stream Overlays & Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap"
+    rel="stylesheet">
 
   <style>
     .canvas-workspace {
       background-color: #080c14;
-      background-image: 
+      background-image:
         radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
       background-size: 24px 24px;
     }
-    
+
     .element-selected {
       outline: 2px solid #6366f1 !important;
       outline-offset: 2px;
     }
+
     .element-locked {
       outline: 2px dashed #f59e0b !important;
       cursor: not-allowed !important;
@@ -37,44 +41,108 @@
       border: 2px solid #4f46e5;
       border-radius: 2px;
       z-index: 9999;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     }
-    .handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
-    .handle-n  { top: -6px; left: calc(50% - 5px); cursor: ns-resize; }
-    .handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
-    .handle-e  { top: calc(50% - 5px); right: -6px; cursor: ew-resize; }
-    .handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
-    .handle-s  { bottom: -6px; left: calc(50% - 5px); cursor: ns-resize; }
-    .handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
-    .handle-w  { top: calc(50% - 5px); left: -6px; cursor: ew-resize; }
 
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #0b0f19; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    .handle-nw {
+      top: -6px;
+      left: -6px;
+      cursor: nwse-resize;
+    }
+
+    .handle-n {
+      top: -6px;
+      left: calc(50% - 5px);
+      cursor: ns-resize;
+    }
+
+    .handle-ne {
+      top: -6px;
+      right: -6px;
+      cursor: nesw-resize;
+    }
+
+    .handle-e {
+      top: calc(50% - 5px);
+      right: -6px;
+      cursor: ew-resize;
+    }
+
+    .handle-se {
+      bottom: -6px;
+      right: -6px;
+      cursor: nwse-resize;
+    }
+
+    .handle-s {
+      bottom: -6px;
+      left: calc(50% - 5px);
+      cursor: ns-resize;
+    }
+
+    .handle-sw {
+      bottom: -6px;
+      left: -6px;
+      cursor: nesw-resize;
+    }
+
+    .handle-w {
+      top: calc(50% - 5px);
+      left: -6px;
+      cursor: ew-resize;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
   </style>
 </head>
-<body class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
+
+<body
+  class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
 
   <!-- TOP HEADER -->
-  <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30 shadow-md">
+  <header
+    class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30 shadow-md">
     <div class="flex items-center space-x-3">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/20">
+      <div
+        class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/20">
         ⚡
       </div>
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-sm font-bold tracking-tight text-white">LiveOverlay Studio</h1>
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">GSAP ANIMATION</span>
+          <span
+            class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">GSAP
+            ANIMATION</span>
         </div>
         <div class="mt-1 flex flex-wrap items-center gap-2">
-          <select id="scene-selector" class="h-7 max-w-[180px] rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100">
+          <select id="scene-selector"
+            class="h-7 max-w-[180px] rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100">
             <option value="default">default</option>
           </select>
-          <input id="scene-name-input" type="text" value="Live Streaming Scene" class="h-7 w-52 rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100 focus:border-indigo-500 focus:outline-none">
-          <button id="new-scene-btn" class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">New</button>
-          <button id="duplicate-scene-btn" class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">Duplicate</button>
-          <button id="delete-scene-btn" class="h-7 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2.5 text-[11px] font-semibold text-rose-200 hover:bg-rose-500/20 transition">Delete</button>
+          <input id="scene-name-input" type="text" value="Live Streaming Scene"
+            class="h-7 w-52 rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100 focus:border-indigo-500 focus:outline-none">
+          <button id="new-scene-btn"
+            class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">New</button>
+          <button id="duplicate-scene-btn"
+            class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">Duplicate</button>
+          <button id="delete-scene-btn"
+            class="h-7 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2.5 text-[11px] font-semibold text-rose-200 hover:bg-rose-500/20 transition">Delete</button>
         </div>
         <p class="text-[11px] text-slate-400 font-mono mt-1" id="scene-info">1920 × 1080 Full HD</p>
       </div>
@@ -82,34 +150,44 @@
 
     <!-- Zoom & Animation Playback Controls -->
     <div class="flex items-center space-x-2">
-      <button id="play-all-animations-btn" class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition">
+      <button id="play-all-animations-btn"
+        class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition">
         <span>✨</span>
         <span>Play All Animations</span>
       </button>
 
       <div class="flex items-center space-x-1.5 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
-        <button id="zoom-out-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom Out">−</button>
+        <button id="zoom-out-btn"
+          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition"
+          title="Zoom Out">−</button>
         <span id="zoom-level" class="text-xs font-mono px-2 text-slate-300 min-w-[45px] text-center">45%</span>
-        <button id="zoom-in-btn" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition" title="Zoom In">+</button>
-        <button id="zoom-fit-btn" class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">Fit</button>
+        <button id="zoom-in-btn"
+          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition"
+          title="Zoom In">+</button>
+        <button id="zoom-fit-btn"
+          class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">Fit</button>
       </div>
     </div>
 
     <!-- Save & OBS Actions -->
     <div class="flex items-center space-x-3">
-      <div id="save-status" class="text-xs font-medium text-emerald-400 opacity-0 transition-opacity duration-200 flex items-center gap-1">
+      <div id="save-status"
+        class="text-xs font-medium text-emerald-400 opacity-0 transition-opacity duration-200 flex items-center gap-1">
         <span>✓</span><span>Saved</span>
       </div>
-      
-      <button id="save-scene-btn" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
+
+      <button id="save-scene-btn"
+        class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
         <span>💾</span>
         <span>Save Scene</span>
       </button>
 
-      <a id="overlay-preview-link" href="/overlay.html" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
+      <a id="overlay-preview-link" href="/overlay.html" target="_blank"
+        class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
         <span>Preview OBS</span>
         <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
       </a>
     </div>
@@ -120,35 +198,41 @@
 
     <!-- LEFT SIDEBAR: Add Elements & Layers Hierarchy -->
     <aside class="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 z-20">
-      
+
       <!-- Section 1: Quick Add Elements -->
       <div class="p-3.5 border-b border-slate-800">
         <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5">Add Elements</h2>
         <div class="grid grid-cols-2 gap-2">
-          <button id="add-text-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-text-btn"
+            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">🔤</span>
             <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Text</span>
           </button>
 
-          <button id="add-shape-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-shape-btn"
+            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">⬛</span>
             <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Shape Box</span>
           </button>
 
-          <button id="add-badge-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-badge-btn"
+            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">🎵</span>
             <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Social Badge</span>
           </button>
 
-          <button id="add-banner-btn" class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="add-banner-btn"
+            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">📢</span>
             <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Banner</span>
           </button>
-          <button id="upload-asset-btn" class="p-2.5 bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/40 hover:border-indigo-500/70 rounded-xl text-left transition flex flex-col gap-1 group">
+          <button id="upload-asset-btn"
+            class="p-2.5 bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/40 hover:border-indigo-500/70 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">🖼️</span>
             <span class="text-xs font-semibold text-indigo-200">Upload Asset</span>
           </button>
-          <input id="asset-file-input" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif" class="hidden">
+          <input id="asset-file-input" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif"
+            class="hidden">
         </div>
       </div>
 
@@ -168,13 +252,19 @@
         <div class="flex items-center justify-between gap-2">
           <div>
             <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">External API Sources</h2>
-            <p class="text-[10px] text-slate-500 mt-1">Isi array JSON source API. Renderer overlay akan membaca cache backend, bukan request langsung ke API luar.</p>
+            <p class="text-[10px] text-slate-500 mt-1">Isi array JSON source API. Renderer overlay akan membaca cache
+              backend, bukan request langsung ke API luar.</p>
           </div>
-          <button id="refresh-external-data-btn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-200 transition">Refresh</button>
+          <button id="refresh-external-data-btn"
+            class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-200 transition">Refresh</button>
         </div>
-        <textarea id="external-sources-json" rows="9" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-[11px] text-slate-200 font-mono focus:outline-none focus:border-indigo-500 resize-none" spellcheck="false"></textarea>
+        <textarea id="external-sources-json" rows="9"
+          class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-[11px] text-slate-200 font-mono focus:outline-none focus:border-indigo-500 resize-none"
+          spellcheck="false"></textarea>
         <div class="flex items-center justify-between gap-2">
-          <button id="save-external-sources-btn" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition">Save Sources</button>
+          <button id="save-external-sources-btn"
+            class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition">Save
+            Sources</button>
           <p id="external-sources-status" class="text-[10px] text-slate-500 text-right">Belum ada source eksternal.</p>
         </div>
       </div>
@@ -184,10 +274,18 @@
         <div class="p-3 border-b border-slate-800 flex items-center justify-between">
           <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
           <div class="flex items-center space-x-1">
-            <button id="layer-top-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Bring to Top">⏫</button>
-            <button id="layer-up-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Move Up">▲</button>
-            <button id="layer-down-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Move Down">▼</button>
-            <button id="layer-bottom-btn" class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold" title="Send to Bottom">⏬</button>
+            <button id="layer-top-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Bring to Top">⏫</button>
+            <button id="layer-up-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Move Up">▲</button>
+            <button id="layer-down-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Move Down">▼</button>
+            <button id="layer-bottom-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Send to Bottom">⏬</button>
           </div>
         </div>
 
@@ -198,24 +296,25 @@
     </aside>
 
     <!-- CENTER: Canvas Workspace -->
-    <main id="canvas-container" class="flex-1 canvas-workspace overflow-auto relative flex items-center justify-center p-8">
+    <main id="canvas-container"
+      class="flex-1 canvas-workspace overflow-auto relative flex items-center justify-center p-8">
       <div id="artboard-scaler" style="transform-origin: center center; transition: transform 0.1s ease-out;">
-        <div
-          id="artboard"
+        <div id="artboard"
           class="relative bg-transparent border-2 border-dashed border-slate-700/80 shadow-2xl overflow-hidden"
-          style="width: 1920px; height: 1080px;"
-        >
+          style="width: 1920px; height: 1080px;">
           <!-- Elements injected dynamically -->
         </div>
       </div>
     </main>
 
     <!-- RIGHT SIDEBAR: Comprehensive Properties & Animation Panel -->
-    <aside id="properties-panel" class="w-80 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-20">
-      
+    <aside id="properties-panel"
+      class="w-80 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-20">
+
       <!-- Empty Selection State / Canvas Settings -->
       <div id="no-selection" class="flex flex-col p-4 space-y-5">
-        <div class="flex flex-col items-center justify-center p-4 text-center text-slate-500 border-b border-slate-800/80 mb-2">
+        <div
+          class="flex flex-col items-center justify-center p-4 text-center text-slate-500 border-b border-slate-800/80 mb-2">
           <span class="text-3xl mb-2">🎯</span>
           <p class="text-xs font-semibold text-slate-300">No element selected</p>
           <p class="text-[10px] text-slate-500 mt-0.5">Select a layer to configure elements & animations.</p>
@@ -231,25 +330,30 @@
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Scene ID (Slug)</label>
-            <input type="text" id="canvas-scene-id" placeholder="scene-slug" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            <input type="text" id="canvas-scene-id" placeholder="scene-slug"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
-              <input type="number" id="canvas-width" min="100" max="7680" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="canvas-width" min="100" max="7680"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
-              <input type="number" id="canvas-height" min="100" max="7680" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="canvas-height" min="100" max="7680"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
           </div>
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="canvas-bg-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
-              <input type="text" id="canvas-bg-color" placeholder="transparent" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+              <input type="color" id="canvas-bg-color-picker"
+                class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="canvas-bg-color" placeholder="transparent"
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
             </div>
           </div>
         </div>
@@ -257,39 +361,52 @@
 
       <!-- Properties Form -->
       <div id="selection-form" class="hidden p-4 space-y-5">
-        
+
         <!-- Header Info & Quick Element Actions -->
         <div class="pb-3 border-b border-slate-800">
           <div class="flex items-center justify-between mb-2">
-            <span id="prop-type-badge" class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">TEXT</span>
+            <span id="prop-type-badge"
+              class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">TEXT</span>
             <div class="flex items-center space-x-1">
-              <button id="lock-toggle-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-amber-400 transition" title="Toggle Lock">
+              <button id="lock-toggle-btn"
+                class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-amber-400 transition"
+                title="Toggle Lock">
                 <span id="lock-icon">🔓</span>
               </button>
-              <button id="visibility-toggle-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition" title="Toggle Visibility">
+              <button id="visibility-toggle-btn"
+                class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                title="Toggle Visibility">
                 <span id="visibility-icon">👁️</span>
               </button>
-              <button id="duplicate-btn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition" title="Duplicate">
+              <button id="duplicate-btn"
+                class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                title="Duplicate">
                 <span>📋</span>
               </button>
-              <button id="delete-element-btn" class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition" title="Delete">
+              <button id="delete-element-btn"
+                class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition"
+                title="Delete">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
             </div>
           </div>
-          <input type="text" id="prop-name" placeholder="Layer Name" class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none w-full">
+          <input type="text" id="prop-name" placeholder="Layer Name"
+            class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none w-full">
         </div>
 
         <!-- NEW: GSAP ANIMATION CONTROLS (FASE 3) -->
-        <div class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30">
+        <div
+          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-1.5">
               <span class="text-base">✨</span>
               <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300">GSAP Animations</h3>
             </div>
-            <button id="test-element-animation-btn" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
+            <button id="test-element-animation-btn"
+              class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
               <span>▶</span><span>Test</span>
             </button>
           </div>
@@ -297,7 +414,8 @@
           <!-- Entrance Animation -->
           <div class="space-y-2 pt-1 border-t border-indigo-500/20">
             <label class="block text-[11px] font-semibold text-slate-300">Entrance Animation (Masuk)</label>
-            <select id="prop-anim-entrance-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <select id="prop-anim-entrance-type"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
               <option value="none">None (Instant)</option>
               <option value="fadeIn">Fade In (Halus)</option>
               <option value="slideUp">Slide Up (Dari Bawah)</option>
@@ -313,17 +431,20 @@
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
-                <input type="number" id="prop-anim-entrance-duration" step="0.1" min="0.1" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                <input type="number" id="prop-anim-entrance-duration" step="0.1" min="0.1" max="5.0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
               <div>
                 <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
-                <input type="number" id="prop-anim-entrance-delay" step="0.1" min="0.0" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                <input type="number" id="prop-anim-entrance-delay" step="0.1" min="0.0" max="5.0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
             </div>
 
             <div>
               <label class="block text-[10px] text-slate-400 mb-0.5">Easing Curve</label>
-              <select id="prop-anim-entrance-ease" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              <select id="prop-anim-entrance-ease"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
                 <option value="power3.out">Smooth Ease Out (Power3)</option>
                 <option value="back.out(1.7)">Bouncy OverShoot (Back)</option>
                 <option value="elastic.out(1, 0.5)">Elastic Spring</option>
@@ -337,7 +458,8 @@
           <!-- Loop / Idle Animation -->
           <div class="space-y-2 pt-2 border-t border-indigo-500/20">
             <label class="block text-[11px] font-semibold text-slate-300">Loop / Idle Animation (Berulang)</label>
-            <select id="prop-anim-loop-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <select id="prop-anim-loop-type"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
               <option value="none">None (Statis)</option>
               <option value="pulse">Pulse (Nafas Skala)</option>
               <option value="float">Float (Melayang Santai)</option>
@@ -350,14 +472,16 @@
 
             <div>
               <label class="block text-[10px] text-slate-400 mb-0.5">Loop Cycle Speed (s)</label>
-              <input type="number" id="prop-anim-loop-duration" step="0.2" min="0.5" max="10.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              <input type="number" id="prop-anim-loop-duration" step="0.2" min="0.5" max="10.0"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
             </div>
           </div>
 
           <!-- Exit Animation -->
           <div class="space-y-2 pt-2 border-t border-indigo-500/20">
             <label class="block text-[11px] font-semibold text-slate-300">Exit Animation (Keluar)</label>
-            <select id="prop-anim-exit-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <select id="prop-anim-exit-type"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
               <option value="none">None (Instant)</option>
               <option value="fadeOut">Fade Out (Halus)</option>
               <option value="slideUp">Slide Up (Ke Atas)</option>
@@ -371,11 +495,13 @@
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
-                <input type="number" id="prop-anim-exit-duration" step="0.1" min="0.1" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                <input type="number" id="prop-anim-exit-duration" step="0.1" min="0.1" max="5.0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
               <div>
                 <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
-                <input type="number" id="prop-anim-exit-delay" step="0.1" min="0.0" max="5.0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                <input type="number" id="prop-anim-exit-delay" step="0.1" min="0.0" max="5.0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
             </div>
           </div>
@@ -385,35 +511,51 @@
         <div class="space-y-2">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Canvas Alignment</h3>
           <div class="grid grid-cols-6 gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
-            <button id="align-left-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Left">⬅️</button>
-            <button id="align-center-h-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Center Horizontal">↔️</button>
-            <button id="align-right-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Right">➡️</button>
-            <button id="align-top-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Top">⬆️</button>
-            <button id="align-center-v-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Center Vertical">↕️</button>
-            <button id="align-bottom-btn" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center" title="Align Bottom">⬇️</button>
+            <button id="align-left-btn"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
+              title="Align Left">⬅️</button>
+            <button id="align-center-h-btn"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
+              title="Align Center Horizontal">↔️</button>
+            <button id="align-right-btn"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
+              title="Align Right">➡️</button>
+            <button id="align-top-btn"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
+              title="Align Top">⬆️</button>
+            <button id="align-center-v-btn"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
+              title="Align Center Vertical">↕️</button>
+            <button id="align-bottom-btn"
+              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
+              title="Align Bottom">⬇️</button>
           </div>
         </div>
 
         <!-- Transform: Dimensions, Position & Rotation -->
         <div class="space-y-3 pt-2 border-t border-slate-800">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Transform & Position</h3>
-          
+
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">X (px)</label>
-              <input type="number" id="prop-x" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-x"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Y (px)</label>
-              <input type="number" id="prop-y" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-y"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
-              <input type="number" id="prop-width" min="10" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-width" min="10"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
-              <input type="number" id="prop-height" min="10" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-height" min="10"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
           </div>
 
@@ -425,7 +567,8 @@
             </div>
             <div class="flex items-center gap-2">
               <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-rotation-num" min="-180" max="180" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+              <input type="number" id="prop-rotation-num" min="-180" max="180"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
           </div>
 
@@ -436,7 +579,8 @@
             </div>
             <div class="flex items-center gap-2">
               <input type="range" id="prop-opacity" min="0" max="100" value="100" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-opacity-num" min="0" max="100" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+              <input type="number" id="prop-opacity-num" min="0" max="100"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
           </div>
         </div>
@@ -444,10 +588,11 @@
         <!-- Typography Section (Text Elements) -->
         <div id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Typography</h3>
-          
+
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Text Content</label>
-            <textarea id="prop-text-content" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+            <textarea id="prop-text-content" rows="2"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
           </div>
 
           <div class="space-y-2 rounded-xl border border-indigo-500/20 bg-indigo-600/15 p-3">
@@ -463,14 +608,16 @@
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Binding Source</label>
-                <select id="prop-text-binding-source" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <select id="prop-text-binding-source"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                   <option value="platform">Platform Stats</option>
                   <option value="external">External API Cache</option>
                 </select>
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Format</label>
-                <select id="prop-text-binding-format" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <select id="prop-text-binding-format"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                   <option value="raw">Raw</option>
                   <option value="number">Number</option>
                   <option value="uppercase">UPPERCASE</option>
@@ -481,7 +628,8 @@
 
             <div id="platform-binding-group">
               <label class="block text-[11px] text-slate-400 mb-1">Platform Field</label>
-              <select id="prop-text-binding-field" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <select id="prop-text-binding-field"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                 <option value="username">Username</option>
                 <option value="displayName">Display Name</option>
                 <option value="viewerCount">Viewer Count</option>
@@ -497,11 +645,14 @@
             <div id="external-binding-group" class="hidden grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">External Source</label>
-                <select id="prop-text-binding-external-source" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"></select>
+                <select id="prop-text-binding-external-source"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"></select>
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Field Path</label>
-                <input type="text" id="prop-text-binding-field-path" list="external-field-paths" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" placeholder="current.temperature_2m">
+                <input type="text" id="prop-text-binding-field-path" list="external-field-paths"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="current.temperature_2m">
                 <datalist id="external-field-paths"></datalist>
               </div>
             </div>
@@ -509,28 +660,34 @@
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Prefix</label>
-                <input type="text" id="prop-text-binding-prefix" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <input type="text" id="prop-text-binding-prefix"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Suffix</label>
-                <input type="text" id="prop-text-binding-suffix" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <input type="text" id="prop-text-binding-suffix"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
               </div>
             </div>
 
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Fallback</label>
-              <input type="text" id="prop-text-binding-fallback" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="text" id="prop-text-binding-fallback"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
 
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Preview</label>
-              <div id="prop-text-binding-preview" class="rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-2 text-xs text-slate-200 font-mono truncate">-</div>
+              <div id="prop-text-binding-preview"
+                class="rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-2 text-xs text-slate-200 font-mono truncate">
+                -</div>
             </div>
           </div>
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Font Family</label>
-            <select id="prop-font-family" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <select id="prop-font-family"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
               <option value="Inter, sans-serif">Inter (Clean UI)</option>
               <option value="Poppins, sans-serif">Poppins (Modern Rounded)</option>
               <option value="Outfit, sans-serif">Outfit (Geometric Stream)</option>
@@ -544,11 +701,13 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Font Size (px)</label>
-              <input type="number" id="prop-font-size" min="8" max="180" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-font-size" min="8" max="180"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Weight</label>
-              <select id="prop-font-weight" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <select id="prop-font-weight"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                 <option value="300">Light (300)</option>
                 <option value="400">Regular (400)</option>
                 <option value="500">Medium (500)</option>
@@ -565,14 +724,18 @@
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Align</label>
               <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-                <button type="button" id="align-t-left" class="py-1 text-xs rounded text-slate-300 hover:text-white">◀</button>
-                <button type="button" id="align-t-center" class="py-1 text-xs rounded text-slate-300 hover:text-white">■</button>
-                <button type="button" id="align-t-right" class="py-1 text-xs rounded text-slate-300 hover:text-white">▶</button>
+                <button type="button" id="align-t-left"
+                  class="py-1 text-xs rounded text-slate-300 hover:text-white">◀</button>
+                <button type="button" id="align-t-center"
+                  class="py-1 text-xs rounded text-slate-300 hover:text-white">■</button>
+                <button type="button" id="align-t-right"
+                  class="py-1 text-xs rounded text-slate-300 hover:text-white">▶</button>
               </div>
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Transform</label>
-              <select id="prop-text-transform" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <select id="prop-text-transform"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                 <option value="none">Normal</option>
                 <option value="uppercase">UPPERCASE</option>
                 <option value="lowercase">lowercase</option>
@@ -584,13 +747,16 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
-              <input type="number" id="prop-letter-spacing" step="0.5" min="-5" max="30" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-letter-spacing" step="0.5" min="-5" max="30"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
               <div class="flex items-center gap-1.5">
-                <input type="color" id="prop-text-color-picker" class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
-                <input type="text" id="prop-text-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                <input type="color" id="prop-text-color-picker"
+                  class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-text-color"
+                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
               </div>
             </div>
           </div>
@@ -601,11 +767,13 @@
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Image / SVG</h3>
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Asset URL</label>
-            <input type="text" id="prop-image-src" readonly class="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 font-mono truncate">
+            <input type="text" id="prop-image-src" readonly
+              class="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 font-mono truncate">
           </div>
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Fit</label>
-            <select id="prop-image-fit" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <select id="prop-image-fit"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
               <option value="contain">Contain (show whole asset)</option>
               <option value="cover">Cover (crop to fill)</option>
               <option value="fill">Fill (stretch)</option>
@@ -629,26 +797,33 @@
           <div id="solid-fill-section">
             <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="prop-bg-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
-              <input type="text" id="prop-bg-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+              <input type="color" id="prop-bg-color-picker"
+                class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="prop-bg-color"
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
             </div>
           </div>
 
           <!-- Gradient Controls -->
-          <div id="gradient-fill-section" class="hidden space-y-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+          <div id="gradient-fill-section"
+            class="hidden space-y-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[10px] text-slate-400 mb-1">Color From</label>
                 <div class="flex items-center gap-1">
-                  <input type="color" id="prop-grad-from-picker" class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
-                  <input type="text" id="prop-grad-from" class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+                  <input type="color" id="prop-grad-from-picker"
+                    class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+                  <input type="text" id="prop-grad-from"
+                    class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
                 </div>
               </div>
               <div>
                 <label class="block text-[10px] text-slate-400 mb-1">Color To</label>
                 <div class="flex items-center gap-1">
-                  <input type="color" id="prop-grad-to-picker" class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
-                  <input type="text" id="prop-grad-to" class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+                  <input type="color" id="prop-grad-to-picker"
+                    class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+                  <input type="text" id="prop-grad-to"
+                    class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
                 </div>
               </div>
             </div>
@@ -663,29 +838,33 @@
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Internal Padding (px)</label>
-            <input type="number" id="prop-padding" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <input type="number" id="prop-padding" min="0" max="100"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
           </div>
         </div>
 
         <!-- Borders & Corners Section -->
         <div class="space-y-3 pt-2 border-t border-slate-800">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Borders & Corners</h3>
-          
+
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Radius (px)</label>
-              <input type="number" id="prop-border-radius" min="0" max="200" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-border-radius" min="0" max="200"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Width (px)</label>
-              <input type="number" id="prop-border-width" min="0" max="30" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <input type="number" id="prop-border-width" min="0" max="30"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Style</label>
-              <select id="prop-border-style" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <select id="prop-border-style"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                 <option value="solid">Solid</option>
                 <option value="dashed">Dashed</option>
                 <option value="dotted">Dotted</option>
@@ -695,8 +874,10 @@
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Color</label>
               <div class="flex items-center gap-1.5">
-                <input type="color" id="prop-border-color-picker" class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
-                <input type="text" id="prop-border-color" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono">
+                <input type="color" id="prop-border-color-picker"
+                  class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-border-color"
+                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono">
               </div>
             </div>
           </div>
@@ -705,27 +886,32 @@
         <!-- Shadow & Glow Section -->
         <div class="space-y-3 pt-2 border-t border-slate-800">
           <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow & Glow</h3>
-          
+
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="prop-shadow-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
-              <input type="text" id="prop-shadow-color" placeholder="rgba(0,0,0,0.5)" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+              <input type="color" id="prop-shadow-color-picker"
+                class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="prop-shadow-color" placeholder="rgba(0,0,0,0.5)"
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-2">
             <div>
               <label class="block text-[10px] text-slate-400 mb-1">Blur (px)</label>
-              <input type="number" id="prop-shadow-blur" min="0" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              <input type="number" id="prop-shadow-blur" min="0" max="100"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="block text-[10px] text-slate-400 mb-1">Offset X</label>
-              <input type="number" id="prop-shadow-x" min="-100" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              <input type="number" id="prop-shadow-x" min="-100" max="100"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="block text-[10px] text-slate-400 mb-1">Offset Y</label>
-              <input type="number" id="prop-shadow-y" min="-100" max="100" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              <input type="number" id="prop-shadow-y" min="-100" max="100"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
           </div>
         </div>
@@ -923,19 +1109,19 @@
       document.getElementById('platform-binding-group').classList.toggle('hidden', isExternal)
       document.getElementById('external-binding-group').classList.toggle('hidden', !isExternal)
 
-      ;[
-        'prop-text-binding-source',
-        'prop-text-binding-field',
-        'prop-text-binding-format',
-        'prop-text-binding-prefix',
-        'prop-text-binding-suffix',
-        'prop-text-binding-fallback',
-        'prop-text-binding-external-source',
-        'prop-text-binding-field-path'
-      ].forEach(id => {
-        const input = document.getElementById(id)
-        if (input) input.disabled = !isEnabled
-      })
+        ;[
+          'prop-text-binding-source',
+          'prop-text-binding-field',
+          'prop-text-binding-format',
+          'prop-text-binding-prefix',
+          'prop-text-binding-suffix',
+          'prop-text-binding-fallback',
+          'prop-text-binding-external-source',
+          'prop-text-binding-field-path'
+        ].forEach(id => {
+          const input = document.getElementById(id)
+          if (input) input.disabled = !isEnabled
+        })
 
       populateExternalFieldOptions(binding)
     }
@@ -1425,9 +1611,9 @@
         case 'heartbeat':
           const htl = gsap.timeline({ repeat: -1, repeatDelay: dur - 0.6 })
           htl.to(node, { scale: 1.08, duration: 0.15, ease: 'power1.out' })
-             .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
-             .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
-             .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
+            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
+            .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
+            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
           break
         case 'bounce':
           gsap.to(node, { y: '-=14', duration: dur / 2, repeat: -1, yoyo: true, ease: 'power2.out' })
@@ -1435,10 +1621,10 @@
         case 'shake':
           const stl = gsap.timeline({ repeat: -1, repeatDelay: dur })
           stl.to(node, { x: '+=5', duration: 0.08 })
-             .to(node, { x: '-=10', duration: 0.08 })
-             .to(node, { x: '+=8', duration: 0.08 })
-             .to(node, { x: '-=6', duration: 0.08 })
-             .to(node, { x: 0, duration: 0.08 })
+            .to(node, { x: '-=10', duration: 0.08 })
+            .to(node, { x: '+=8', duration: 0.08 })
+            .to(node, { x: '-=6', duration: 0.08 })
+            .to(node, { x: 0, duration: 0.08 })
           break
       }
     }
@@ -1451,7 +1637,7 @@
       const ease = exit.ease || 'power2.in'
       gsap.killTweensOf(node)
 
-      const complete = onComplete || (() => {})
+      const complete = onComplete || (() => { })
       switch (exit.type) {
         case 'fadeOut': return gsap.to(node, { opacity: 0, duration, delay, ease, onComplete: complete })
         case 'slideUp': return gsap.to(node, { y: '-=60', opacity: 0, duration, delay, ease, onComplete: complete })
@@ -1633,11 +1819,10 @@
 
       reversedElements.forEach(el => {
         const item = document.createElement('div')
-        item.className = `px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer border transition ${
-          el.id === selectedElementId 
-            ? 'bg-indigo-600/25 border-indigo-500/70 text-white shadow-md' 
+        item.className = `px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer border transition ${el.id === selectedElementId
+            ? 'bg-indigo-600/25 border-indigo-500/70 text-white shadow-md'
             : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-        }`
+          }`
 
         const hasAnim = el.animation?.entrance?.type !== 'none' || el.animation?.loop?.type !== 'none'
 
@@ -1708,7 +1893,7 @@
       document.getElementById('prop-y').value = el.y
       document.getElementById('prop-width').value = el.width
       document.getElementById('prop-height').value = el.height
-      
+
       const rot = el.rotation || 0
       document.getElementById('prop-rotation').value = rot
       document.getElementById('prop-rotation-num').value = rot
@@ -1784,7 +1969,7 @@
 
       document.getElementById('prop-bg-color').value = el.style?.backgroundColor || 'transparent'
       document.getElementById('prop-bg-color-picker').value = el.style?.backgroundColor?.startsWith('#') ? el.style.backgroundColor : '#090d16'
-      
+
       const grad = el.style?.gradient || { from: '#0f172a', to: '#020617', angle: 90 }
       document.getElementById('prop-grad-from').value = grad.from || '#0f172a'
       document.getElementById('prop-grad-from-picker').value = grad.from?.startsWith('#') ? grad.from : '#0f172a'
@@ -2115,10 +2300,10 @@
         renderCanvas()
         updateSceneInfo()
       })
-      
+
       const canvasBgInput = document.getElementById('canvas-bg-color')
       const canvasBgPicker = document.getElementById('canvas-bg-color-picker')
-      
+
       canvasBgInput.addEventListener('input', (e) => {
         if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
         const val = e.target.value || 'transparent'
@@ -2128,7 +2313,7 @@
         }
         renderCanvas()
       })
-      
+
       canvasBgPicker.addEventListener('input', (e) => {
         if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
         const val = e.target.value
@@ -2408,4 +2593,5 @@
     })
   </script>
 </body>
+
 </html>

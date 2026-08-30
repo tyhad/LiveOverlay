@@ -933,53 +933,53 @@ const app = new Elysia()
         return { success: false, message: 'A multipart file field named "file" is required' }
       }
 
-  .delete(
-        '/api/assets/:id',
-        async ({ params, headers, set }) => {
-          if (SETTINGS_SECRET) {
-            const authHeader = headers['authorization'] || headers['x-secret-token']
-            const token = authHeader?.replace(/^Bearer\s+/i, '')
-            if (token !== SETTINGS_SECRET) {
-              set.status = 401
-              return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-            }
-          }
+      const extension = ASSET_MIME_TYPES.get(uploadedFile.type)
+      if (!extension) {
+        set.status = 415
+        return { success: false, message: 'Only SVG, PNG, JPEG, WEBP, and GIF assets are supported' }
+      }
+      if (uploadedFile.size === 0 || uploadedFile.size > MAX_ASSET_SIZE) {
+        set.status = 413
+        return { success: false, message: 'Asset must be between 1 byte and 10 MB' }
+      }
 
-          const deleted = await deleteAsset(params.id)
-          if (!deleted) {
-            set.status = 404
-            return { success: false, message: 'Asset not found' }
-          }
+      await mkdir(ASSET_DIRECTORY, { recursive: true })
+      const originalName = uploadedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^[-.]+/, '') || `asset.${extension}`
+      const filename = `${crypto.randomUUID()}_${originalName.replace(/\.[^.]+$/, '')}.${extension}`
+      await Bun.write(`${ASSET_DIRECTORY}/${filename}`, uploadedFile)
 
-          return { success: true, message: 'Asset deleted successfully' }
-        }
-      )
-
-const extension = ASSET_MIME_TYPES.get(uploadedFile.type)
-if (!extension) {
-  set.status = 415
-  return { success: false, message: 'Only SVG, PNG, JPEG, WEBP, and GIF assets are supported' }
-}
-if (uploadedFile.size === 0 || uploadedFile.size > MAX_ASSET_SIZE) {
-  set.status = 413
-  return { success: false, message: 'Asset must be between 1 byte and 10 MB' }
-}
-
-await mkdir(ASSET_DIRECTORY, { recursive: true })
-const originalName = uploadedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^[-.]+/, '') || `asset.${extension}`
-const filename = `${crypto.randomUUID()}_${originalName.replace(/\.[^.]+$/, '')}.${extension}`
-await Bun.write(`${ASSET_DIRECTORY}/${filename}`, uploadedFile)
-
-return {
-  success: true,
-  asset: {
-    id: filename,
-    name: originalName,
-    url: `/uploads/${encodeURIComponent(filename)}`,
-  },
-}
+      return {
+        success: true,
+        asset: {
+          id: filename,
+          name: originalName,
+          url: `/uploads/${encodeURIComponent(filename)}`,
+        },
+      }
     }
   )
+  .delete(
+    '/api/assets/:id',
+    async ({ params, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
+      }
+
+      const deleted = await deleteAsset(params.id)
+      if (!deleted) {
+        set.status = 404
+        return { success: false, message: 'Asset not found' }
+      }
+
+      return { success: true, message: 'Asset deleted successfully' }
+    }
+  )
+
   .post(
   '/api/data-sources',
   async ({ body, headers, set }) => {

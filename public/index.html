@@ -213,11 +213,46 @@
     <!-- RIGHT SIDEBAR: Comprehensive Properties & Animation Panel -->
     <aside id="properties-panel" class="w-80 bg-slate-900/95 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-20">
       
-      <!-- Empty Selection State -->
-      <div id="no-selection" class="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500">
-        <span class="text-4xl mb-3">🎯</span>
-        <p class="text-sm font-semibold text-slate-300">No element selected</p>
-        <p class="text-xs text-slate-500 mt-1">Select an element on the canvas to configure detailed properties & GSAP animations.</p>
+      <!-- Empty Selection State / Canvas Settings -->
+      <div id="no-selection" class="flex flex-col p-4 space-y-5">
+        <div class="flex flex-col items-center justify-center p-4 text-center text-slate-500 border-b border-slate-800/80 mb-2">
+          <span class="text-3xl mb-2">🎯</span>
+          <p class="text-xs font-semibold text-slate-300">No element selected</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Select a layer to configure elements & animations.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div class="pb-2 border-b border-slate-800">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span>🎨</span>
+              <span>Canvas Settings</span>
+            </h3>
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Scene ID (Slug)</label>
+            <input type="text" id="canvas-scene-id" placeholder="scene-slug" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
+              <input type="number" id="canvas-width" min="100" max="7680" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
+              <input type="number" id="canvas-height" min="100" max="7680" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="canvas-bg-color-picker" class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+              <input type="text" id="canvas-bg-color" placeholder="transparent" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Properties Form -->
@@ -731,6 +766,7 @@
     const noSelectionEl = document.getElementById('no-selection')
     const selectionFormEl = document.getElementById('selection-form')
     const saveStatusEl = document.getElementById('save-status')
+    const sceneInfoEl = document.getElementById('scene-info')
     const sceneSelectorEl = document.getElementById('scene-selector')
     const sceneNameInputEl = document.getElementById('scene-name-input')
     const overlayPreviewLinkEl = document.getElementById('overlay-preview-link')
@@ -739,6 +775,7 @@
     const deleteSceneBtn = document.getElementById('delete-scene-btn')
     const assetListEl = document.getElementById('asset-list')
     const assetFileInput = document.getElementById('asset-file-input')
+    let persistedSceneId = scene.id
     let assets = []
     let liveStats = {
       platform: 'TikTok Live',
@@ -766,6 +803,30 @@
       const url = new URL(window.location.href)
       url.searchParams.set('scene', sceneId)
       window.history.replaceState({}, '', url.toString())
+    }
+
+    function renderSceneOptions() {
+      sceneSelectorEl.replaceChildren(
+        ...availableScenes.map((item) => {
+          const option = document.createElement('option')
+          option.value = item.id
+          option.textContent = `${item.name} (${item.id})`
+          return option
+        })
+      )
+    }
+
+    function updateSceneInfo() {
+      const width = Number(scene?.canvas?.width) || 1920
+      const height = Number(scene?.canvas?.height) || 1080
+      sceneInfoEl.textContent = `${width} × ${height} • ${scene.id}`
+    }
+
+    function getSceneCanvasSize() {
+      return {
+        width: Number(scene?.canvas?.width) || 1920,
+        height: Number(scene?.canvas?.height) || 1080,
+      }
     }
 
     function ensureTextBinding(el) {
@@ -929,8 +990,9 @@
       if (!canvasContainer) return
       const containerW = canvasContainer.clientWidth - 80
       const containerH = canvasContainer.clientHeight - 80
-      const scaleX = containerW / 1920
-      const scaleY = containerH / 1080
+      const { width, height } = getSceneCanvasSize()
+      const scaleX = containerW / width
+      const scaleY = containerH / height
       setZoom(Math.min(scaleX, scaleY, 0.85))
     }
 
@@ -956,6 +1018,7 @@
     }
 
     function syncSceneControls() {
+      renderSceneOptions()
       sceneSelectorEl.value = currentSceneId
       sceneNameInputEl.value = scene.name || ''
       updateOverlayPreviewLink()
@@ -977,6 +1040,7 @@
       updateBindingPreview()
       updateInspectorValues()
       updateSceneInfo()
+      fitZoom()
     }
 
     async function loadAvailableScenes() {
@@ -991,14 +1055,6 @@
         if (availableScenes.length === 0) {
           availableScenes = [normalizeSceneClient(scene)]
         }
-        sceneSelectorEl.replaceChildren(
-          ...availableScenes.map((item) => {
-            const option = document.createElement('option')
-            option.value = item.id
-            option.textContent = `${item.name} (${item.id})`
-            return option
-          })
-        )
         if (!availableScenes.some((item) => item.id === currentSceneId)) {
           currentSceneId = availableScenes[0].id
         }
@@ -1013,16 +1069,15 @@
         const res = await fetch(`/api/scenes/${encodeURIComponent(sceneId || 'default')}`)
         if (res.ok) {
           const nextScene = normalizeSceneClient(await res.json())
+          persistedSceneId = nextScene.id
           hydrateSceneEditor(nextScene, false)
           updateSceneUrl(nextScene.id)
           return
         }
 
-        const fallbackRes = await fetch('/api/scene')
-        if (fallbackRes.ok) {
-          const nextScene = normalizeSceneClient(await fallbackRes.json())
-          hydrateSceneEditor(nextScene, false)
-          updateSceneUrl(nextScene.id)
+        if (res.status === 404) {
+          console.error(`Scene not found: ${sceneId}`)
+          return
         }
       } catch (err) {
         console.error('Failed to load scene:', err)
@@ -1043,6 +1098,7 @@
         id: nextId,
         name: nextName,
       })
+      persistedSceneId = null
       availableScenes = [...availableScenes.filter((item) => item.id !== nextScene.id), nextScene]
       hydrateSceneEditor(nextScene)
       await saveScene()
@@ -1054,12 +1110,17 @@
       if (!window.confirm(`Delete scene "${nextName}"?`)) return
       try {
         const res = await fetch(`/api/scenes/${encodeURIComponent(currentSceneId)}`, { method: 'DELETE' })
-        if (!res.ok) return
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null)
+          throw new Error(payload?.message || 'Failed to delete scene')
+        }
         await loadAvailableScenes()
         const fallbackScene = availableScenes[0] || normalizeSceneClient(scene)
+        persistedSceneId = fallbackScene.id
         await loadScene(fallbackScene.id)
       } catch (err) {
         console.error('Failed to delete scene:', err)
+        alert(err.message || 'Failed to delete scene')
       }
     }
 
@@ -1067,6 +1128,10 @@
       const nextName = window.prompt('Duplicate scene name', `${scene.name} Copy`)?.trim()
       if (!nextName) return
       const nextId = slugifySceneId(window.prompt('Duplicate scene id', `${currentSceneId}-copy`) || `${currentSceneId}-copy`, `${currentSceneId}-copy`)
+      if (availableScenes.some((item) => item.id === nextId)) {
+        alert(`Scene ID "${nextId}" already exists. Use a different identifier.`)
+        return
+      }
       await createSceneFromTemplate(scene, nextName, nextId)
       updateSceneUrl(nextId)
     }
@@ -1233,20 +1298,25 @@
         const res = await fetch('/api/scenes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scene })
+          body: JSON.stringify({ scene, originalId: persistedSceneId })
         })
-        if (res.ok) {
-          await loadAvailableScenes()
-          updateOverlayPreviewLink()
-          saveStatusEl.classList.remove('opacity-0')
-          saveStatusEl.classList.add('opacity-100')
-          setTimeout(() => {
-            saveStatusEl.classList.remove('opacity-100')
-            saveStatusEl.classList.add('opacity-0')
-          }, 2000)
+        const payload = await res.json().catch(() => null)
+        if (!res.ok) {
+          throw new Error(payload?.message || 'Failed to save scene')
         }
+
+        persistedSceneId = payload?.data?.id || scene.id
+        await loadAvailableScenes()
+        updateOverlayPreviewLink()
+        saveStatusEl.classList.remove('opacity-0')
+        saveStatusEl.classList.add('opacity-100')
+        setTimeout(() => {
+          saveStatusEl.classList.remove('opacity-100')
+          saveStatusEl.classList.add('opacity-0')
+        }, 2000)
       } catch (err) {
         console.error('Failed to save scene:', err)
+        alert(err.message || 'Failed to save scene')
       }
     }
 
@@ -1365,6 +1435,11 @@
 
     // Render Canvas
     function renderCanvas() {
+      const canvasWidth = Number(scene?.canvas?.width) || 1920
+      const canvasHeight = Number(scene?.canvas?.height) || 1080
+      artboard.style.width = `${canvasWidth}px`
+      artboard.style.height = `${canvasHeight}px`
+      artboard.style.backgroundColor = scene?.canvas?.backgroundColor || 'transparent'
       artboard.innerHTML = ''
       const sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
 
@@ -1556,6 +1631,21 @@
       })
     }
 
+    function updateCanvasInspectorValues() {
+      if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
+      const width = Number(scene.canvas.width) || 1920
+      const height = Number(scene.canvas.height) || 1080
+      const bg = scene.canvas.backgroundColor || 'transparent'
+
+      document.getElementById('canvas-scene-id').value = scene.id || ''
+      document.getElementById('canvas-width').value = width
+      document.getElementById('canvas-height').value = height
+      document.getElementById('canvas-bg-color').value = bg
+      if (bg.startsWith('#')) {
+        document.getElementById('canvas-bg-color-picker').value = bg
+      }
+    }
+
     function selectElement(id) {
       selectedElementId = id
       renderCanvas()
@@ -1564,6 +1654,7 @@
       if (!id) {
         noSelectionEl.classList.remove('hidden')
         selectionFormEl.classList.add('hidden')
+        updateCanvasInspectorValues()
         return
       }
 
@@ -1574,7 +1665,10 @@
 
     function updateInspectorValues() {
       const el = scene.elements.find(item => item.id === selectedElementId)
-      if (!el) return
+      if (!el) {
+        updateCanvasInspectorValues()
+        return
+      }
 
       document.getElementById('prop-type-badge').textContent = el.type.toUpperCase()
       document.getElementById('prop-name').value = el.name || el.id
@@ -1783,11 +1877,11 @@
 
       // Alignments
       document.getElementById('align-left-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = 0; renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-center-h-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = Math.round((1920 - el.width) / 2); renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-right-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = 1920 - el.width; renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-center-h-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = Math.round((getSceneCanvasSize().width - el.width) / 2); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-right-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = getSceneCanvasSize().width - el.width; renderCanvas(); updateInspectorValues(); } })
       document.getElementById('align-top-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = 0; renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-center-v-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = Math.round((1080 - el.height) / 2); renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-bottom-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = 1080 - el.height; renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-center-v-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = Math.round((getSceneCanvasSize().height - el.height) / 2); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-bottom-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = getSceneCanvasSize().height - el.height; renderCanvas(); updateInspectorValues(); } })
 
       // Transforms
       document.getElementById('prop-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.x = parseInt(e.target.value) || 0; renderCanvas(); } })
@@ -1964,6 +2058,51 @@
         cloned.zIndex = (el.zIndex || 1) + 1
         scene.elements.push(cloned)
         selectElement(cloned.id)
+      })
+
+      // Canvas properties listeners
+      document.getElementById('canvas-scene-id').addEventListener('input', (e) => {
+        const oldId = currentSceneId
+        const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9_-]+/g, '-')
+        scene.id = sanitized
+        currentSceneId = sanitized
+        availableScenes = availableScenes.map((item) => (item.id === oldId ? { ...item, id: sanitized } : item))
+        syncSceneControls()
+        updateSceneInfo()
+        updateSceneUrl(sanitized)
+      })
+      document.getElementById('canvas-width').addEventListener('input', (e) => {
+        if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
+        scene.canvas.width = parseInt(e.target.value) || 1920
+        renderCanvas()
+        updateSceneInfo()
+      })
+      document.getElementById('canvas-height').addEventListener('input', (e) => {
+        if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
+        scene.canvas.height = parseInt(e.target.value) || 1080
+        renderCanvas()
+        updateSceneInfo()
+      })
+      
+      const canvasBgInput = document.getElementById('canvas-bg-color')
+      const canvasBgPicker = document.getElementById('canvas-bg-color-picker')
+      
+      canvasBgInput.addEventListener('input', (e) => {
+        if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
+        const val = e.target.value || 'transparent'
+        scene.canvas.backgroundColor = val
+        if (val.startsWith('#')) {
+          canvasBgPicker.value = val
+        }
+        renderCanvas()
+      })
+      
+      canvasBgPicker.addEventListener('input', (e) => {
+        if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
+        const val = e.target.value
+        scene.canvas.backgroundColor = val
+        canvasBgInput.value = val
+        renderCanvas()
       })
     }
 
@@ -2191,6 +2330,10 @@
       const nextName = window.prompt('New scene name', 'New Scene')?.trim()
       if (!nextName) return
       const nextId = slugifySceneId(window.prompt('New scene id', nextName) || nextName, slugifySceneId(nextName, 'scene-new'))
+      if (availableScenes.some((item) => item.id === nextId)) {
+        alert(`Scene ID "${nextId}" already exists. Use a different identifier.`)
+        return
+      }
       await createSceneFromTemplate(normalizeSceneClient({
         id: nextId,
         name: nextName,

@@ -68,6 +68,13 @@
     const renderedElements = new Map()
     const loopAnimations = new Map()
 
+    function getSceneCanvasSize(scene) {
+      return {
+        width: Number(scene?.canvas?.width) || 1920,
+        height: Number(scene?.canvas?.height) || 1080,
+      }
+    }
+
     function getPathSegments(path) {
       return String(path || '').match(/[^.[\]]+/g) || []
     }
@@ -87,11 +94,16 @@
     }
 
     function scaleViewport() {
+      const { width, height } = getSceneCanvasSize(currentScene)
+      viewport.style.width = `${width}px`
+      viewport.style.height = `${height}px`
+      viewport.style.backgroundColor = currentScene?.canvas?.backgroundColor || 'transparent'
+
       const windowW = window.innerWidth
       const windowH = window.innerHeight
-      if (windowW !== 1920 || windowH !== 1080) {
-        const scaleX = windowW / 1920
-        const scaleY = windowH / 1080
+      if (windowW !== width || windowH !== height) {
+        const scaleX = windowW / width
+        const scaleY = windowH / height
         const scale = Math.min(scaleX, scaleY)
         viewport.style.transform = `scale(${scale})`
       } else {
@@ -297,6 +309,7 @@
 
     function renderScene(scene) {
       if (!scene || !scene.elements) return
+      scaleViewport()
       const visibleElements = scene.elements.filter(el => !el.hidden)
       const visibleIds = new Set(visibleElements.map(el => el.id))
 

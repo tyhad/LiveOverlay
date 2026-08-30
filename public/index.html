@@ -269,7 +269,76 @@
         </div>
       </div>
 
-      <!-- Section 4: Layers List -->
+      <!-- Section 4: Platform Live Stats Connector -->
+      <div class="p-3 border-b border-slate-800 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Live Stats</h2>
+            <p class="text-[10px] text-slate-500 mt-0.5">Auto-fetch dari TikTok / YouTube Live.</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span id="platform-connector-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+            <span id="platform-connector-state-label" class="text-[10px] text-slate-500">OFF</span>
+          </div>
+        </div>
+
+        <!-- Platform selector -->
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="platform-tiktok-btn"
+            class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
+            data-platform="tiktok">🎵 TikTok</button>
+          <button id="platform-youtube-btn"
+            class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
+            data-platform="youtube">▶️ YouTube</button>
+        </div>
+
+        <!-- TikTok fields -->
+        <div id="connector-tiktok-fields" class="space-y-1.5">
+          <label class="block text-[10px] text-slate-400">TikTok Username</label>
+          <input type="text" id="connector-tiktok-username" placeholder="@username"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- YouTube fields -->
+        <div id="connector-youtube-fields" class="hidden space-y-1.5">
+          <label class="block text-[10px] text-slate-400">YouTube API Key <span class="text-slate-600">(Data API v3)</span></label>
+          <input type="password" id="connector-yt-api-key" placeholder="AIza..."
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+          <label class="block text-[10px] text-slate-400 mt-1">Video ID <span class="text-slate-600">(atau kosongi, pakai Channel ID)</span></label>
+          <input type="text" id="connector-yt-video-id" placeholder="dQw4w9WgXcQ"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+          <label class="block text-[10px] text-slate-400 mt-1">Channel ID <span class="text-slate-600">(fallback jika Video ID kosong)</span></label>
+          <input type="text" id="connector-yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Poll interval -->
+        <div class="flex items-center gap-2">
+          <label class="text-[10px] text-slate-400 shrink-0">Poll tiap</label>
+          <input type="number" id="connector-poll-interval" min="10" max="300" value="30"
+            class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+          <span class="text-[10px] text-slate-500">detik</span>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex gap-1.5">
+          <button id="connector-save-btn"
+            class="flex-1 px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-[11px] font-semibold text-slate-200 transition">Simpan</button>
+          <button id="connector-start-btn"
+            class="flex-1 px-2 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-semibold transition">▶ Start</button>
+          <button id="connector-stop-btn"
+            class="flex-1 px-2 py-1.5 rounded-lg bg-rose-600/60 hover:bg-rose-600/80 text-white text-[11px] font-semibold transition hidden">■ Stop</button>
+        </div>
+
+        <!-- Status display -->
+        <div id="platform-connector-status-box" class="bg-slate-950 border border-slate-800 rounded-lg p-2 space-y-0.5">
+          <p class="text-[10px] text-slate-500">Viewer: <span id="connector-status-viewers" class="text-slate-300">—</span></p>
+          <p class="text-[10px] text-slate-500">Updated: <span id="connector-status-updated" class="text-slate-300">—</span></p>
+          <p id="connector-status-error" class="text-[10px] text-rose-400 hidden"></p>
+        </div>
+      </div>
+
+      <!-- Section 5: Layers List -->
       <div class="flex-1 flex flex-col min-h-0">
         <div class="p-3 border-b border-slate-800 flex items-center justify-between">
           <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
@@ -2587,10 +2656,163 @@
       await loadScene(currentSceneId)
       loadLiveStats()
       loadAssets()
+      initPlatformConnector()
       fitZoom()
       setInterval(loadLiveStats, 2000)
       setInterval(loadExternalData, 5000)
+      setInterval(loadPlatformConnectorStatus, 4000)
     })
+
+    // ── Platform Live Stats Connector UI ──────────────────────────────────────
+
+    let connectorSelectedPlatform = 'tiktok'
+
+    function updatePlatformTabUI(platform) {
+      connectorSelectedPlatform = platform
+      const tikBtn = document.getElementById('platform-tiktok-btn')
+      const ytBtn = document.getElementById('platform-youtube-btn')
+      const tikFields = document.getElementById('connector-tiktok-fields')
+      const ytFields = document.getElementById('connector-youtube-fields')
+
+      const activeClass = ['border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300']
+      const inactiveClass = ['border-slate-700', 'bg-slate-800', 'text-slate-400']
+
+      if (platform === 'tiktok') {
+        tikBtn.classList.remove(...inactiveClass); tikBtn.classList.add(...activeClass)
+        ytBtn.classList.remove(...activeClass); ytBtn.classList.add(...inactiveClass)
+        tikFields.classList.remove('hidden')
+        ytFields.classList.add('hidden')
+      } else {
+        ytBtn.classList.remove(...inactiveClass); ytBtn.classList.add(...activeClass)
+        tikBtn.classList.remove(...activeClass); tikBtn.classList.add(...inactiveClass)
+        ytFields.classList.remove('hidden')
+        tikFields.classList.add('hidden')
+      }
+    }
+
+    function renderConnectorStatus(status, liveStatsSnapshot) {
+      const dot = document.getElementById('platform-connector-dot')
+      const stateLabel = document.getElementById('platform-connector-state-label')
+      const startBtn = document.getElementById('connector-start-btn')
+      const stopBtn = document.getElementById('connector-stop-btn')
+      const errorEl = document.getElementById('connector-status-error')
+      const viewersEl = document.getElementById('connector-status-viewers')
+      const updatedEl = document.getElementById('connector-status-updated')
+
+      const isRunning = status?.running && status?.enabled
+      dot.className = `w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : status?.enabled ? 'bg-amber-500' : 'bg-slate-600'}`
+      stateLabel.textContent = isRunning ? 'LIVE' : status?.enabled ? 'CONNECTING…' : 'OFF'
+      stateLabel.className = `text-[10px] ${isRunning ? 'text-emerald-400 font-semibold' : status?.enabled ? 'text-amber-400' : 'text-slate-500'}`
+
+      startBtn.classList.toggle('hidden', isRunning || !!status?.enabled)
+      stopBtn.classList.toggle('hidden', !isRunning && !status?.enabled)
+
+      if (status?.lastError) {
+        errorEl.textContent = `⚠ ${status.lastError}`
+        errorEl.classList.remove('hidden')
+      } else {
+        errorEl.classList.add('hidden')
+      }
+
+      if (liveStatsSnapshot) {
+        viewersEl.textContent = liveStatsSnapshot.viewerCount !== undefined ? liveStatsSnapshot.viewerCount.toLocaleString() : '—'
+        const ts = status?.lastSuccessAt || liveStatsSnapshot.lastUpdatedAt
+        updatedEl.textContent = ts ? new Date(ts).toLocaleTimeString() : '—'
+      }
+    }
+
+    async function loadPlatformConnectorStatus() {
+      try {
+        const res = await fetch('/api/platform-connector')
+        if (!res.ok) return
+        const data = await res.json()
+        renderConnectorStatus(data.status, liveStats)
+      } catch (err) {
+        console.warn('Failed to load platform connector status:', err)
+      }
+    }
+
+    async function savePlatformConnectorConfig() {
+      const pollIntervalSec = Math.max(10, Math.min(300, parseInt(document.getElementById('connector-poll-interval').value) || 30))
+      const body = {
+        platform: connectorSelectedPlatform,
+        tiktokUsername: document.getElementById('connector-tiktok-username').value.trim(),
+        youtubeApiKey: document.getElementById('connector-yt-api-key').value.trim(),
+        youtubeVideoId: document.getElementById('connector-yt-video-id').value.trim(),
+        youtubeChannelId: document.getElementById('connector-yt-channel-id').value.trim(),
+        pollIntervalMs: pollIntervalSec * 1000,
+      }
+
+      const res = await fetch('/api/platform-connector', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to save config')
+      renderConnectorStatus(data.status, liveStats)
+    }
+
+    async function startPlatformConnector() {
+      try {
+        await savePlatformConnectorConfig()
+        const res = await fetch('/api/platform-connector/start', { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message || 'Failed to start connector')
+        renderConnectorStatus(data.status, liveStats)
+      } catch (err) {
+        console.error('Failed to start platform connector:', err)
+        alert(err.message || 'Failed to start connector')
+      }
+    }
+
+    async function stopPlatformConnector() {
+      try {
+        const res = await fetch('/api/platform-connector/stop', { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message || 'Failed to stop connector')
+        renderConnectorStatus(data.status, liveStats)
+      } catch (err) {
+        console.error('Failed to stop platform connector:', err)
+        alert(err.message || 'Failed to stop connector')
+      }
+    }
+
+    async function initPlatformConnector() {
+      // Platform tab buttons
+      document.querySelectorAll('.platform-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => updatePlatformTabUI(btn.dataset.platform))
+      })
+      document.getElementById('connector-save-btn').addEventListener('click', async () => {
+        try {
+          await savePlatformConnectorConfig()
+        } catch (err) {
+          alert(err.message || 'Failed to save config')
+        }
+      })
+      document.getElementById('connector-start-btn').addEventListener('click', startPlatformConnector)
+      document.getElementById('connector-stop-btn').addEventListener('click', stopPlatformConnector)
+
+      // Load current config and populate fields
+      try {
+        const res = await fetch('/api/platform-connector')
+        if (res.ok) {
+          const data = await res.json()
+          const cfg = data.config || {}
+          updatePlatformTabUI(cfg.platform || 'tiktok')
+          document.getElementById('connector-tiktok-username').value = cfg.tiktokUsername || ''
+          document.getElementById('connector-yt-api-key').value = cfg.youtubeApiKey || ''
+          document.getElementById('connector-yt-video-id').value = cfg.youtubeVideoId || ''
+          document.getElementById('connector-yt-channel-id').value = cfg.youtubeChannelId || ''
+          document.getElementById('connector-poll-interval').value = Math.round((cfg.pollIntervalMs || 30000) / 1000)
+          renderConnectorStatus(data.status, liveStats)
+        }
+      } catch (err) {
+        console.warn('Failed to init platform connector UI:', err)
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
   </script>
 </body>
 

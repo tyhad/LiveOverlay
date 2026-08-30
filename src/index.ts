@@ -12,12 +12,14 @@ const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
 const DATA_SOURCES_FILE = 'data-sources.json'
 const EXAMPLE_DATA_SOURCES_FILE = 'data-sources.example.json'
+const PLATFORM_CONFIG_FILE = 'platform-config.json'
 const ASSET_DIRECTORY = 'public/uploads'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
 const PORT = Number(process.env.PORT || 3000)
 const MAX_ASSET_SIZE = 10 * 1024 * 1024
 const DEFAULT_EXTERNAL_POLL_INTERVAL_MS = 15_000
 const DEFAULT_EXTERNAL_TIMEOUT_MS = 5_000
+const DEFAULT_PLATFORM_POLL_INTERVAL_MS = 30_000
 const ASSET_MIME_TYPES = new Map([
   ['image/svg+xml', 'svg'],
   ['image/png', 'png'],
@@ -29,6 +31,32 @@ const ASSET_MIME_TYPES = new Map([
 interface Settings {
   tiktokUsername: string
   runningText: string
+}
+
+type PlatformType = 'tiktok' | 'youtube'
+
+interface PlatformConnectorConfig {
+  enabled: boolean
+  platform: PlatformType
+  /** TikTok: channel username e.g. "@creator". YouTube: not used for connect (use videoId or channelId). */
+  tiktokUsername?: string
+  /** YouTube: specific live video ID. If empty, the connector will search for the live broadcast of the channel. */
+  youtubeVideoId?: string
+  /** YouTube: channel ID (UCxxxxxx) used to find current live broadcast when youtubeVideoId is empty. */
+  youtubeChannelId?: string
+  /** YouTube Data API v3 key. Required for YouTube connector. */
+  youtubeApiKey?: string
+  /** Poll interval in ms. Min 10s, max 300s. Default 30s. */
+  pollIntervalMs?: number
+}
+
+interface PlatformConnectorStatus {
+  enabled: boolean
+  platform: PlatformType
+  running: boolean
+  lastFetchedAt: string | null
+  lastSuccessAt: string | null
+  lastError: string | null
 }
 
 interface GradientStyle {
@@ -815,6 +843,267 @@ async function deleteAsset(assetId: string): Promise<boolean> {
   return true
 }
 
+// ─── Platform Live Stats Connector ───────────────────────────────────────────
+
+const DEFAULT_PLATFORM_CONFIG: PlatformConnectorConfig = {
+  enabled: false,
+  platform: 'tiktok',
+  tiktokUsername: '',
+  youtubeVideoId: '',
+  youtubeChannelId: '',
+  youtubeApiKey: '',
+  pollIntervalMs: DEFAULT_PLATFORM_POLL_INTERVAL_MS,
+}
+
+let platformConnectorStatus: PlatformConnectorStatus = {
+  enabled: false,
+  platform: 'tiktok',
+  running: false,
+  lastFetchedAt: null,
+  lastSuccessAt: null,
+  lastError: null,
+}
+
+let platformPollTimer: ReturnType<typeof setTimeout> | null = null
+
+async function getPlatformConfig(): Promise<PlatformConnectorConfig> {
+  const file = Bun.file(PLATFORM_CONFIG_FILE)
+  if (await file.exists()) {
+    try {
+      const parsed = JSON.parse(await file.text())
+      return {
+        ...DEFAULT_PLATFORM_CONFIG,
+        ...parsed,
+        pollIntervalMs: Math.max(10_000, Math.min(300_000, Number(parsed.pollIntervalMs) || DEFAULT_PLATFORM_POLL_INTERVAL_MS)),
+      }
+    } catch {
+      // Fallback to default
+    }
+  }
+  return { ...DEFAULT_PLATFORM_CONFIG }
+}
+
+async function savePlatformConfig(data: Partial<PlatformConnectorConfig>): Promise<PlatformConnectorConfig> {
+  const current = await getPlatformConfig()
+  const updated: PlatformConnectorConfig = {
+    ...current,
+    ...data,
+    pollIntervalMs: Math.max(10_000, Math.min(300_000, Number(data.pollIntervalMs ?? current.pollIntervalMs) || DEFAULT_PLATFORM_POLL_INTERVAL_MS)),
+  }
+  await Bun.write(PLATFORM_CONFIG_FILE, JSON.stringify(updated, null, 2))
+  return updated
+}
+
+/** Fetch YouTube live stats via Data API v3 and push to live-stats store. */
+async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void> {
+  const apiKey = config.youtubeApiKey?.trim()
+  if (!apiKey) throw new Error('YouTube API key is required')
+
+  let videoId = config.youtubeVideoId?.trim() || ''
+
+  // If no explicit video ID, find the current live broadcast for the channel
+  if (!videoId) {
+    const channelId = config.youtubeChannelId?.trim()
+    if (!channelId) throw new Error('Either YouTube Video ID or Channel ID is required')
+
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${encodeURIComponent(channelId)}&eventType=live&type=video&key=${encodeURIComponent(apiKey)}`
+    const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(10_000) })
+    if (!searchRes.ok) {
+      const errBody = await searchRes.text()
+      throw new Error(`YouTube search API ${searchRes.status}: ${errBody.slice(0, 200)}`)
+    }
+    const searchData = await searchRes.json() as { items?: { id?: { videoId?: string } }[] }
+    videoId = searchData.items?.[0]?.id?.videoId || ''
+    if (!videoId) throw new Error('No active live broadcast found for this channel')
+  }
+
+  // Fetch video details: liveStreamingDetails + snippet
+  const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${encodeURIComponent(videoId)}&key=${encodeURIComponent(apiKey)}`
+  const videoRes = await fetch(videoUrl, { signal: AbortSignal.timeout(10_000) })
+  if (!videoRes.ok) {
+    const errBody = await videoRes.text()
+    throw new Error(`YouTube videos API ${videoRes.status}: ${errBody.slice(0, 200)}`)
+  }
+
+  const videoData = await videoRes.json() as {
+    items?: {
+      snippet?: { channelTitle?: string; title?: string }
+      liveStreamingDetails?: {
+        concurrentViewers?: string
+        activeLiveChatId?: string
+      }
+    }[]
+  }
+  const item = videoData.items?.[0]
+  if (!item) throw new Error(`Video ${videoId} not found`)
+
+  const snippet = item.snippet || {}
+  const lsd = item.liveStreamingDetails || {}
+  const viewerCount = Number(lsd.concurrentViewers) || 0
+
+  // Fetch latest chat messages if we have a liveChatId
+  let latestChatAuthor = ''
+  let latestChatMessage = ''
+  const chatMessages: { id: string; author: string; message: string; receivedAt: string }[] = []
+
+  const liveChatId = lsd.activeLiveChatId
+  if (liveChatId) {
+    try {
+      const chatUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${encodeURIComponent(liveChatId)}&part=snippet,authorDetails&maxResults=25&key=${encodeURIComponent(apiKey)}`
+      const chatRes = await fetch(chatUrl, { signal: AbortSignal.timeout(10_000) })
+      if (chatRes.ok) {
+        const chatData = await chatRes.json() as {
+          items?: {
+            id?: string
+            snippet?: { displayMessage?: string; publishedAt?: string }
+            authorDetails?: { displayName?: string }
+          }[]
+        }
+        const items = chatData.items || []
+        items.forEach((msg) => {
+          const author = msg.authorDetails?.displayName || 'viewer'
+          const message = msg.snippet?.displayMessage || ''
+          const receivedAt = msg.snippet?.publishedAt || new Date().toISOString()
+          chatMessages.push({ id: msg.id || `chat_${Date.now()}`, author, message, receivedAt })
+        })
+        const last = chatMessages.at(-1)
+        if (last) {
+          latestChatAuthor = last.author
+          latestChatMessage = last.message
+        }
+      }
+    } catch {
+      // Chat fetch is best-effort, don't fail the whole connector
+    }
+  }
+
+  await saveLiveStats({
+    platform: 'YouTube Live',
+    username: snippet.channelTitle || config.youtubeChannelId || videoId,
+    displayName: snippet.channelTitle || snippet.title || videoId,
+    viewerCount,
+    isLive: true,
+    latestChatAuthor,
+    latestChatMessage,
+    chatMessages: chatMessages.length > 0 ? chatMessages : undefined,
+  })
+}
+
+/** Fetch TikTok live stats via a polling approach.
+ *  TikTok doesn't have an official API for live data. This uses the open
+ *  TikTok webcast info endpoint as an unofficial, best-effort approach.
+ *  If it fails (TikTok may block this at any time), the error is surfaced
+ *  in the connector status so the user can fall back to manual push via
+ *  POST /api/live-stats from an external script.
+ */
+async function fetchTikTokStats(config: PlatformConnectorConfig): Promise<void> {
+  const username = (config.tiktokUsername || '').replace(/^@/, '').trim()
+  if (!username) throw new Error('TikTok username is required')
+
+  // TikTok's unofficial webcast info endpoint
+  const url = `https://webcast.tiktok.com/webcast/room/info/?aid=1988&app_name=tiktok_web&unique_id=${encodeURIComponent(username)}`
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    },
+    signal: AbortSignal.timeout(15_000),
+  })
+
+  if (!res.ok) {
+    throw new Error(`TikTok webcast API ${res.status}: ${res.statusText}`)
+  }
+
+  const data = await res.json() as {
+    data?: {
+      room?: {
+        owner?: { display_id?: string; nickname?: string }
+        user_count?: { display_value?: string }
+        like_count?: { display_value?: string }
+        title?: string
+        status?: number
+      }
+    }
+    status_code?: number
+  }
+
+  if (data.status_code !== 0 || !data.data?.room) {
+    throw new Error(`TikTok returned status_code ${data.status_code} — user may not be live`)
+  }
+
+  const room = data.data.room
+  const owner = room.owner || {}
+  const isLive = room.status === 2
+  const viewerCount = Number((room.user_count?.display_value || '').replace(/[^0-9]/g, '')) || 0
+  const likeCount = Number((room.like_count?.display_value || '').replace(/[^0-9]/g, '')) || 0
+
+  await saveLiveStats({
+    platform: 'TikTok Live',
+    username: `@${owner.display_id || username}`,
+    displayName: owner.nickname || owner.display_id || username,
+    viewerCount,
+    likeCount,
+    isLive,
+  })
+}
+
+async function runPlatformConnectorOnce(): Promise<void> {
+  const config = await getPlatformConfig()
+  if (!config.enabled) return
+
+  const now = new Date().toISOString()
+  platformConnectorStatus.lastFetchedAt = now
+
+  try {
+    if (config.platform === 'youtube') {
+      await fetchYouTubeStats(config)
+    } else {
+      await fetchTikTokStats(config)
+    }
+    platformConnectorStatus.lastSuccessAt = now
+    platformConnectorStatus.lastError = null
+  } catch (err) {
+    platformConnectorStatus.lastError = err instanceof Error ? err.message : String(err)
+    console.warn(`[platform-connector] ${config.platform} fetch error:`, platformConnectorStatus.lastError)
+  }
+}
+
+function schedulePlatformPoll(config: PlatformConnectorConfig): void {
+  if (platformPollTimer !== null) {
+    clearTimeout(platformPollTimer)
+    platformPollTimer = null
+  }
+  if (!config.enabled) {
+    platformConnectorStatus.running = false
+    return
+  }
+
+  platformConnectorStatus.running = true
+  const interval = Math.max(10_000, Math.min(300_000, config.pollIntervalMs || DEFAULT_PLATFORM_POLL_INTERVAL_MS))
+
+  const tick = async () => {
+    await runPlatformConnectorOnce()
+    if (platformConnectorStatus.running) {
+      platformPollTimer = setTimeout(tick, interval)
+    }
+  }
+
+  // Run immediately, then schedule
+  tick()
+}
+
+// Initialize platform connector from persisted config on startup
+getPlatformConfig().then((config) => {
+  platformConnectorStatus.platform = config.platform
+  platformConnectorStatus.enabled = config.enabled
+  if (config.enabled) {
+    schedulePlatformPoll(config)
+  }
+}).catch((err) => {
+  console.warn('[platform-connector] Failed to load config on startup:', err)
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const app = new Elysia()
   .get('/', () => Bun.file('public/index.html'))
   .get('/gui.html', ({ set }) => {
@@ -825,11 +1114,21 @@ const app = new Elysia()
     timestamp: new Date().toISOString(),
     message: 'LiveOverlay Studio Backend Ready',
   }))
-  .get('/api/settings', async () => {
-    return await getSettings()
+  // NOTE: /api/settings is intentionally removed — it was dead code from the
+  // pre-scene-system era. Use /api/live-stats and /api/scenes instead.
+  .get('/api/platform-connector', async () => {
+    const config = await getPlatformConfig()
+    return {
+      config,
+      status: {
+        ...platformConnectorStatus,
+        platform: config.platform,
+        enabled: config.enabled,
+      },
+    }
   })
   .post(
-    '/api/settings',
+    '/api/platform-connector',
     async ({ body, headers, set }) => {
       if (SETTINGS_SECRET) {
         const authHeader = headers['authorization'] || headers['x-secret-token']
@@ -840,24 +1139,88 @@ const app = new Elysia()
         }
       }
 
-      const updated = await saveSettings({
-        tiktokUsername: body.tiktokUsername,
-        runningText: body.runningText,
+      const updated = await savePlatformConfig({
+        enabled: body.enabled ?? undefined,
+        platform: (body.platform as PlatformType) ?? undefined,
+        tiktokUsername: body.tiktokUsername ?? undefined,
+        youtubeVideoId: body.youtubeVideoId ?? undefined,
+        youtubeChannelId: body.youtubeChannelId ?? undefined,
+        youtubeApiKey: body.youtubeApiKey ?? undefined,
+        pollIntervalMs: body.pollIntervalMs ?? undefined,
       })
+
+      platformConnectorStatus.platform = updated.platform
+      platformConnectorStatus.enabled = updated.enabled
+
+      // Restart the poll cycle with the new config
+      schedulePlatformPoll(updated)
 
       return {
         success: true,
-        message: 'Settings saved successfully',
-        data: updated,
+        message: 'Platform connector config saved',
+        config: updated,
+        status: {
+          ...platformConnectorStatus,
+          platform: updated.platform,
+          enabled: updated.enabled,
+        },
       }
     },
     {
       body: t.Object({
+        enabled: t.Optional(t.Boolean()),
+        platform: t.Optional(t.String()),
         tiktokUsername: t.Optional(t.String()),
-        runningText: t.Optional(t.String()),
+        youtubeVideoId: t.Optional(t.String()),
+        youtubeChannelId: t.Optional(t.String()),
+        youtubeApiKey: t.Optional(t.String()),
+        pollIntervalMs: t.Optional(t.Numeric()),
       }),
     }
   )
+  .post('/api/platform-connector/start', async ({ headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const authHeader = headers['authorization'] || headers['x-secret-token']
+      const token = authHeader?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) {
+        set.status = 401
+        return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+      }
+    }
+
+    const config = await savePlatformConfig({ enabled: true })
+    platformConnectorStatus.platform = config.platform
+    platformConnectorStatus.enabled = true
+    platformConnectorStatus.lastError = null
+    schedulePlatformPoll(config)
+
+    return {
+      success: true,
+      message: `Platform connector started (${config.platform})`,
+      status: { ...platformConnectorStatus },
+    }
+  })
+  .post('/api/platform-connector/stop', async ({ headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const authHeader = headers['authorization'] || headers['x-secret-token']
+      const token = authHeader?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) {
+        set.status = 401
+        return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+      }
+    }
+
+    await savePlatformConfig({ enabled: false })
+    platformConnectorStatus.enabled = false
+    schedulePlatformPoll({ ...DEFAULT_PLATFORM_CONFIG, enabled: false })
+
+    return {
+      success: true,
+      message: 'Platform connector stopped',
+      status: { ...platformConnectorStatus },
+    }
+  })
+
   .get('/api/scenes', async () => {
     const scenes = await getScenes()
     return {

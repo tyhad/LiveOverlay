@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { staticPlugin } from '@elysiajs/static'
-import { mkdir, readdir } from 'node:fs/promises'
+import { mkdir, readdir, unlink } from 'node:fs/promises'
 
 const SETTINGS_FILE = 'settings.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
@@ -491,14 +491,14 @@ const DEFAULT_LIVE_STATS: LiveStatsData = {
 function normalizeLiveStats(data: LiveStatsUpdate | Partial<LiveStatsData>): LiveStatsData {
   const nextChatMessages = Array.isArray(data.chatMessages)
     ? data.chatMessages
-        .filter((message): message is ChatMessage => !!message && typeof message === 'object')
-        .slice(-25)
-        .map((message, index) => ({
-          id: message.id || `chat_${index + 1}`,
-          author: message.author || 'viewer',
-          message: message.message || '',
-          receivedAt: message.receivedAt || new Date().toISOString(),
-        }))
+      .filter((message): message is ChatMessage => !!message && typeof message === 'object')
+      .slice(-25)
+      .map((message, index) => ({
+        id: message.id || `chat_${index + 1}`,
+        author: message.author || 'viewer',
+        message: message.message || '',
+        receivedAt: message.receivedAt || new Date().toISOString(),
+      }))
     : DEFAULT_LIVE_STATS.chatMessages
 
   return {
@@ -606,10 +606,10 @@ function normalizeExternalDataSourceConfig(source: Partial<ExternalDataSourceCon
     method: 'GET',
     headers: source.headers && typeof source.headers === 'object'
       ? Object.fromEntries(
-          Object.entries(source.headers)
-            .filter(([key, value]) => key && value !== undefined && value !== null)
-            .map(([key, value]) => [String(key).trim(), String(value)])
-        )
+        Object.entries(source.headers)
+          .filter(([key, value]) => key && value !== undefined && value !== null)
+          .map(([key, value]) => [String(key).trim(), String(value)])
+      )
       : {},
     pollIntervalMs: Math.max(5_000, Math.min(300_000, Number(source.pollIntervalMs) || DEFAULT_EXTERNAL_POLL_INTERVAL_MS)),
     timeoutMs: Math.max(1_000, Math.min(30_000, Number(source.timeoutMs) || DEFAULT_EXTERNAL_TIMEOUT_MS)),
@@ -798,6 +798,23 @@ async function listAssets() {
   }
 }
 
+async function deleteAsset(assetId: string): Promise<boolean> {
+  const safeId = String(assetId || '')
+  // Prevent path traversal — only allow the exact filename, no slashes/dots-escaping
+  if (!safeId || safeId.includes('/') || safeId.includes('\\') || safeId.includes('..')) {
+    return false
+  }
+
+  const filePath = `${ASSET_DIRECTORY}/${safeId}`
+  const file = Bun.file(filePath)
+  if (!(await file.exists())) {
+    return false
+  }
+
+  await unlink(filePath)
+  return true
+}
+
 const app = new Elysia()
   .get('/', () => Bun.file('public/index.html'))
   .get('/gui.html', ({ set }) => {
@@ -916,70 +933,92 @@ const app = new Elysia()
         return { success: false, message: 'A multipart file field named "file" is required' }
       }
 
-      const extension = ASSET_MIME_TYPES.get(uploadedFile.type)
-      if (!extension) {
-        set.status = 415
-        return { success: false, message: 'Only SVG, PNG, JPEG, WEBP, and GIF assets are supported' }
-      }
-      if (uploadedFile.size === 0 || uploadedFile.size > MAX_ASSET_SIZE) {
-        set.status = 413
-        return { success: false, message: 'Asset must be between 1 byte and 10 MB' }
-      }
+  .delete(
+        '/api/assets/:id',
+        async ({ params, headers, set }) => {
+          if (SETTINGS_SECRET) {
+            const authHeader = headers['authorization'] || headers['x-secret-token']
+            const token = authHeader?.replace(/^Bearer\s+/i, '')
+            if (token !== SETTINGS_SECRET) {
+              set.status = 401
+              return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+            }
+          }
 
-      await mkdir(ASSET_DIRECTORY, { recursive: true })
-      const originalName = uploadedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^[-.]+/, '') || `asset.${extension}`
-      const filename = `${crypto.randomUUID()}_${originalName.replace(/\.[^.]+$/, '')}.${extension}`
-      await Bun.write(`${ASSET_DIRECTORY}/${filename}`, uploadedFile)
+          const deleted = await deleteAsset(params.id)
+          if (!deleted) {
+            set.status = 404
+            return { success: false, message: 'Asset not found' }
+          }
 
-      return {
-        success: true,
-        asset: {
-          id: filename,
-          name: originalName,
-          url: `/uploads/${encodeURIComponent(filename)}`,
-        },
-      }
+          return { success: true, message: 'Asset deleted successfully' }
+        }
+      )
+
+const extension = ASSET_MIME_TYPES.get(uploadedFile.type)
+if (!extension) {
+  set.status = 415
+  return { success: false, message: 'Only SVG, PNG, JPEG, WEBP, and GIF assets are supported' }
+}
+if (uploadedFile.size === 0 || uploadedFile.size > MAX_ASSET_SIZE) {
+  set.status = 413
+  return { success: false, message: 'Asset must be between 1 byte and 10 MB' }
+}
+
+await mkdir(ASSET_DIRECTORY, { recursive: true })
+const originalName = uploadedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^[-.]+/, '') || `asset.${extension}`
+const filename = `${crypto.randomUUID()}_${originalName.replace(/\.[^.]+$/, '')}.${extension}`
+await Bun.write(`${ASSET_DIRECTORY}/${filename}`, uploadedFile)
+
+return {
+  success: true,
+  asset: {
+    id: filename,
+    name: originalName,
+    url: `/uploads/${encodeURIComponent(filename)}`,
+  },
+}
     }
   )
   .post(
-    '/api/data-sources',
-    async ({ body, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
+  '/api/data-sources',
+  async ({ body, headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const authHeader = headers['authorization'] || headers['x-secret-token']
+      const token = authHeader?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) {
+        set.status = 401
+        return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
       }
-
-      const updated = await saveExternalDataSources(body.sources)
-      await getExternalDataSnapshot(true)
-
-      return {
-        success: true,
-        message: 'External data sources saved successfully',
-        data: updated,
-      }
-    },
-    {
-      body: t.Object({
-        sources: t.Array(
-          t.Object({
-            id: t.Optional(t.String()),
-            name: t.Optional(t.String()),
-            url: t.Optional(t.String()),
-            enabled: t.Optional(t.Boolean()),
-            method: t.Optional(t.Literal('GET')),
-            headers: t.Optional(t.Record(t.String(), t.String())),
-            pollIntervalMs: t.Optional(t.Numeric()),
-            timeoutMs: t.Optional(t.Numeric()),
-            rootPath: t.Optional(t.String()),
-          })
-        ),
-      }),
     }
-  )
+
+    const updated = await saveExternalDataSources(body.sources)
+    await getExternalDataSnapshot(true)
+
+    return {
+      success: true,
+      message: 'External data sources saved successfully',
+      data: updated,
+    }
+  },
+  {
+    body: t.Object({
+      sources: t.Array(
+        t.Object({
+          id: t.Optional(t.String()),
+          name: t.Optional(t.String()),
+          url: t.Optional(t.String()),
+          enabled: t.Optional(t.Boolean()),
+          method: t.Optional(t.Literal('GET')),
+          headers: t.Optional(t.Record(t.String(), t.String())),
+          pollIntervalMs: t.Optional(t.Numeric()),
+          timeoutMs: t.Optional(t.Numeric()),
+          rootPath: t.Optional(t.String()),
+        })
+      ),
+    }),
+  }
+)
   .post(
     '/api/live-stats',
     async ({ body, headers, set }) => {

@@ -1252,9 +1252,12 @@
       }
 
       assets.forEach(asset => {
+        const wrapper = document.createElement('div')
+        wrapper.className = 'group relative aspect-square overflow-hidden rounded-lg border border-slate-700 bg-slate-800 hover:border-indigo-400'
+
         const button = document.createElement('button')
         button.type = 'button'
-        button.className = 'group relative aspect-square overflow-hidden rounded-lg border border-slate-700 bg-slate-800 hover:border-indigo-400 focus:outline-none focus:border-indigo-400'
+        button.className = 'h-full w-full focus:outline-none'
         button.title = `Add ${asset.name}`
         const image = document.createElement('img')
         image.src = asset.url
@@ -1263,7 +1266,20 @@
         image.loading = 'lazy'
         button.appendChild(image)
         button.addEventListener('click', () => createImageElement(asset))
-        assetListEl.appendChild(button)
+
+        const deleteBtn = document.createElement('button')
+        deleteBtn.type = 'button'
+        deleteBtn.title = `Delete ${asset.name}`
+        deleteBtn.className = 'absolute top-0.5 right-0.5 hidden group-hover:flex items-center justify-center w-4 h-4 rounded-full bg-rose-500/90 hover:bg-rose-500 text-white text-[10px] leading-none'
+        deleteBtn.textContent = '×'
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          deleteAsset(asset.id, asset.name)
+        })
+
+        wrapper.appendChild(button)
+        wrapper.appendChild(deleteBtn)
+        assetListEl.appendChild(wrapper)
       })
     }
 
@@ -1289,6 +1305,22 @@
       assets.unshift(data.asset)
       renderAssetList()
       createImageElement(data.asset)
+    }
+
+    async function deleteAsset(assetId, assetName) {
+      if (!window.confirm(`Delete asset "${assetName}"? This cannot be undone.`)) return
+      try {
+        const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, { method: 'DELETE' })
+        const data = await res.json().catch(() => null)
+        if (!res.ok) {
+          throw new Error(data?.message || 'Failed to delete asset')
+        }
+        assets = assets.filter(item => item.id !== assetId)
+        renderAssetList()
+      } catch (err) {
+        console.error('Failed to delete asset:', err)
+        alert(err.message || 'Failed to delete asset')
+      }
     }
 
     async function saveScene() {

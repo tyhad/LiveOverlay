@@ -163,7 +163,7 @@ Untuk detail roadmap dan status implementasi tiap fase, lihat [`issue.md`](./iss
 Proyek ini dikembangkan secara iteratif dengan bantuan AI coding assistant, termasuk:
 
 - **[Claude](https://claude.com)** (Anthropic)
-- **Agy CLI**
+- **Antigravity CLI**
 - **Codex CLI**
 
 ---

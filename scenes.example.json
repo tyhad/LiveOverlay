@@ -1,0 +1,156 @@
+[
+  {
+    "id": "default",
+    "name": "Live Streaming Scene",
+    "canvas": {
+      "width": 1920,
+      "height": 1080,
+      "backgroundColor": "transparent"
+    },
+    "elements": [
+      {
+        "id": "banner-bg",
+        "type": "shape",
+        "name": "Announcement Box",
+        "x": 60,
+        "y": 940,
+        "width": 680,
+        "height": 65,
+        "rotation": 0,
+        "opacity": 0.95,
+        "zIndex": 1,
+        "hidden": false,
+        "locked": false,
+        "style": {
+          "backgroundColor": "#090d16",
+          "borderRadius": 20,
+          "borderWidth": 1.5,
+          "borderColor": "#334155",
+          "borderStyle": "solid",
+          "shadowColor": "rgba(0,0,0,0.6)",
+          "shadowBlur": 24,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 6,
+          "gradient": {
+            "enabled": true,
+            "from": "#0f172a",
+            "to": "#020617",
+            "angle": 135
+          }
+        },
+        "animation": {
+          "entrance": {
+            "type": "slideUp",
+            "duration": 0.8,
+            "delay": 0.3,
+            "ease": "power3.out"
+          },
+          "loop": {
+            "type": "pulse",
+            "duration": 3.2
+          }
+        }
+      },
+      {
+        "id": "banner-text",
+        "type": "text",
+        "name": "Running Stream Text",
+        "x": 84,
+        "y": 958,
+        "width": 630,
+        "height": 30,
+        "rotation": 0,
+        "opacity": 1,
+        "zIndex": 2,
+        "hidden": false,
+        "locked": false,
+        "style": {
+          "text": "✨ Welcome to the stream! Jangan lupa Tap-tap layar & Follow!",
+          "fontFamily": "Poppins",
+          "fontSize": 17,
+          "fontWeight": "600",
+          "color": "#f8fafc",
+          "backgroundColor": "transparent",
+          "textAlign": "left",
+          "textTransform": "none",
+          "letterSpacing": 0.5,
+          "padding": 0,
+          "borderRadius": 0,
+          "borderWidth": 0,
+          "borderColor": "transparent"
+        }
+      }
+    ]
+  },
+  {
+    "id": "portrait-chat",
+    "name": "Portrait Just Chatting",
+    "canvas": {
+      "width": 1080,
+      "height": 1920,
+      "backgroundColor": "transparent"
+    },
+    "elements": [
+      {
+        "id": "portrait-card",
+        "type": "shape",
+        "name": "Chat Card",
+        "x": 80,
+        "y": 1440,
+        "width": 920,
+        "height": 280,
+        "rotation": 0,
+        "opacity": 0.96,
+        "zIndex": 1,
+        "hidden": false,
+        "locked": false,
+        "style": {
+          "backgroundColor": "#020617",
+          "borderRadius": 36,
+          "borderWidth": 2,
+          "borderColor": "#38bdf8",
+          "borderStyle": "solid",
+          "shadowColor": "rgba(2, 132, 199, 0.35)",
+          "shadowBlur": 32,
+          "shadowOffsetX": 0,
+          "shadowOffsetY": 10,
+          "gradient": {
+            "enabled": true,
+            "from": "#0f172a",
+            "to": "#020617",
+            "angle": 90
+          }
+        }
+      },
+      {
+        "id": "portrait-title",
+        "type": "text",
+        "name": "Portrait Title",
+        "x": 120,
+        "y": 1488,
+        "width": 840,
+        "height": 60,
+        "rotation": 0,
+        "opacity": 1,
+        "zIndex": 2,
+        "hidden": false,
+        "locked": false,
+        "style": {
+          "text": "JUST CHATTING",
+          "fontFamily": "Outfit",
+          "fontSize": 42,
+          "fontWeight": "800",
+          "color": "#e2e8f0",
+          "backgroundColor": "transparent",
+          "textAlign": "left",
+          "textTransform": "uppercase",
+          "letterSpacing": 3,
+          "padding": 0,
+          "borderRadius": 0,
+          "borderWidth": 0,
+          "borderColor": "transparent"
+        }
+      }
+    ]
+  }
+]

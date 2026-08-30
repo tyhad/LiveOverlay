@@ -69,31 +69,47 @@ Ini bukan lagi "form + settings.json", tapi:
 
 Jangan coba build semuanya sekaligus. Urutan disarankan:
 
-### Fase 1 — Fondasi Kanvas & CRUD Elemen Dasar
+### Fase 1 — Fondasi Kanvas & CRUD Elemen Dasar — ✅ SELESAI
 Bangun editor kanvas minimal: bisa nambah elemen Text & Shape, drag untuk posisi, resize, dan simpan/load Scene sederhana ke backend. Overlay renderer bisa menampilkan hasil Scene itu (statis dulu, tanpa animasi).
 
-### Fase 2 — Panel Properti Lengkap
+### Fase 2 — Panel Properti Lengkap — ✅ SELESAI
 Tambahkan panel edit properti detail (warna, font, ukuran presisi via input angka, opacity, rotasi, z-index/reorder layer).
 
-### Fase 3 — Sistem Animasi
+### Fase 3 — Sistem Animasi — ✅ SELESAI
 Tambahkan pilihan animasi (preset GSAP) per elemen — animasi masuk, animasi idle/loop, animasi keluar. Overlay renderer menjalankan animasi ini saat scene di-load / elemen muncul.
 
-### Fase 4 — Asset & SVG Import
-Fitur upload SVG/gambar dari user, elemen tipe "Image/SVG" bisa dipakai di kanvas seperti elemen lain (posisi, ukuran, animasi tetap berlaku).
+### Fase 4 — Asset & SVG Import — ✅ SELESAI
+Fitur upload SVG/gambar dari user, elemen tipe "Image/SVG" bisa dipakai di kanvas seperti elemen lain (posisi, ukuran, animasi tetap berlaku). Verified end-to-end: backend upload (`POST /api/assets`, whitelist MIME, 10MB limit, sanitized filename) → editor (grid thumbnail, klik jadi elemen) → overlay (render `src` + `objectFit` sama persis).
 
-### Fase 5a — Platform Live Stats
+### Fase 5a — Platform Live Stats — ⚠️ BELUM CLEAR (infrastruktur selesai, konektor belum ada)
 Hubungkan elemen Text tertentu ke data yang berasal dari platform streaming itu sendiri, seperti username, viewer count, follower count, live chat, dan data platform relevan lainnya. Tujuannya agar kombinasi "desain visual bebas" + "data yang update real-time" tetap jalan bareng.
 
-### Fase 5b — External Data Source (Generic API Binding)
+Sudah ada: model data, `POST/GET /api/live-stats`, binding UI di editor, overlay poll tiap 2 detik. **Belum ada**: kode yang benar-benar narik data dari TikTok/YouTube Live — endpoint saat ini cuma "penerima" pasif, nunggu didorong data dari luar. Riset teknis pendekatan sudah dilakukan (YouTube: API resmi Google; TikTok: gak ada API resmi, harus pakai pendekatan unofficial semacam `TikTok-Live-Connector`). Brief eksekusi tersedia di `fase-5a-finishing-brief.md`. Juga perlu bereskan dead code `/api/settings` (sistem lama, sudah gak dipakai) saat masuk fase ini.
+
+### Fase 5b — External Data Source (Generic API Binding) — ✅ SELESAI
 Tambahkan sistem data source yang fleksibel agar user dapat mengonfigurasi API eksternal apa pun dan memilih field dari response API tersebut untuk ditampilkan pada elemen overlay. Contoh use case-nya adalah data F1, seperti track condition dari API publik semacam FastF1, maupun API free-to-use lainnya.
 
-Polling API eksternal sebaiknya dilakukan di sisi backend dengan caching, bukan langsung dari overlay browser source, supaya latency atau rate-limit API luar tidak mengganggu kecepatan render overlay.
+Polling API eksternal sebaiknya dilakukan di sisi backend dengan caching, bukan langsung dari overlay browser source, supaya latency atau rate-limit API luar tidak mengganggu kecepatan render overlay. Sudah diimplementasi sesuai prinsip ini: config CRUD, caching + in-flight dedupe, per-source poll interval/timeout dengan clamp, auto-discover field dari response. Minor gap: config source masih via raw JSON textarea di editor, belum form UI per-field (kandidat Fase 7).
 
-### Fase 6 — Multi-Scene & Multi-Output
+### Fase 6 — Multi-Scene & Multi-Output — ✅ SELESAI
 Kemampuan menyimpan banyak Scene, memberi nama dan identifier pada tiap scene, serta menjalankan beberapa scene secara concurrent pada output atau URL overlay yang berbeda. Setiap OBS Browser Source atau instance overlay dapat memilih scene spesifik secara independen, sehingga beberapa layout untuk stance, orientasi, atau platform live yang berbeda dapat tampil dan tersinkron pada waktu yang sama tanpa reset atau saling mengganggu.
 
-### Fase 7 — Polish UX Editor
+Diselesaikan lewat PR #18 (merged), commit final `e0bd7e9`. Termasuk: CRUD scene berbasis array (`GET/POST/DELETE /api/scenes`), scene selector + rename/duplicate/delete di editor, `?scene=`/`?id=` query param di overlay, dan **Canvas Settings per-scene** (width/height/background color kustom per scene — sebelumnya hardcode 1920×1080), yang jadi prasyarat teknis untuk use case portrait+landscape TikTok sekaligus.
+
+**Technical debt tersisa dari Fase 6 (belum blocking, tapi belum diverifikasi — kandidat Fase 7):**
+- Concurrent rendering multi-scene (2+ browser source beda `?scene=` render bersamaan) belum di-test langsung secara manual/otomatis. Secara desain kode kemungkinan besar aman (`getScenes()`/`getSceneById()` pure file-read, tanpa shared mutable state saat render), tapi belum ada verifikasi eksplisit.
+- Race condition di `persistSceneStore()`: dua `Bun.write()` (`scenes.json` dan `scene.json`) berurutan tanpa lock. Kalau dua save scene terjadi nyaris bersamaan, berpotensi `scenes.json` sempat inkonsisten. Risiko kejadian rendah, tapi belum dibenahi.
+
+### Fase 7 — Polish UX Editor — BELUM DIMULAI
 Snap-to-grid, alignment guide, keyboard shortcut, undo/redo, dsb — hal-hal yang bikin proses desain di dalam tool ini terasa senyaman software desain sungguhan.
+
+Kandidat item tambahan (technical debt yang sudah terkumpul, belum urgent):
+- Verifikasi & fix concurrent rendering multi-scene + race condition `persistSceneStore` (lihat catatan di Fase 6 di atas).
+- Config source Fase 5b masih via raw JSON textarea di editor, belum form UI per-field.
+- Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`.
+- Google Fonts di-load all-upfront (7 keluarga font) padahal biasanya cuma 1-2 dipakai per scene.
+- `gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).
+- `/api/settings` (sistem lama, `settings.json`) sudah dead code sejak scene system jalan — perlu di-consolidate/dihapus (juga disebutkan sebagai to-do di Fase 5a).
 
 ## 6. Yang SENGAJA Di-luar Scope (untuk sekarang)
 

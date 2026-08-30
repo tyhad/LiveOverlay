@@ -124,6 +124,16 @@ Supaya model implementasi gak melebar:
 - **Extensible element model**: nambah tipe elemen baru di masa depan (misal nanti mau ada elemen "gauge", "chat box", dll) gak boleh butuh rombak ulang arsitektur data.
 - **Tetap ringan & personal-use**: gak perlu over-engineer ke arah SaaS, tapi kode tetap terstruktur rapi supaya gampang dikembangkan bertahap sesuai fase di atas.
 
+## Ide & Todo Berikutnya (belum masuk fase manapun)
+
+Catatan ide/temuan dari sesi kerja, belum diprioritaskan ke fase spesifik — perlu didiskusikan & ditentukan skopnya di sesi mendatang sebelum dieksekusi.
+
+### Element Binding/Grouping untuk Animasi
+Kemampuan bind text/shape/element lain ke satu object "master" sehingga saat object master dianimasikan, element yang di-bind ikut bergerak/ter-animasi bersamaan (semacam grouping animasi, bukan cuma grouping visual statis). Perlu dipikirkan matang: model data-nya (parent-child transform vs shared animation trigger vs GSAP timeline linked), dan gimana ini berinteraksi dengan sistem `SceneElement` yang sudah ada sekarang (khususnya `animation` config per elemen). Kandidat masuk Fase 7 atau fase tambahan tersendiri.
+
+### Browser Source dimension tidak auto-sync ke Canvas Settings scene
+Saat ini `scene.canvas.width/height` cuma ngatur ukuran artboard di dalam overlay — tidak otomatis mengubah ukuran window Browser Source di OBS/TikTok Studio. User harus set manual dimensi Browser Source (Properties) supaya sesuai scene (misal 1080×1920 untuk portrait), termasuk pastikan `?scene=` yang dipakai sudah benar. Untuk sekarang diakali manual (desain disesuaikan ke browser source), belum dibenerin di level kode. Kemungkinan penyebab teknis kalau mau digali: `scaleViewport()`/CSS transform overlay belum proper handle aspect ratio non-landscape — belum diverifikasi.
+
 ## 8. Execution Notes for AI
 
 - Implementasikan per-fase, jangan sekaligus. Setiap fase harus menghasilkan output yang bisa dijalankan dan diverifikasi sebelum lanjut ke fase berikutnya.

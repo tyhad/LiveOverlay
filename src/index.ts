@@ -766,6 +766,7 @@ let tiktokConn: TikTokLiveConnection | null = null
 let tiktokConnUsername: string = ''
 let tiktokBackoffAttempt = 0
 let tiktokReconnectTimer: ReturnType<typeof setTimeout> | null = null
+let intentionalDisconnect = false
 
 let cachedYouTubeVideoId: string | null = null
 let cachedYouTubeChannelId: string | null = null
@@ -943,6 +944,16 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
   })
 }
 
+function parseCompactNumber(value: unknown): number | undefined {
+  const match = String(value ?? '').trim().match(/^([\d.]+)\s*([KkMmBb]?)$/)
+  if (!match) return undefined
+  const num = parseFloat(match[1] || '0')
+  if (!Number.isFinite(num)) return undefined
+  const suffix = (match[2] || '').toUpperCase()
+  const mult = suffix === 'K' ? 1_000 : suffix === 'M' ? 1_000_000 : suffix === 'B' ? 1_000_000_000 : 1
+  return Math.round(num * mult)
+}
+
 /** Manage persistent WebSocket connection for TikTok Live using tiktok-live-connector. */
 function stopTikTokConnector(): void {
   if (tiktokReconnectTimer) {
@@ -950,6 +961,7 @@ function stopTikTokConnector(): void {
     tiktokReconnectTimer = null
   }
   if (tiktokConn) {
+    intentionalDisconnect = true
     try { tiktokConn.disconnect() } catch {}
     tiktokConn = null
   }
@@ -1002,12 +1014,23 @@ function startTikTokConnector(rawUsername: string): void {
   })
 
   conn.on(WebcastEvent.STREAM_END, async () => {
+    intentionalDisconnect = true
     await saveLiveStats({ isLive: false })
     platformConnectorStatus.running = false
   })
 
   conn.on(ControlEvent.DISCONNECTED, () => {
     platformConnectorStatus.running = false
+    if (!intentionalDisconnect) {
+      tiktokBackoffAttempt++
+      const delayMs = Math.min(300_000, 5_000 * Math.pow(2, tiktokBackoffAttempt - 1))
+      console.warn(`[tiktok-connector] Unexpected disconnect. Retrying in ${delayMs / 1000}s (attempt ${tiktokBackoffAttempt})...`)
+      if (tiktokReconnectTimer) clearTimeout(tiktokReconnectTimer)
+      tiktokReconnectTimer = setTimeout(() => {
+        intentionalDisconnect = false
+        startTikTokConnector(tiktokConnUsername)
+      }, delayMs)
+    }
   })
 
   conn.on(ControlEvent.ERROR, (err: any) => {
@@ -1015,6 +1038,7 @@ function startTikTokConnector(rawUsername: string): void {
     platformConnectorStatus.lastError = msg
   })
 
+  intentionalDisconnect = false
   conn.connect().then(async (state: any) => {
     platformConnectorStatus.running = true
     platformConnectorStatus.lastSuccessAt = new Date().toISOString()
@@ -1024,9 +1048,9 @@ function startTikTokConnector(rawUsername: string): void {
     const roomInfo = state?.roomInfo || (conn as any).roomInfo || {}
     const owner = roomInfo?.owner || {}
     const followerCount = owner.follow_info?.follower_count ?? owner.follower_count ?? undefined
-    const viewerCount = roomInfo?.user_count?.display_value
-      ? Number(String(roomInfo.user_count.display_value).replace(/[^0-9]/g, ''))
-      : undefined
+    const viewerCount = typeof roomInfo?.user_count === 'number'
+      ? roomInfo.user_count
+      : parseCompactNumber(roomInfo?.user_count?.display_value)
 
     await saveLiveStats({
       platform: 'TikTok Live',

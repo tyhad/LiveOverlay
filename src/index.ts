@@ -962,7 +962,7 @@ function stopTikTokConnector(): void {
   }
   if (tiktokConn) {
     intentionalDisconnect = true
-    try { tiktokConn.disconnect() } catch {}
+    try { tiktokConn.disconnect() } catch { }
     tiktokConn = null
   }
   tiktokConnUsername = ''
@@ -984,7 +984,7 @@ function startTikTokConnector(rawUsername: string): void {
 
   // Disconnect existing if changing username or reconnecting
   if (tiktokConn) {
-    try { tiktokConn.disconnect() } catch {}
+    try { tiktokConn.disconnect() } catch { }
     tiktokConn = null
   }
 
@@ -998,7 +998,7 @@ function startTikTokConnector(rawUsername: string): void {
 
   conn.on(WebcastEvent.CHAT, async (data: any) => {
     const author = data.user?.nickname || data.user?.uniqueId || 'viewer'
-    const message = data.comment || ''
+    const message = data.content || ''
     await saveLiveStats({
       latestChatAuthor: author,
       latestChatMessage: message,
@@ -1045,12 +1045,12 @@ function startTikTokConnector(rawUsername: string): void {
     platformConnectorStatus.lastError = null
     tiktokBackoffAttempt = 0
 
-    const roomInfo = state?.roomInfo || (conn as any).roomInfo || {}
+    const roomInfoRaw = state?.roomInfo || (conn as any).roomInfo || {}
+    const roomInfo = roomInfoRaw?.data || roomInfoRaw
     const owner = roomInfo?.owner || {}
-    const followerCount = owner.follow_info?.follower_count ?? owner.follower_count ?? undefined
-    const viewerCount = typeof roomInfo?.user_count === 'number'
-      ? roomInfo.user_count
-      : parseCompactNumber(roomInfo?.user_count?.display_value)
+    const followerCount = owner.follow_info?.follower_count ?? undefined
+    const viewerCount = Number.isFinite(roomInfo?.user_count) ? roomInfo.user_count : undefined
+    const likeCount = Number.isFinite(roomInfo?.like_count) ? roomInfo.like_count : undefined
 
     await saveLiveStats({
       platform: 'TikTok Live',
@@ -1059,6 +1059,7 @@ function startTikTokConnector(rawUsername: string): void {
       isLive: true,
       ...(followerCount !== undefined && Number.isFinite(Number(followerCount)) ? { followerCount: Number(followerCount) } : {}),
       ...(viewerCount !== undefined && Number.isFinite(viewerCount) ? { viewerCount } : {}),
+      ...(likeCount !== undefined ? { likeCount } : {}),
     })
   }).catch((err: any) => {
     platformConnectorStatus.running = false
@@ -1380,44 +1381,44 @@ const app = new Elysia()
   )
 
   .post(
-  '/api/data-sources',
-  async ({ body, headers, set }) => {
-    if (SETTINGS_SECRET) {
-      const authHeader = headers['authorization'] || headers['x-secret-token']
-      const token = authHeader?.replace(/^Bearer\s+/i, '')
-      if (token !== SETTINGS_SECRET) {
-        set.status = 401
-        return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+    '/api/data-sources',
+    async ({ body, headers, set }) => {
+      if (SETTINGS_SECRET) {
+        const authHeader = headers['authorization'] || headers['x-secret-token']
+        const token = authHeader?.replace(/^Bearer\s+/i, '')
+        if (token !== SETTINGS_SECRET) {
+          set.status = 401
+          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+        }
       }
-    }
 
-    const updated = await saveExternalDataSources(body.sources)
-    await getExternalDataSnapshot(true)
+      const updated = await saveExternalDataSources(body.sources)
+      await getExternalDataSnapshot(true)
 
-    return {
-      success: true,
-      message: 'External data sources saved successfully',
-      data: updated,
+      return {
+        success: true,
+        message: 'External data sources saved successfully',
+        data: updated,
+      }
+    },
+    {
+      body: t.Object({
+        sources: t.Array(
+          t.Object({
+            id: t.Optional(t.String()),
+            name: t.Optional(t.String()),
+            url: t.Optional(t.String()),
+            enabled: t.Optional(t.Boolean()),
+            method: t.Optional(t.Literal('GET')),
+            headers: t.Optional(t.Record(t.String(), t.String())),
+            pollIntervalMs: t.Optional(t.Numeric()),
+            timeoutMs: t.Optional(t.Numeric()),
+            rootPath: t.Optional(t.String()),
+          })
+        ),
+      }),
     }
-  },
-  {
-    body: t.Object({
-      sources: t.Array(
-        t.Object({
-          id: t.Optional(t.String()),
-          name: t.Optional(t.String()),
-          url: t.Optional(t.String()),
-          enabled: t.Optional(t.Boolean()),
-          method: t.Optional(t.Literal('GET')),
-          headers: t.Optional(t.Record(t.String(), t.String())),
-          pollIntervalMs: t.Optional(t.Numeric()),
-          timeoutMs: t.Optional(t.Numeric()),
-          rootPath: t.Optional(t.String()),
-        })
-      ),
-    }),
-  }
-)
+  )
   .post(
     '/api/live-stats',
     async ({ body, headers, set }) => {

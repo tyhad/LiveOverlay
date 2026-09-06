@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { staticPlugin } from '@elysiajs/static'
 import { mkdir, readdir, unlink } from 'node:fs/promises'
 import { basename } from 'node:path'
+import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector'
 
 const SETTINGS_FILE = 'settings.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
@@ -761,6 +762,16 @@ let platformConnectorStatus: PlatformConnectorStatus = {
 }
 
 let platformPollTimer: ReturnType<typeof setTimeout> | null = null
+let tiktokConn: TikTokLiveConnection | null = null
+let tiktokConnUsername: string = ''
+let tiktokBackoffAttempt = 0
+let tiktokReconnectTimer: ReturnType<typeof setTimeout> | null = null
+
+let cachedYouTubeVideoId: string | null = null
+let cachedYouTubeChannelId: string | null = null
+let cachedYouTubeSubCount: number | null = null
+let cachedYouTubeSubLastFetched: number = 0
+let youtubeBackoffAttempt = 0
 
 async function getPlatformConfig(): Promise<PlatformConnectorConfig> {
   const file = Bun.file(PLATFORM_CONFIG_FILE)
@@ -790,54 +801,100 @@ async function savePlatformConfig(data: Partial<PlatformConnectorConfig>): Promi
   return updated
 }
 
+/** Fetch YouTube channel subscriber count (cached for 5 minutes). */
+async function fetchYouTubeSubscriberCount(channelId: string, apiKey: string): Promise<number | undefined> {
+  const now = Date.now()
+  if (cachedYouTubeSubCount !== null && now - cachedYouTubeSubLastFetched < 300_000) {
+    return cachedYouTubeSubCount
+  }
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${encodeURIComponent(channelId)}&key=${encodeURIComponent(apiKey)}`
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    if (res.ok) {
+      const data = await res.json() as { items?: { statistics?: { subscriberCount?: string } }[] }
+      const subCount = Number(data.items?.[0]?.statistics?.subscriberCount)
+      if (Number.isFinite(subCount)) {
+        cachedYouTubeSubCount = subCount
+        cachedYouTubeSubLastFetched = now
+        return subCount
+      }
+    }
+  } catch {
+    // Best-effort
+  }
+  return cachedYouTubeSubCount ?? undefined
+}
+
 /** Fetch YouTube live stats via Data API v3 and push to live-stats store. */
 async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void> {
   const apiKey = config.youtubeApiKey?.trim()
   if (!apiKey) throw new Error('YouTube API key is required')
 
   let videoId = config.youtubeVideoId?.trim() || ''
+  const channelId = config.youtubeChannelId?.trim() || ''
 
-  // If no explicit video ID, find the current live broadcast for the channel
+  // If no explicit video ID, resolve & cache video ID for channel to save quota
   if (!videoId) {
-    const channelId = config.youtubeChannelId?.trim()
     if (!channelId) throw new Error('Either YouTube Video ID or Channel ID is required')
 
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${encodeURIComponent(channelId)}&eventType=live&type=video&key=${encodeURIComponent(apiKey)}`
-    const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(10_000) })
-    if (!searchRes.ok) {
-      const errBody = await searchRes.text()
-      throw new Error(`YouTube search API ${searchRes.status}: ${errBody.slice(0, 200)}`)
+    if (cachedYouTubeChannelId === channelId && cachedYouTubeVideoId) {
+      videoId = cachedYouTubeVideoId
+    } else {
+      // 100 quota units call
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${encodeURIComponent(channelId)}&eventType=live&type=video&key=${encodeURIComponent(apiKey)}`
+      const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(10_000) })
+      if (!searchRes.ok) {
+        const errBody = await searchRes.text()
+        throw new Error(`YouTube search API ${searchRes.status}: ${errBody.slice(0, 200)}`)
+      }
+      const searchData = await searchRes.json() as { items?: { id?: { videoId?: string } }[] }
+      videoId = searchData.items?.[0]?.id?.videoId || ''
+      if (!videoId) {
+        cachedYouTubeVideoId = null
+        throw new Error('No active live broadcast found for this channel')
+      }
+      cachedYouTubeVideoId = videoId
+      cachedYouTubeChannelId = channelId
     }
-    const searchData = await searchRes.json() as { items?: { id?: { videoId?: string } }[] }
-    videoId = searchData.items?.[0]?.id?.videoId || ''
-    if (!videoId) throw new Error('No active live broadcast found for this channel')
   }
 
-  // Fetch video details: liveStreamingDetails + snippet
+  // Fetch video details (1 quota unit)
   const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${encodeURIComponent(videoId)}&key=${encodeURIComponent(apiKey)}`
   const videoRes = await fetch(videoUrl, { signal: AbortSignal.timeout(10_000) })
   if (!videoRes.ok) {
+    cachedYouTubeVideoId = null
     const errBody = await videoRes.text()
     throw new Error(`YouTube videos API ${videoRes.status}: ${errBody.slice(0, 200)}`)
   }
 
   const videoData = await videoRes.json() as {
     items?: {
-      snippet?: { channelTitle?: string; title?: string }
+      snippet?: { channelTitle?: string; title?: string; channelId?: string }
       liveStreamingDetails?: {
         concurrentViewers?: string
         activeLiveChatId?: string
+        actualEndTime?: string
       }
     }[]
   }
   const item = videoData.items?.[0]
-  if (!item) throw new Error(`Video ${videoId} not found`)
+  if (!item || item.liveStreamingDetails?.actualEndTime) {
+    cachedYouTubeVideoId = null
+    throw new Error(`Video ${videoId} is no longer live`)
+  }
 
   const snippet = item.snippet || {}
   const lsd = item.liveStreamingDetails || {}
   const viewerCount = Number(lsd.concurrentViewers) || 0
+  const activeChannelId = snippet.channelId || channelId
 
-  // Fetch latest chat messages if we have a liveChatId
+  // Fetch subscriber count if channel ID available (cached)
+  let followerCount: number | undefined = undefined
+  if (activeChannelId) {
+    followerCount = await fetchYouTubeSubscriberCount(activeChannelId, apiKey)
+  }
+
+  // Fetch latest chat messages if liveChatId exists
   let latestChatAuthor = ''
   let latestChatMessage = ''
   const chatMessages: { id: string; author: string; message: string; receivedAt: string }[] = []
@@ -869,97 +926,176 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
         }
       }
     } catch {
-      // Chat fetch is best-effort, don't fail the whole connector
+      // Best effort
     }
   }
 
   await saveLiveStats({
     platform: 'YouTube Live',
-    username: snippet.channelTitle || config.youtubeChannelId || videoId,
+    username: snippet.channelTitle || activeChannelId || videoId,
     displayName: snippet.channelTitle || snippet.title || videoId,
     viewerCount,
     isLive: true,
+    ...(followerCount !== undefined ? { followerCount } : {}),
     latestChatAuthor,
     latestChatMessage,
     chatMessages: chatMessages.length > 0 ? chatMessages : undefined,
   })
 }
 
-/** Fetch TikTok live stats via a polling approach.
- *  TikTok doesn't have an official API for live data. This uses the open
- *  TikTok webcast info endpoint as an unofficial, best-effort approach.
- *  If it fails (TikTok may block this at any time), the error is surfaced
- *  in the connector status so the user can fall back to manual push via
- *  POST /api/live-stats from an external script.
- */
-async function fetchTikTokStats(config: PlatformConnectorConfig): Promise<void> {
-  const username = (config.tiktokUsername || '').replace(/^@/, '').trim()
-  if (!username) throw new Error('TikTok username is required')
+/** Manage persistent WebSocket connection for TikTok Live using tiktok-live-connector. */
+function stopTikTokConnector(): void {
+  if (tiktokReconnectTimer) {
+    clearTimeout(tiktokReconnectTimer)
+    tiktokReconnectTimer = null
+  }
+  if (tiktokConn) {
+    try { tiktokConn.disconnect() } catch {}
+    tiktokConn = null
+  }
+  tiktokConnUsername = ''
+  tiktokBackoffAttempt = 0
+  platformConnectorStatus.running = false
+}
 
-  // TikTok's unofficial webcast info endpoint
-  const url = `https://webcast.tiktok.com/webcast/room/info/?aid=1988&app_name=tiktok_web&unique_id=${encodeURIComponent(username)}`
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    },
-    signal: AbortSignal.timeout(15_000),
+function startTikTokConnector(rawUsername: string): void {
+  const username = rawUsername.replace(/^@/, '').trim()
+  if (!username) {
+    platformConnectorStatus.lastError = 'TikTok username is required'
+    return
+  }
+
+  // If already connected to the same username and running, do nothing
+  if (tiktokConn && tiktokConnUsername === username && platformConnectorStatus.running) {
+    return
+  }
+
+  // Disconnect existing if changing username or reconnecting
+  if (tiktokConn) {
+    try { tiktokConn.disconnect() } catch {}
+    tiktokConn = null
+  }
+
+  tiktokConnUsername = username
+  platformConnectorStatus.platform = 'tiktok'
+  platformConnectorStatus.enabled = true
+  platformConnectorStatus.running = false
+
+  const conn = new TikTokLiveConnection(username, {})
+  tiktokConn = conn
+
+  conn.on(WebcastEvent.CHAT, async (data: any) => {
+    const author = data.user?.nickname || data.user?.uniqueId || 'viewer'
+    const message = data.comment || ''
+    await saveLiveStats({
+      latestChatAuthor: author,
+      latestChatMessage: message,
+    })
+    platformConnectorStatus.lastSuccessAt = new Date().toISOString()
+    platformConnectorStatus.lastError = null
   })
 
-  if (!res.ok) {
-    throw new Error(`TikTok webcast API ${res.status}: ${res.statusText}`)
-  }
-
-  const data = await res.json() as {
-    data?: {
-      room?: {
-        owner?: { display_id?: string; nickname?: string }
-        user_count?: { display_value?: string }
-        like_count?: { display_value?: string }
-        title?: string
-        status?: number
-      }
+  conn.on(WebcastEvent.ROOM_USER, async (data: any) => {
+    if (typeof data.viewerCount === 'number') {
+      await saveLiveStats({ viewerCount: data.viewerCount })
     }
-    status_code?: number
-  }
+  })
 
-  if (data.status_code !== 0 || !data.data?.room) {
-    throw new Error(`TikTok returned status_code ${data.status_code} — user may not be live`)
-  }
+  conn.on(WebcastEvent.STREAM_END, async () => {
+    await saveLiveStats({ isLive: false })
+    platformConnectorStatus.running = false
+  })
 
-  const room = data.data.room
-  const owner = room.owner || {}
-  const isLive = room.status === 2
-  const viewerCount = Number((room.user_count?.display_value || '').replace(/[^0-9]/g, '')) || 0
-  const likeCount = Number((room.like_count?.display_value || '').replace(/[^0-9]/g, '')) || 0
+  conn.on(ControlEvent.DISCONNECTED, () => {
+    platformConnectorStatus.running = false
+  })
 
-  await saveLiveStats({
-    platform: 'TikTok Live',
-    username: `@${owner.display_id || username}`,
-    displayName: owner.nickname || owner.display_id || username,
-    viewerCount,
-    likeCount,
-    isLive,
+  conn.on(ControlEvent.ERROR, (err: any) => {
+    const msg = err instanceof Error ? err.message : String(err)
+    platformConnectorStatus.lastError = msg
+  })
+
+  conn.connect().then(async (state: any) => {
+    platformConnectorStatus.running = true
+    platformConnectorStatus.lastSuccessAt = new Date().toISOString()
+    platformConnectorStatus.lastError = null
+    tiktokBackoffAttempt = 0
+
+    const roomInfo = state?.roomInfo || (conn as any).roomInfo || {}
+    const owner = roomInfo?.owner || {}
+    const followerCount = owner.follow_info?.follower_count ?? owner.follower_count ?? undefined
+    const viewerCount = roomInfo?.user_count?.display_value
+      ? Number(String(roomInfo.user_count.display_value).replace(/[^0-9]/g, ''))
+      : undefined
+
+    await saveLiveStats({
+      platform: 'TikTok Live',
+      username: `@${owner.display_id || username}`,
+      displayName: owner.nickname || owner.display_id || username,
+      isLive: true,
+      ...(followerCount !== undefined && Number.isFinite(Number(followerCount)) ? { followerCount: Number(followerCount) } : {}),
+      ...(viewerCount !== undefined && Number.isFinite(viewerCount) ? { viewerCount } : {}),
+    })
+  }).catch((err: any) => {
+    platformConnectorStatus.running = false
+    const msg = err instanceof Error ? err.message : String(err)
+    platformConnectorStatus.lastError = msg
+
+    // Exponential backoff reconnect
+    if (tiktokReconnectTimer) clearTimeout(tiktokReconnectTimer)
+    tiktokBackoffAttempt++
+    const delayMs = Math.min(300_000, 5_000 * Math.pow(2, tiktokBackoffAttempt - 1))
+    console.warn(`[tiktok-connector] Connect failed: ${msg}. Retrying in ${delayMs / 1000}s (attempt ${tiktokBackoffAttempt})...`)
+    tiktokReconnectTimer = setTimeout(() => {
+      startTikTokConnector(username)
+    }, delayMs)
   })
 }
 
 async function runPlatformConnectorOnce(): Promise<void> {
   const config = await getPlatformConfig()
-  if (!config.enabled) return
+  if (!config.enabled) {
+    stopTikTokConnector()
+    if (platformPollTimer) {
+      clearTimeout(platformPollTimer)
+      platformPollTimer = null
+    }
+    return
+  }
 
   const now = new Date().toISOString()
   platformConnectorStatus.lastFetchedAt = now
 
+  if (config.platform === 'tiktok') {
+    startTikTokConnector(config.tiktokUsername || '')
+    return
+  }
+
+  // If switching from TikTok to YouTube, stop TikTok connection
+  stopTikTokConnector()
+
   try {
-    if (config.platform === 'youtube') {
-      await fetchYouTubeStats(config)
-    } else {
-      await fetchTikTokStats(config)
-    }
+    await fetchYouTubeStats(config)
     platformConnectorStatus.lastSuccessAt = now
     platformConnectorStatus.lastError = null
+    platformConnectorStatus.running = true
+    youtubeBackoffAttempt = 0
   } catch (err) {
-    platformConnectorStatus.lastError = err instanceof Error ? err.message : String(err)
-    console.warn(`[platform-connector] ${config.platform} fetch error:`, platformConnectorStatus.lastError)
+    const msg = err instanceof Error ? err.message : String(err)
+    platformConnectorStatus.lastError = msg
+    youtubeBackoffAttempt++
+    console.warn(`[youtube-connector] Error (attempt ${youtubeBackoffAttempt}):`, msg)
+  }
+
+  // Reschedule YouTube poll with exponential backoff on failure
+  if (platformConnectorStatus.enabled && config.platform === 'youtube') {
+    const baseInterval = Math.max(10_000, Math.min(300_000, config.pollIntervalMs || DEFAULT_PLATFORM_POLL_INTERVAL_MS))
+    const nextDelay = youtubeBackoffAttempt > 0
+      ? Math.min(300_000, baseInterval * Math.pow(2, youtubeBackoffAttempt - 1))
+      : baseInterval
+
+    if (platformPollTimer) clearTimeout(platformPollTimer)
+    platformPollTimer = setTimeout(() => runPlatformConnectorOnce(), nextDelay)
   }
 }
 
@@ -969,22 +1105,17 @@ function schedulePlatformPoll(config: PlatformConnectorConfig): void {
     platformPollTimer = null
   }
   if (!config.enabled) {
+    stopTikTokConnector()
     platformConnectorStatus.running = false
     return
   }
 
-  platformConnectorStatus.running = true
-  const interval = Math.max(10_000, Math.min(300_000, config.pollIntervalMs || DEFAULT_PLATFORM_POLL_INTERVAL_MS))
-
-  const tick = async () => {
-    await runPlatformConnectorOnce()
-    if (platformConnectorStatus.running) {
-      platformPollTimer = setTimeout(tick, interval)
-    }
+  if (config.platform === 'tiktok') {
+    startTikTokConnector(config.tiktokUsername || '')
+  } else {
+    stopTikTokConnector()
+    runPlatformConnectorOnce()
   }
-
-  // Run immediately, then schedule
-  tick()
 }
 
 // Initialize platform connector from persisted config on startup

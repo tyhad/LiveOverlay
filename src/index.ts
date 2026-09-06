@@ -1,13 +1,11 @@
 import { Elysia, t } from 'elysia'
 import { staticPlugin } from '@elysiajs/static'
 import { mkdir, readdir, unlink } from 'node:fs/promises'
+import { basename } from 'node:path'
 
 const SETTINGS_FILE = 'settings.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
-const SCENE_FILE = 'scene.json'
-const EXAMPLE_SCENE_FILE = 'scene.example.json'
 const SCENES_FILE = 'scenes.json'
-const EXAMPLE_SCENES_FILE = 'scenes.example.json'
 const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
 const DATA_SOURCES_FILE = 'data-sources.json'
@@ -280,14 +278,9 @@ function createDefaultScene(id = 'default', name = 'Live Streaming Scene'): Scen
   }
 }
 
-class SceneStoreError extends Error {
+interface SceneStoreError {
+  message: string
   status: number
-
-  constructor(message: string, status = 400) {
-    super(message)
-    this.name = 'SceneStoreError'
-    this.status = status
-  }
 }
 
 function normalizeSceneId(value: string, fallback: string): string {
@@ -321,9 +314,7 @@ function normalizeScene(scene: Partial<SceneData>, index = 0): SceneData {
 
 async function readSceneStore(): Promise<SceneStoreLoadResult> {
   const scenesFile = Bun.file(SCENES_FILE)
-  const scenesFileExists = await scenesFile.exists()
-
-  if (scenesFileExists) {
+  if (await scenesFile.exists()) {
     try {
       const parsed = JSON.parse(await scenesFile.text())
       if (Array.isArray(parsed)) {
@@ -335,66 +326,14 @@ async function readSceneStore(): Promise<SceneStoreLoadResult> {
         }
       }
     } catch {
-      // Fall back to recovery sources without overwriting the corrupt file automatically.
+      return { scenes: [createDefaultScene()], source: 'default', scenesFileExists: true, scenesFileCorrupt: true }
     }
   }
-
-  const legacyFile = Bun.file(SCENE_FILE)
-  if (await legacyFile.exists()) {
-    try {
-      const parsed = JSON.parse(await legacyFile.text())
-      if (parsed && typeof parsed === 'object') {
-        return {
-          scenes: [normalizeScene(parsed as Partial<SceneData>, 0)],
-          source: 'legacy',
-          scenesFileExists,
-          scenesFileCorrupt: scenesFileExists,
-        }
-      }
-    } catch {
-      // Fall back to example files
-    }
-  }
-
-  const exampleScenesFile = Bun.file(EXAMPLE_SCENES_FILE)
-  if (await exampleScenesFile.exists()) {
-    try {
-      const parsed = JSON.parse(await exampleScenesFile.text())
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return {
-          scenes: parsed.map((scene, index) => normalizeScene(scene, index)),
-          source: 'example-scenes',
-          scenesFileExists,
-          scenesFileCorrupt: scenesFileExists,
-        }
-      }
-    } catch {
-      // Fall back to legacy example file
-    }
-  }
-
-  const exampleSceneFile = Bun.file(EXAMPLE_SCENE_FILE)
-  if (await exampleSceneFile.exists()) {
-    try {
-      const parsed = JSON.parse(await exampleSceneFile.text())
-      if (parsed && typeof parsed === 'object') {
-        return {
-          scenes: [normalizeScene(parsed as Partial<SceneData>, 0)],
-          source: 'example-scene',
-          scenesFileExists,
-          scenesFileCorrupt: scenesFileExists,
-        }
-      }
-    } catch {
-      // Use built-in fallback
-    }
-  }
-
   return {
     scenes: [createDefaultScene()],
     source: 'default',
-    scenesFileExists,
-    scenesFileCorrupt: scenesFileExists,
+    scenesFileExists: false,
+    scenesFileCorrupt: false,
   }
 }
 
@@ -404,19 +343,13 @@ async function persistSceneStore(scenes: SceneData[]): Promise<SceneData[]> {
     : [createDefaultScene()]
 
   await Bun.write(SCENES_FILE, JSON.stringify(normalized, null, 2))
-  await Bun.write(SCENE_FILE, JSON.stringify(normalized[0], null, 2))
   return normalized
 }
 
 async function getScenes(): Promise<SceneData[]> {
   const result = await readSceneStore()
-  if (result.scenes.length === 0) {
-    return await persistSceneStore([createDefaultScene()])
-  }
-  if (result.source !== 'scenes' && !result.scenesFileExists) {
+  if (!result.scenesFileExists) {
     await persistSceneStore(result.scenes)
-  } else if (!(await Bun.file(SCENE_FILE).exists())) {
-    await Bun.write(SCENE_FILE, JSON.stringify(result.scenes[0], null, 2))
   }
   return result.scenes
 }
@@ -431,7 +364,7 @@ async function getSceneById(sceneId?: string): Promise<SceneData | null> {
 async function saveScene(scene: SceneData, originalId?: string): Promise<SceneData> {
   const store = await readSceneStore()
   if (store.scenesFileCorrupt) {
-    throw new SceneStoreError(`Cannot save scene while ${SCENES_FILE} is corrupt. Repair or remove the file first.`, 409)
+    throw { message: `Cannot save scene while ${SCENES_FILE} is corrupt. Repair or remove the file first.`, status: 409 }
   }
 
   const scenes = store.scenes
@@ -440,7 +373,7 @@ async function saveScene(scene: SceneData, originalId?: string): Promise<SceneDa
   const conflictingScene = scenes.find((item) => item.id === normalized.id && item.id !== normalizedOriginalId)
 
   if (conflictingScene) {
-    throw new SceneStoreError(`Scene ID "${normalized.id}" already exists. Use a different identifier.`, 409)
+    throw { message: `Scene ID "${normalized.id}" already exists. Use a different identifier.`, status: 409 }
   }
 
   const targetId = normalizedOriginalId || normalized.id
@@ -454,13 +387,13 @@ async function saveScene(scene: SceneData, originalId?: string): Promise<SceneDa
 async function deleteScene(sceneId: string): Promise<SceneData[]> {
   const store = await readSceneStore()
   if (store.scenesFileCorrupt) {
-    throw new SceneStoreError(`Cannot delete scene while ${SCENES_FILE} is corrupt. Repair or remove the file first.`, 409)
+    throw { message: `Cannot delete scene while ${SCENES_FILE} is corrupt. Repair or remove the file first.`, status: 409 }
   }
 
   const scenes = store.scenes
   const normalizedId = normalizeSceneId(sceneId, '')
   if (!normalizedId) {
-    throw new SceneStoreError('Scene identifier is required', 400)
+    throw { message: 'Scene identifier is required', status: 400 }
   }
 
   const nextScenes = scenes.filter((scene) => scene.id !== normalizedId)
@@ -575,18 +508,7 @@ async function saveLiveStats(data: LiveStatsUpdate): Promise<LiveStatsData> {
   return updated
 }
 
-const DEFAULT_EXTERNAL_DATA_SOURCES: ExternalDataSourceConfig[] = [
-  {
-    id: 'weather-jakarta',
-    name: 'Open-Meteo Jakarta',
-    url: 'https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,weather_code',
-    enabled: false,
-    method: 'GET',
-    pollIntervalMs: 30000,
-    timeoutMs: 5000,
-    rootPath: 'current',
-  },
-]
+const DEFAULT_EXTERNAL_DATA_SOURCES: ExternalDataSourceConfig[] = []
 
 const externalDataCache = new Map<string, ExternalDataSourceCacheEntry>()
 const externalDataInflight = new Map<string, Promise<ExternalDataSourceCacheEntry>>()
@@ -663,36 +585,15 @@ async function saveExternalDataSources(data: Partial<ExternalDataSourceConfig>[]
   return normalized
 }
 
-function pathSegments(path: string): string[] {
-  return String(path || '').match(/[^.[\]]+/g) || []
-}
-
 function getValueAtPath(data: unknown, path?: string): unknown {
   if (!path) return data
-  return pathSegments(path).reduce<unknown>((current, segment) => {
-    if (current === null || current === undefined) return undefined
-    if (Array.isArray(current)) {
-      const index = Number(segment)
-      return Number.isInteger(index) ? current[index] : undefined
-    }
-    if (typeof current === 'object') {
-      return (current as Record<string, unknown>)[segment]
-    }
-    return undefined
-  }, data)
+  return path.split(/[.[\]]+/).filter(Boolean).reduce<unknown>((curr, key) => (curr && typeof curr === 'object' ? (curr as Record<string, unknown>)[key] : undefined), data)
 }
 
 function collectFieldPaths(data: unknown, prefix = ''): string[] {
   if (data === null || data === undefined) return []
-  if (Array.isArray(data)) {
-    return data.flatMap((value, index) => collectFieldPaths(value, prefix ? `${prefix}.${index}` : String(index)))
-  }
-  if (typeof data === 'object') {
-    const entries = Object.entries(data as Record<string, unknown>)
-    if (entries.length === 0 && prefix) return [prefix]
-    return entries.flatMap(([key, value]) => collectFieldPaths(value, prefix ? `${prefix}.${key}` : key))
-  }
-  return prefix ? [prefix] : []
+  if (typeof data !== 'object') return prefix ? [prefix] : []
+  return Object.entries(data as Record<string, unknown>).flatMap(([k, v]) => collectFieldPaths(v, prefix ? `${prefix}.${k}` : k))
 }
 
 async function refreshExternalDataSource(source: ExternalDataSourceConfig, force = false): Promise<ExternalDataSourceCacheEntry> {
@@ -799,17 +700,12 @@ async function listAssets() {
 }
 
 async function deleteAsset(assetId: string): Promise<boolean> {
-  const safeId = String(assetId || '')
-  // Prevent path traversal — only allow the exact filename, no slashes/dots-escaping
-  if (!safeId || safeId.includes('/') || safeId.includes('\\') || safeId.includes('..')) {
-    return false
-  }
+  const safeId = basename(String(assetId || ''))
+  if (!safeId || safeId === '.' || safeId === '..') return false
 
   const filePath = `${ASSET_DIRECTORY}/${safeId}`
   const file = Bun.file(filePath)
-  if (!(await file.exists())) {
-    return false
-  }
+  if (!(await file.exists())) return false
 
   await unlink(filePath)
   return true
@@ -817,9 +713,6 @@ async function deleteAsset(assetId: string): Promise<boolean> {
 
 const app = new Elysia()
   .get('/', () => Bun.file('public/index.html'))
-  .get('/gui.html', ({ set }) => {
-    set.redirect = '/'
-  })
   .get('/api/health', () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -873,18 +766,6 @@ const app = new Elysia()
       return { success: false, message: 'Scene not found' }
     }
     return scene
-  })
-  .get('/api/scene', async ({ query, set }) => {
-    const sceneId = query.scene || query.id
-    const scene = await getSceneById(sceneId)
-    if (!scene && sceneId) {
-      set.status = 404
-      return {
-        success: false,
-        message: 'Scene not found',
-      }
-    }
-    return scene || createDefaultScene()
   })
   .get('/api/live-stats', async () => {
     return await getLiveStats()
@@ -1063,36 +944,6 @@ const app = new Elysia()
     }
   )
   .post(
-    '/api/scene',
-    async ({ body, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
-      }
-
-      try {
-        const updated = await saveScene(body as SceneData, (body as SceneData).id)
-        return {
-          success: true,
-          message: 'Scene saved successfully',
-          data: updated,
-        }
-      } catch (error) {
-        if (error instanceof SceneStoreError) {
-          set.status = error.status
-          return { success: false, message: error.message }
-        }
-
-        set.status = 500
-        return { success: false, message: 'Failed to save scene' }
-      }
-    }
-  )
-  .post(
     '/api/scenes',
     async ({ body, headers, set }) => {
       if (SETTINGS_SECRET) {
@@ -1112,14 +963,9 @@ const app = new Elysia()
           message: 'Scene saved successfully',
           data: updated,
         }
-      } catch (error) {
-        if (error instanceof SceneStoreError) {
-          set.status = error.status
-          return { success: false, message: error.message }
-        }
-
-        set.status = 500
-        return { success: false, message: 'Failed to save scene' }
+      } catch (error: any) {
+        set.status = error?.status || 500
+        return { success: false, message: error?.message || 'Failed to save scene' }
       }
     }
   )
@@ -1142,14 +988,9 @@ const app = new Elysia()
           message: 'Scene deleted successfully',
           data: scenes,
         }
-      } catch (error) {
-        if (error instanceof SceneStoreError) {
-          set.status = error.status
-          return { success: false, message: error.message }
-        }
-
-        set.status = 500
-        return { success: false, message: 'Failed to delete scene' }
+      } catch (error: any) {
+        set.status = error?.status || 500
+        return { success: false, message: error?.message || 'Failed to delete scene' }
       }
     }
   )

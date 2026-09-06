@@ -75,18 +75,9 @@
       }
     }
 
-    function getPathSegments(path) {
-      return String(path || '').match(/[^.[\]]+/g) || []
-    }
-
     function getValueAtPath(data, path) {
       if (!path) return data
-      return getPathSegments(path).reduce((current, segment) => {
-        if (current === null || current === undefined) return undefined
-        if (Array.isArray(current)) return current[Number(segment)]
-        if (typeof current === 'object') return current[segment]
-        return undefined
-      }, data)
+      return path.split(/[.[\]]+/).filter(Boolean).reduce((curr, key) => (curr && typeof curr === 'object' ? curr[key] : undefined), data)
     }
 
     function getExternalSourceSnapshot(sourceId) {

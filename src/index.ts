@@ -761,6 +761,8 @@ let platformConnectorStatus: PlatformConnectorStatus = {
   lastError: null,
 }
 
+let youtubeChatPageToken: string | null = null
+
 let platformPollTimer: ReturnType<typeof setTimeout> | null = null
 let tiktokConn: TikTokLiveConnection | null = null
 let tiktokConnUsername: string = ''
@@ -852,6 +854,7 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
       videoId = searchData.items?.[0]?.id?.videoId || ''
       if (!videoId) {
         cachedYouTubeVideoId = null
+        youtubeChatPageToken = null
         throw new Error('No active live broadcast found for this channel')
       }
       cachedYouTubeVideoId = videoId
@@ -864,6 +867,7 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
   const videoRes = await fetch(videoUrl, { signal: AbortSignal.timeout(10_000) })
   if (!videoRes.ok) {
     cachedYouTubeVideoId = null
+    youtubeChatPageToken = null
     const errBody = await videoRes.text()
     throw new Error(`YouTube videos API ${videoRes.status}: ${errBody.slice(0, 200)}`)
   }
@@ -881,6 +885,7 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
   const item = videoData.items?.[0]
   if (!item || item.liveStreamingDetails?.actualEndTime) {
     cachedYouTubeVideoId = null
+    youtubeChatPageToken = null
     throw new Error(`Video ${videoId} is no longer live`)
   }
 
@@ -903,16 +908,18 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
   const liveChatId = lsd.activeLiveChatId
   if (liveChatId) {
     try {
-      const chatUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${encodeURIComponent(liveChatId)}&part=snippet,authorDetails&maxResults=25&key=${encodeURIComponent(apiKey)}`
+      const chatUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${encodeURIComponent(liveChatId)}&part=snippet,authorDetails&maxResults=25${youtubeChatPageToken ? `&pageToken=${encodeURIComponent(youtubeChatPageToken)}` : ''}&key=${encodeURIComponent(apiKey)}`
       const chatRes = await fetch(chatUrl, { signal: AbortSignal.timeout(10_000) })
       if (chatRes.ok) {
         const chatData = await chatRes.json() as {
+          nextPageToken?: string
           items?: {
             id?: string
             snippet?: { displayMessage?: string; publishedAt?: string }
             authorDetails?: { displayName?: string }
           }[]
         }
+        youtubeChatPageToken = chatData.nextPageToken || youtubeChatPageToken
         const items = chatData.items || []
         items.forEach((msg) => {
           const author = msg.authorDetails?.displayName || 'viewer'

@@ -65,6 +65,12 @@
     }
     let externalData = { sources: [] }
     let lastExternalDataHash = ''
+    let displayedChat = { author: '', message: '' }
+    let chatDisplayQueue = []
+    let displayedChatIds = new Set()
+    let chatDisplayDurationMs = 4000
+    let chatDisplayTimer = null
+    let isFirstStatsSync = true
     const renderedElements = new Map()
     const loopAnimations = new Map()
 
@@ -197,6 +203,10 @@
       let rawValue
       if (binding.source === 'external') {
         rawValue = getValueAtPath(getExternalSourceSnapshot(binding.externalSourceId)?.data, binding.fieldPath)
+      } else if (binding.field === 'latestChatAuthor') {
+        rawValue = displayedChat.author
+      } else if (binding.field === 'latestChatMessage') {
+        rawValue = displayedChat.message
       } else {
         rawValue = liveStats?.[binding.field]
       }
@@ -342,6 +352,73 @@
       })
     }
 
+    function processChatQueue(newLiveStats) {
+      const incoming = Array.isArray(newLiveStats.chatMessages) ? newLiveStats.chatMessages : []
+
+      if (isFirstStatsSync) {
+        incoming.forEach(msg => displayedChatIds.add(msg.id))
+        if (incoming.length > 0) {
+          const last = incoming[incoming.length - 1]
+          displayedChat = { author: last.author, message: last.message }
+        }
+        isFirstStatsSync = false
+        return
+      }
+
+      const queuedIds = new Set(chatDisplayQueue.map(msg => msg.id))
+      incoming.forEach(msg => {
+        if (!displayedChatIds.has(msg.id) && !queuedIds.has(msg.id)) {
+          chatDisplayQueue.push(msg)
+        }
+      })
+
+      const MAX_QUEUE = 15
+      while (chatDisplayQueue.length > MAX_QUEUE) {
+        chatDisplayQueue.shift()
+      }
+    }
+
+    function tickChatDisplay() {
+      if (chatDisplayQueue.length === 0) return
+      const next = chatDisplayQueue.shift()
+      displayedChatIds.add(next.id)
+      displayedChat = { author: next.author, message: next.message }
+
+      if (currentScene) {
+        currentScene.elements.forEach(el => {
+          const field = el.textBinding?.field
+          if (el.textBinding?.enabled && (field === 'latestChatAuthor' || field === 'latestChatMessage')) {
+            const rendered = renderedElements.get(el.id)
+            const textEl = rendered?.node?.firstElementChild
+            if (textEl) {
+              gsap.fromTo(textEl, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' })
+            }
+          }
+        })
+        renderScene(currentScene)
+      }
+    }
+
+    function restartChatDisplayTimer() {
+      if (chatDisplayTimer) clearInterval(chatDisplayTimer)
+      chatDisplayTimer = setInterval(tickChatDisplay, chatDisplayDurationMs)
+    }
+
+    async function syncPlatformConnectorConfig() {
+      try {
+        const res = await fetch('/api/platform-connector')
+        if (!res.ok) return
+        const data = await res.json()
+        const nextDuration = Math.max(1500, Math.min(15000, Number(data?.config?.chatDisplayDurationMs) || 4000))
+        if (nextDuration !== chatDisplayDurationMs) {
+          chatDisplayDurationMs = nextDuration
+          restartChatDisplayTimer()
+        }
+      } catch (err) {
+        console.error('Failed to sync platform connector config:', err)
+      }
+    }
+
     async function syncScene(isInitial = false) {
       try {
         const res = await fetch(`/api/scenes/${encodeURIComponent(overlaySceneId)}`)
@@ -366,6 +443,7 @@
         if (text !== lastLiveStatsHash || isInitial) {
           lastLiveStatsHash = text
           liveStats = JSON.parse(text)
+          processChatQueue(liveStats)
           if (currentScene) renderScene(currentScene)
         }
       } catch (err) {
@@ -395,9 +473,12 @@
       syncLiveStats(true)
       syncExternalData(true)
       syncScene(true)
+      syncPlatformConnectorConfig()
+      restartChatDisplayTimer()
       setInterval(() => syncScene(false), 2000)
       setInterval(() => syncLiveStats(false), 2000)
       setInterval(() => syncExternalData(false), 5000)
+      setInterval(syncPlatformConnectorConfig, 5000)
     })
   </script>
 </body>

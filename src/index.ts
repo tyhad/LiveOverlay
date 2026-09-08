@@ -47,6 +47,7 @@ interface PlatformConnectorConfig {
   youtubeApiKey?: string
   /** Poll interval in ms. Min 10s, max 300s. Default 30s. */
   pollIntervalMs?: number
+  chatDisplayDurationMs?: number
 }
 
 interface PlatformConnectorStatus {
@@ -750,6 +751,7 @@ const DEFAULT_PLATFORM_CONFIG: PlatformConnectorConfig = {
   youtubeChannelId: '',
   youtubeApiKey: '',
   pollIntervalMs: DEFAULT_PLATFORM_POLL_INTERVAL_MS,
+  chatDisplayDurationMs: 4000,
 }
 
 let platformConnectorStatus: PlatformConnectorStatus = {
@@ -785,6 +787,7 @@ async function getPlatformConfig(): Promise<PlatformConnectorConfig> {
         ...DEFAULT_PLATFORM_CONFIG,
         ...parsed,
         pollIntervalMs: Math.max(10_000, Math.min(300_000, Number(parsed.pollIntervalMs) || DEFAULT_PLATFORM_POLL_INTERVAL_MS)),
+        chatDisplayDurationMs: Math.max(1_500, Math.min(15_000, Number(parsed.chatDisplayDurationMs) || 4000)),
       }
     } catch {
       // Fallback to default
@@ -799,6 +802,7 @@ async function savePlatformConfig(data: Partial<PlatformConnectorConfig>): Promi
     ...current,
     ...data,
     pollIntervalMs: Math.max(10_000, Math.min(300_000, Number(data.pollIntervalMs ?? current.pollIntervalMs) || DEFAULT_PLATFORM_POLL_INTERVAL_MS)),
+    chatDisplayDurationMs: Math.max(1_500, Math.min(15_000, Number(data.chatDisplayDurationMs ?? current.chatDisplayDurationMs) || 4000)),
   }
   await Bun.write(PLATFORM_CONFIG_FILE, JSON.stringify(updated, null, 2))
   return updated
@@ -1203,6 +1207,7 @@ const app = new Elysia()
         youtubeChannelId: body.youtubeChannelId ?? undefined,
         youtubeApiKey: body.youtubeApiKey ?? undefined,
         pollIntervalMs: body.pollIntervalMs ?? undefined,
+        chatDisplayDurationMs: body.chatDisplayDurationMs ?? undefined,
       })
 
       platformConnectorStatus.platform = updated.platform
@@ -1231,6 +1236,7 @@ const app = new Elysia()
         youtubeChannelId: t.Optional(t.String()),
         youtubeApiKey: t.Optional(t.String()),
         pollIntervalMs: t.Optional(t.Numeric()),
+        chatDisplayDurationMs: t.Optional(t.Numeric()),
       }),
     }
   )

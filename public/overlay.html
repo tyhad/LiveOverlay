@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,14 +10,18 @@
   <!-- Google Fonts for Stream Overlays -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap"
+    rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    html, body {
+
+    html,
+    body {
       width: 100%;
       height: 100%;
       background: transparent !important;
@@ -24,6 +29,7 @@
       overflow: hidden;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
+
     #overlay-viewport {
       position: relative;
       width: 1920px;
@@ -31,6 +37,7 @@
       transform-origin: top left;
       overflow: hidden;
     }
+
     .overlay-element {
       position: absolute;
       box-sizing: border-box;
@@ -38,6 +45,7 @@
     }
   </style>
 </head>
+
 <body>
   <div id="overlay-viewport">
     <!-- Dynamic Animated Scene Elements Injected Here -->
@@ -136,9 +144,9 @@
         case 'heartbeat':
           animation = gsap.timeline({ repeat: -1, repeatDelay: Math.max(0, dur - 0.6) })
           animation.to(node, { scale: 1.08, duration: 0.15, ease: 'power1.out' })
-             .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
-             .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
-             .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
+            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
+            .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
+            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
           break
         case 'bounce':
           animation = gsap.to(node, { y: '-=14', duration: dur / 2, repeat: -1, yoyo: true, ease: 'power2.out' })
@@ -146,10 +154,10 @@
         case 'shake':
           animation = gsap.timeline({ repeat: -1, repeatDelay: dur })
           animation.to(node, { x: '+=5', duration: 0.08 })
-             .to(node, { x: '-=10', duration: 0.08 })
-             .to(node, { x: '+=8', duration: 0.08 })
-             .to(node, { x: '-=6', duration: 0.08 })
-             .to(node, { x: 0, duration: 0.08 })
+            .to(node, { x: '-=10', duration: 0.08 })
+            .to(node, { x: '+=8', duration: 0.08 })
+            .to(node, { x: '-=6', duration: 0.08 })
+            .to(node, { x: 0, duration: 0.08 })
           break
       }
 
@@ -169,7 +177,7 @@
       const ease = exit.ease || 'power2.in'
       stopLoopAnimation(node)
       gsap.killTweensOf(node)
-      const complete = onComplete || (() => {})
+      const complete = onComplete || (() => { })
 
       switch (exit.type) {
         case 'fadeOut': return gsap.to(node, { opacity: 0, duration, delay, ease, onComplete: complete })
@@ -193,6 +201,99 @@
       if (format === 'uppercase') return String(value).toUpperCase()
       if (format === 'lowercase') return String(value).toLowerCase()
       return String(value)
+    }
+
+    const measureCtx = document.createElement('canvas').getContext('2d')
+
+    function measureTextWidth(text, style = {}) {
+      const fontSize = style.fontSize || 18
+      const fontFamily = style.fontFamily || 'Inter, sans-serif'
+      const fontWeight = style.fontWeight || 'normal'
+      const letterSpacing = style.letterSpacing || 0
+      measureCtx.font = `${fontWeight} ${fontSize}px ${fontFamily}`
+      const base = measureCtx.measureText(text).width
+      const extra = letterSpacing * Math.max(0, text.length - 1)
+      return base + extra
+    }
+
+    function ensureMarqueeTrack(node) {
+      let track = node.querySelector('.marquee-track')
+      if (!track) {
+        node.replaceChildren()
+        track = document.createElement('div')
+        track.className = 'marquee-track'
+        track.style.position = 'absolute'
+        track.style.top = '50%'
+        track.style.transform = 'translateY(-50%)'
+        track.style.display = 'flex'
+        track.style.whiteSpace = 'nowrap'
+        track.style.willChange = 'transform'
+        node.appendChild(track)
+      }
+      return track
+    }
+
+    function styleStaticText(textEl, el, text) {
+      textEl.style.width = '100%'
+      textEl.style.height = '100%'
+      textEl.style.display = 'flex'
+      textEl.style.alignItems = 'center'
+      textEl.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
+      textEl.style.fontSize = `${el.style?.fontSize || 18}px`
+      textEl.style.fontWeight = el.style?.fontWeight || 'normal'
+      textEl.style.color = el.style?.color || '#ffffff'
+      textEl.style.padding = `${el.style?.padding || 0}px`
+      textEl.style.textAlign = el.style?.textAlign || 'left'
+      textEl.style.textTransform = el.style?.textTransform || 'none'
+      textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
+      textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
+      textEl.textContent = text
+    }
+
+    function applyMarqueeText(node, el, text) {
+      const cfg = el.marquee || {}
+      const speed = cfg.speed || 80
+      const gap = cfg.gap ?? 60
+      const style = el.style || {}
+      const textWidth = measureTextWidth(text, style)
+
+      const record = renderedElements.get(el.id)
+      const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing].join('|')
+
+      if (record && record.marqueeSig === sig) return
+
+      const track = ensureMarqueeTrack(node)
+      track.replaceChildren()
+
+      const unit = textWidth + gap
+      // Buat salinan sebanyak yang dibutuhkan supaya container selalu penuh
+      // sepanjang animasi, apapun rasio panjang teks vs lebar container.
+      const copiesNeeded = Math.max(2, Math.ceil(el.width / unit) + 2)
+
+      for (let i = 0; i < copiesNeeded; i++) {
+        const span = document.createElement('span')
+        span.textContent = text
+        span.style.marginRight = `${gap}px`
+        span.style.flexShrink = '0'
+        span.style.fontFamily = style.fontFamily || 'Inter, sans-serif'
+        span.style.fontSize = `${style.fontSize || 18}px`
+        span.style.fontWeight = style.fontWeight || 'normal'
+        span.style.color = style.color || '#ffffff'
+        span.style.letterSpacing = `${style.letterSpacing || 0}px`
+        span.style.textTransform = style.textTransform || 'none'
+        if (i > 0) span.setAttribute('aria-hidden', 'true')
+        track.appendChild(span)
+      }
+
+      gsap.killTweensOf(track)
+      const duration = unit / speed
+      const direction = (cfg.direction || 'rtl') === 'ltr' ? 1 : -1
+      gsap.set(track, { x: 0 })
+      const tween = gsap.fromTo(track, { x: 0 }, { x: direction * unit, duration, ease: 'none', repeat: -1 })
+
+      if (record) {
+        record.marqueeTween = tween; record.marqueeSig = sig
+      }
     }
 
     function resolveElementText(el) {
@@ -259,25 +360,31 @@
         image.style.display = 'block'
         image.style.objectFit = el.objectFit || 'contain'
       } else if (el.type === 'text' || el.style?.text !== undefined) {
-        let textEl = node.firstElementChild
-        if (!textEl) {
-          textEl = document.createElement('div')
-          node.appendChild(textEl)
+        const text = resolveElementText(el)
+        if (el.marquee?.enabled) {
+          applyMarqueeText(node, el, text)
+        } else {
+          let textEl = node.querySelector('.marquee-track') ? null : node.firstElementChild
+          if (!textEl) {
+            node.replaceChildren()
+            textEl = document.createElement('div')
+            node.appendChild(textEl)
+          }
+          textEl.style.width = '100%'
+          textEl.style.height = '100%'
+          textEl.style.display = 'flex'
+          textEl.style.alignItems = 'center'
+          textEl.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
+          textEl.style.fontSize = `${el.style?.fontSize || 18}px`
+          textEl.style.fontWeight = el.style?.fontWeight || 'normal'
+          textEl.style.color = el.style?.color || '#ffffff'
+          textEl.style.padding = `${el.style?.padding || 0}px`
+          textEl.style.textAlign = el.style?.textAlign || 'left'
+          textEl.style.textTransform = el.style?.textTransform || 'none'
+          textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
+          textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
+          textEl.textContent = text
         }
-        textEl.style.width = '100%'
-        textEl.style.height = '100%'
-        textEl.style.display = 'flex'
-        textEl.style.alignItems = 'center'
-        textEl.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
-        textEl.style.fontSize = `${el.style?.fontSize || 18}px`
-        textEl.style.fontWeight = el.style?.fontWeight || 'normal'
-        textEl.style.color = el.style?.color || '#ffffff'
-        textEl.style.padding = `${el.style?.padding || 0}px`
-        textEl.style.textAlign = el.style?.textAlign || 'left'
-        textEl.style.textTransform = el.style?.textTransform || 'none'
-        textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
-        textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
-        textEl.textContent = resolveElementText(el)
       } else {
         node.replaceChildren()
       }
@@ -314,8 +421,9 @@
       const visibleElements = scene.elements.filter(el => !el.hidden)
       const visibleIds = new Set(visibleElements.map(el => el.id))
 
-      renderedElements.forEach(({ node, config }, id) => {
+      renderedElements.forEach(({ node, config, marqueeTween }, id) => {
         if (visibleIds.has(id)) return
+        if (marqueeTween) marqueeTween.kill()
         renderedElements.delete(id)
         playExitAnimation(node, config, () => node.remove())
       })
@@ -482,4 +590,5 @@
     })
   </script>
 </body>
+
 </html>

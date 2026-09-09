@@ -151,6 +151,13 @@ interface ExternalTextBinding {
 
 type TextBinding = PlatformTextBinding | ExternalTextBinding
 
+interface MarqueeConfig {
+  enabled?: boolean
+  speed?: number
+  gap?: number
+  direction?: 'rtl' | 'ltr'
+}
+
 interface SceneElement {
   id: string
   type: 'text' | 'shape' | 'badge' | 'image'
@@ -169,6 +176,7 @@ interface SceneElement {
   style: ElementStyle
   animation?: AnimationConfig
   textBinding?: TextBinding
+  marquee?: MarqueeConfig
 }
 
 interface SceneData {

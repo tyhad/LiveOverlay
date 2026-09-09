@@ -3,8 +3,10 @@ import { staticPlugin } from '@elysiajs/static'
 import { mkdir, readdir, unlink } from 'node:fs/promises'
 import { basename } from 'node:path'
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector'
+import { Database } from 'bun:sqlite'
 
 const SETTINGS_FILE = 'settings.json'
+const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENES_FILE = 'scenes.json'
 const LIVE_STATS_FILE = 'live-stats.json'
@@ -149,7 +151,18 @@ interface ExternalTextBinding {
   fallback?: string
 }
 
-type TextBinding = PlatformTextBinding | ExternalTextBinding
+/** fieldPath examples: "sessions.0.raceName", "driverStandings.0.driverName", "constructorStandings.1.points" */
+interface F1TextBinding {
+  enabled?: boolean
+  source: 'f1data'
+  fieldPath?: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+type TextBinding = PlatformTextBinding | ExternalTextBinding | F1TextBinding
 
 interface MarqueeConfig {
   enabled?: boolean
@@ -238,6 +251,154 @@ interface LiveStatsUpdate {
   lastUpdatedAt?: string
   chatMessages?: ChatMessageInput[]
 }
+
+// ─── F1GStats (read-only local database) ─────────────────────────────────────
+
+interface F1Session {
+  round: number
+  raceName: string
+  sessionType: string
+  startTimeUtc: string
+  circuitName: string
+  countryFlag: string
+  roundRelation: 'previous' | 'now' | 'next' | null
+}
+
+interface F1RoundInfo {
+  round: number
+  raceName: string
+  circuitName: string
+  countryFlag: string
+  sessions: { sessionType: string; startTimeUtc: string }[]
+}
+
+interface F1DriverStanding {
+  position: number
+  driverName: string
+  driverAbbr: string
+  teamName: string
+  points: number
+  wins: number
+  podiums: number
+  dnfDns: number
+}
+
+interface F1ConstructorStanding {
+  position: number
+  teamName: string
+  points: number
+  wins: number
+  podiums: number
+  dnfDns: number
+}
+
+interface F1DataSnapshot {
+  season: string | null
+  lastFetchedAt: string | null
+  previousRound: F1RoundInfo | null
+  nowRound: F1RoundInfo | null
+  nextRound: F1RoundInfo | null
+  driverStandings: F1DriverStanding[]
+  constructorStandings: F1ConstructorStanding[]
+  available: boolean
+  error: string | null
+}
+
+function buildRoundGroup(rows: F1Session[], relation: 'previous' | 'now' | 'next'): F1RoundInfo | null {
+  const relevant = rows.filter((row) => row.roundRelation === relation)
+  const first = relevant[0]
+  if (!first) return null
+  return {
+    round: first.round,
+    raceName: first.raceName,
+    circuitName: first.circuitName,
+    countryFlag: first.countryFlag,
+    sessions: relevant.map((row) => ({ sessionType: row.sessionType, startTimeUtc: row.startTimeUtc })),
+  }
+}
+
+let f1Db: Database | null = null
+let f1DbInitError: string | null = null
+
+function getF1Db(): Database | null {
+  if (f1Db) return f1Db
+  if (f1DbInitError) return null
+  try {
+    f1Db = new Database(F1_DB_PATH, { readonly: true })
+    return f1Db
+  } catch (err) {
+    f1DbInitError = err instanceof Error ? err.message : 'Failed to open F1GStats database'
+    console.warn(`[f1gstats] Could not open database at ${F1_DB_PATH}: ${f1DbInitError}`)
+    return null
+  }
+}
+
+function getF1DataSnapshot(): F1DataSnapshot {
+  const db = getF1Db()
+  if (!db) {
+    return {
+      season: null,
+      lastFetchedAt: null,
+      previousRound: null,
+      nowRound: null,
+      nextRound: null,
+      driverStandings: [],
+      constructorStandings: [],
+      available: false,
+      error: f1DbInitError || 'F1GStats database not found',
+    }
+  }
+
+  try {
+    const metaRows = db.query('SELECT key, value FROM meta').all() as { key: string; value: string }[]
+    const meta = Object.fromEntries(metaRows.map((row) => [row.key, row.value]))
+
+    const sessionRows = db.query(`
+      SELECT round, race_name as raceName, session_type as sessionType,
+             start_time_utc as startTimeUtc, circuit_name as circuitName, country_flag as countryFlag,
+             round_relation as roundRelation
+      FROM sessions ORDER BY start_time_utc ASC
+    `).all() as F1Session[]
+
+    const driverStandings = db.query(`
+      SELECT position, driver_name as driverName, driver_abbr as driverAbbr, team_name as teamName,
+             points, wins, podiums, dnf_dns as dnfDns
+      FROM driver_standings ORDER BY position ASC
+    `).all() as F1DriverStanding[]
+
+    const constructorStandings = db.query(`
+      SELECT position, team_name as teamName, points, wins, podiums, dnf_dns as dnfDns
+      FROM constructor_standings ORDER BY position ASC
+    `).all() as F1ConstructorStanding[]
+
+    return {
+      season: meta.season || null,
+      lastFetchedAt: meta.last_fetched_at || null,
+      previousRound: buildRoundGroup(sessionRows, 'previous'),
+      nowRound: buildRoundGroup(sessionRows, 'now'),
+      nextRound: buildRoundGroup(sessionRows, 'next'),
+      driverStandings,
+      constructorStandings,
+      available: true,
+      error: null,
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to read F1GStats database'
+    return {
+      season: null,
+      lastFetchedAt: null,
+      previousRound: null,
+      nowRound: null,
+      nextRound: null,
+      driverStandings: [],
+      constructorStandings: [],
+      available: false,
+      error: message,
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface ExternalDataSourceConfig {
   id: string
@@ -1332,6 +1493,9 @@ const app = new Elysia()
   })
   .get('/api/live-stats', async () => {
     return await getLiveStats()
+  })
+  .get('/api/f1-data', () => {
+    return getF1DataSnapshot()
   })
   .get('/api/assets', async () => {
     return { assets: await listAssets() }

@@ -867,7 +867,7 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
   }
 
   // Fetch video details (1 quota unit)
-  const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${encodeURIComponent(videoId)}&key=${encodeURIComponent(apiKey)}`
+  const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails,statistics&id=${encodeURIComponent(videoId)}&key=${encodeURIComponent(apiKey)}`
   const videoRes = await fetch(videoUrl, { signal: AbortSignal.timeout(10_000) })
   if (!videoRes.ok) {
     cachedYouTubeVideoId = null
@@ -884,6 +884,7 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
         activeLiveChatId?: string
         actualEndTime?: string
       }
+      statistics?: { likeCount?: string }
     }[]
   }
   const item = videoData.items?.[0]
@@ -897,7 +898,9 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
   const lsd = item.liveStreamingDetails || {}
   const viewerCount = Number(lsd.concurrentViewers) || 0
   const activeChannelId = snippet.channelId || channelId
+  const likeCount = Number(item.statistics?.likeCount)
 
+  // Fetch subscriber count & handle if channel ID available (cached)
   // Fetch subscriber count if channel ID available (cached)
   let followerCount: number | undefined = undefined
   if (activeChannelId) {
@@ -949,6 +952,7 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
     viewerCount,
     isLive: true,
     ...(followerCount !== undefined ? { followerCount } : {}),
+    ...(Number.isFinite(likeCount) ? { likeCount } : {}),
     latestChatAuthor,
     latestChatMessage,
     chatMessages: chatMessages.length > 0 ? chatMessages : undefined,
@@ -1018,9 +1022,17 @@ function startTikTokConnector(rawUsername: string): void {
     platformConnectorStatus.lastError = null
   })
 
+  conn.on(WebcastEvent.LIKE, async (data: any) => {
+    const likeCount = Number(data.total)
+    if (Number.isFinite(likeCount)) {
+      await saveLiveStats({ likeCount })
+    }
+  })
+
   conn.on(WebcastEvent.ROOM_USER, async (data: any) => {
-    if (typeof data.viewerCount === 'number') {
-      await saveLiveStats({ viewerCount: data.viewerCount })
+    const viewerCount = Number(data.total)
+    if (Number.isFinite(viewerCount)) {
+      await saveLiveStats({ viewerCount })
     }
   })
 

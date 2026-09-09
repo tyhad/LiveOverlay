@@ -15,6 +15,7 @@
 | 5a | Platform Live Stats (TikTok/YouTube) | ✅ Selesai |
 | 5b | External Data Source (Generic API Binding) | ✅ Selesai (minor gap, lihat Technical Debt) |
 | 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
+| — | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
 | 7 | Polish UX Editor | Belum dimulai |
 
 ---
@@ -23,12 +24,33 @@
 
 Diselesaikan lewat PR #19 (merged). TikTok connector via `tiktok-live-connector` (WebSocket real-time), YouTube via Data API v3 (REST polling). Semua field (Username, Display Name, Viewer Count, Follower Count, Like Count, Latest Chat Author, Latest Chat Message) terverifikasi bekerja dengan live testing beneran di kedua platform. Termasuk Chat Display Queue System (durasi tampil chat independen dari poll interval, dikonfigurasi lewat `chatDisplayDurationMs`) dan auto-reconnect dengan exponential backoff.
 
+## Running Text (Adaptive Marquee) — Selesai
+
+Fitur sisipan sebelum lanjut ke Fase 7, dikerjakan di branch `feat/running-text-marquee` lalu merge ke `main` via PR. Menambahkan kemampuan teks berjalan (ticker/marquee) pada elemen text, dengan kecepatan konstan (px/detik) berapapun panjang teksnya.
+
+**Data model**: `MarqueeConfig` (`enabled`, `speed`, `gap`, `direction`) ditambahkan ke `SceneElement` di `src/index.ts`, sejajar `animation`/`textBinding`.
+
+**Engine** (`public/overlay.html`):
+- Ukur lebar teks pakai `canvas.measureText()` (bukan `offsetWidth`/`scrollWidth`) untuk hindari bug node-belum-attach ke DOM.
+- Signature-guard sebelum rebuild tween, supaya tidak numpuk tween tiap render tick ~2 detik dari polling.
+- Seamless loop: jumlah salinan teks dihitung dinamis (`Math.ceil(el.width / unit) + 2`) supaya container selalu penuh sepanjang animasi — bukan cuma 2 salinan tetap, biar tidak ada jeda/loncat saat reset loop, baik untuk teks pendek maupun panjang.
+- **Marquee berjalan untuk semua elemen yang `enabled`, bukan cuma yang overflow** — ini keputusan final setelah iterasi (awalnya didesain "cuma jalan kalau overflow", diubah karena user mau kontrol penuh via toggle).
+- Cleanup `marqueeTween.kill()` saat elemen dihapus dari scene, cegah tween "hantu".
+
+**Editor** (`public/index.html`): kontrol UI (toggle enable, speed, gap, direction) di panel Typography. Kanvas editor **tidak** menjalankan animasi kontinu (cuma badge statis "▶ Marquee · Npx/s") karena `renderCanvas()` rebuild total per-`mousemove`, animasi persisten di situ pasti patah.
+
+**Bug yang sempat muncul & fix selama development** (dicatat untuk referensi kalau ada regresi serupa):
+- Track marquee sempat vertikal tidak center (`top:50%` tanpa `transform: translateY(-50%)`) → teks kepotong tengah secara height. Fixed.
+- 2-salinan tetap bikin animasi terasa "glitch"/loncat saat teks pendek dipaksa selalu jalan → diganti jumlah salinan dinamis berbasis lebar container.
+
+---
+
 ## Technical Debt (kandidat Fase 7)
 
 - Concurrent rendering multi-scene (2+ browser source beda `?scene=` render bersamaan) belum di-test langsung. Desain kode kemungkinan besar aman (`getScenes()`/`getSceneById()` pure file-read), tapi belum diverifikasi eksplisit.
 - Race condition di `persistSceneStore()`: dua `Bun.write()` berurutan tanpa lock — kalau dua save scene terjadi nyaris bersamaan, berpotensi `scenes.json` sempat inkonsisten.
 - Config source Fase 5b masih via raw JSON textarea di editor, belum form UI per-field.
-- Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`.
+- Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`. Sekarang marquee juga menambah sedikit duplikasi kecil (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis).
 - Google Fonts di-load all-upfront (7 keluarga font) padahal biasanya cuma 1-2 dipakai per scene. Font favorit user: **Manrope, Quicksand, Limelight** — pastikan 3 ini tetap tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
 - `gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).
 - Browser Source dimension tidak auto-sync ke Canvas Settings scene — lihat detail di bawah.

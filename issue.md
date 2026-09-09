@@ -12,28 +12,16 @@
 | 2 | Panel Properti Lengkap | ✅ Selesai |
 | 3 | Sistem Animasi (GSAP) | ✅ Selesai |
 | 4 | Asset & SVG Import | ✅ Selesai |
-| 5a | Platform Live Stats (TikTok/YouTube) | ⚠️ Belum clear — lihat detail di bawah |
+| 5a | Platform Live Stats (TikTok/YouTube) | ✅ Selesai |
 | 5b | External Data Source (Generic API Binding) | ✅ Selesai (minor gap, lihat Technical Debt) |
 | 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
 | 7 | Polish UX Editor | Belum dimulai |
 
 ---
 
-## Fase 5a — Platform Live Stats (Detail)
+## Fase 5a — Platform Live Stats (Selesai)
 
-Branch: `feat/live-platform-connectors-fase-5a` (belum di-merge — draft PR, perlu revisi sebelum merge).
-
-**Sudah benar:**
-- YouTube connector: pakai YouTube Data API v3 resmi (search live broadcast → `videos.list` untuk viewer count → `liveChatMessages` untuk chat).
-- Dead code `/api/settings` sudah dihapus.
-
-**Perlu direvisi sebelum merge:**
-1. **TikTok connector menyimpang dari rencana awal** — implementasi saat ini pakai REST polling sederhana ke `webcast.tiktok.com/webcast/room/info/` (bukan `TikTok-Live-Connector` / WebSocket push service yang sudah diriset). Konsekuensi: **tidak ada live chat TikTok** (cuma viewer count, like count, status live). Perlu diputuskan: lanjut pakai pendekatan simpel ini (trade-off: gak ada chat, tapi ringan, no extra dependency), atau ganti ke `TikTok-Live-Connector` sesuai riset awal supaya dapat chat real-time.
-2. **Follower count belum diimplementasi** di kedua platform — field `followerCount` gak pernah di-set dari connector manapun.
-3. **Potensi boros kuota YouTube** — kalau pakai Channel ID (bukan Video ID langsung), tiap polling cycle manggil `search.list` (100 unit/call) tanpa caching video ID yang ketemu. Bisa habis kuota harian (10.000 unit) dalam hitungan menit kalau poll interval terlalu pendek. Perlu cache video ID hasil resolve, refresh cuma kalau live berakhir.
-4. **Belum ada retry/backoff saat error** — kalau API TikTok/YouTube gagal terus, polling tetap jalan di interval sama tanpa backoff.
-
----
+Diselesaikan lewat PR #19 (merged). TikTok connector via `tiktok-live-connector` (WebSocket real-time), YouTube via Data API v3 (REST polling). Semua field (Username, Display Name, Viewer Count, Follower Count, Like Count, Latest Chat Author, Latest Chat Message) terverifikasi bekerja dengan live testing beneran di kedua platform. Termasuk Chat Display Queue System (durasi tampil chat independen dari poll interval, dikonfigurasi lewat `chatDisplayDurationMs`) dan auto-reconnect dengan exponential backoff.
 
 ## Technical Debt (kandidat Fase 7)
 

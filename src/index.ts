@@ -777,6 +777,7 @@ let cachedYouTubeChannelId: string | null = null
 let cachedYouTubeSubCount: number | null = null
 let cachedYouTubeSubLastFetched: number = 0
 let youtubeBackoffAttempt = 0
+let cachedYouTubeHandle: string | null = null
 
 async function getPlatformConfig(): Promise<PlatformConnectorConfig> {
   const file = Bun.file(PLATFORM_CONFIG_FILE)
@@ -809,27 +810,35 @@ async function savePlatformConfig(data: Partial<PlatformConnectorConfig>): Promi
 }
 
 /** Fetch YouTube channel subscriber count (cached for 5 minutes). */
-async function fetchYouTubeSubscriberCount(channelId: string, apiKey: string): Promise<number | undefined> {
+async function fetchYouTubeChannelDetails(channelId: string, apiKey: string): Promise<{ subscriberCount?: number; handle?: string }> {
   const now = Date.now()
   if (cachedYouTubeSubCount !== null && now - cachedYouTubeSubLastFetched < 300_000) {
-    return cachedYouTubeSubCount
+    return { subscriberCount: cachedYouTubeSubCount, handle: cachedYouTubeHandle ?? undefined }
   }
   try {
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${encodeURIComponent(channelId)}&key=${encodeURIComponent(apiKey)}`
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${encodeURIComponent(channelId)}&key=${encodeURIComponent(apiKey)}`
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
     if (res.ok) {
-      const data = await res.json() as { items?: { statistics?: { subscriberCount?: string } }[] }
-      const subCount = Number(data.items?.[0]?.statistics?.subscriberCount)
+      const data = await res.json() as {
+        items?: {
+          snippet?: { customUrl?: string }
+          statistics?: { subscriberCount?: string }
+        }[]
+      }
+      const item = data.items?.[0]
+      const subCount = Number(item?.statistics?.subscriberCount)
+      const handle = item?.snippet?.customUrl
       if (Number.isFinite(subCount)) {
         cachedYouTubeSubCount = subCount
         cachedYouTubeSubLastFetched = now
-        return subCount
       }
+      if (handle) cachedYouTubeHandle = handle
+      return { subscriberCount: Number.isFinite(subCount) ? subCount : undefined, handle: handle ?? undefined }
     }
   } catch {
     // Best-effort
   }
-  return cachedYouTubeSubCount ?? undefined
+  return { subscriberCount: cachedYouTubeSubCount ?? undefined, handle: cachedYouTubeHandle ?? undefined }
 }
 
 /** Fetch YouTube live stats via Data API v3 and push to live-stats store. */
@@ -901,10 +910,12 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
   const likeCount = Number(item.statistics?.likeCount)
 
   // Fetch subscriber count & handle if channel ID available (cached)
-  // Fetch subscriber count if channel ID available (cached)
   let followerCount: number | undefined = undefined
+  let channelHandle: string | undefined = undefined
   if (activeChannelId) {
-    followerCount = await fetchYouTubeSubscriberCount(activeChannelId, apiKey)
+    const details = await fetchYouTubeChannelDetails(activeChannelId, apiKey)
+    followerCount = details.subscriberCount
+    channelHandle = details.handle
   }
 
   // Fetch latest chat messages if liveChatId exists
@@ -947,7 +958,7 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
 
   await saveLiveStats({
     platform: 'YouTube Live',
-    username: snippet.channelTitle || activeChannelId || videoId,
+    username: channelHandle || snippet.channelTitle || activeChannelId || videoId,
     displayName: snippet.channelTitle || snippet.title || videoId,
     viewerCount,
     isLive: true,

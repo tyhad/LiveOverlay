@@ -16,6 +16,7 @@
 | 5b | External Data Source (Generic API Binding) | ✅ Selesai (minor gap, lihat Technical Debt) |
 | 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
 | — | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
+| — | F1GStats Integration — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
 | 7 | Polish UX Editor | Belum dimulai |
 
 ---
@@ -43,6 +44,47 @@ Fitur sisipan sebelum lanjut ke Fase 7, dikerjakan di branch `feat/running-text-
 - Track marquee sempat vertikal tidak center (`top:50%` tanpa `transform: translateY(-50%)`) → teks kepotong tengah secara height. Fixed.
 - 2-salinan tetap bikin animasi terasa "glitch"/loncat saat teks pendek dipaksa selalu jalan → diganti jumlah salinan dinamis berbasis lebar container.
 
+## F1GStats Integration — Selesai
+
+Fitur sisipan lain sebelum Fase 7. Menambahkan kemampuan bind text elements ke data F1 (jadwal sesi + WDC/WCC standing) yang dibaca dari database SQLite lokal read-only, sebagai alternatif dari External Data Source (Fase 5b) yang butuh API berbayar untuk akses real-time saat live — F1 season data (schedule, standings) cukup di-prefetch manual sebelum streaming karena jarang berubah selama sesi live berlangsung.
+
+**Arsitektur — 2 project terpisah**:
+1. **F1GStats** (`C:\Users\Setyo\Python\F1GStats`, project Python terpisah, repo git sendiri) — script `fetch_f1_data.py`, dijalankan manual lewat command line (`py fetch_f1_data.py --season 2026 --output ./f1gstats.sqlite`) sebelum sesi live. Fetch dari FastF1 (`get_event_schedule`) + Ergast/Jolpica (`Ergast()` wrapper bawaan FastF1) untuk standings, nama sirkuit resmi, dan hasil race (dipakai hitung podium/DNF-DNS manual). Setiap run: `DELETE` isi tabel lalu `INSERT` ulang (bukan append) — representasi kondisi terkini, bukan akumulasi histori.
+2. **LiveOverlay Studio** (project ini) — baca file `.sqlite` itu **read-only** lewat `bun:sqlite` (bawaan Bun, tanpa dependency tambahan). Tidak pernah menulis balik ke database itu.
+
+Kedua project terhubung murni lewat 1 file `f1gstats.sqlite` yang path-nya diasumsikan sejajar folder LiveOverlay (`../F1GStats/f1gstats.sqlite`, bisa di-override via env var `F1_DB_PATH`).
+
+**Skema database** (4 tabel: `meta`, `sessions`, `driver_standings`, `constructor_standings`) — lihat detail kolom di `src/index.ts` bagian `getF1DataSnapshot()`, atau brief asli fetcher untuk kontrak lengkap.
+
+**Filter Previous/Now/Next Round** — hanya round yang relevan terhadap waktu prefetch yang di-load (bukan semua jadwal semusim), ditentukan `select_relevant_rounds()` di fetcher berdasarkan rentang weekend tiap round (`start_weekend` s/d `end_weekend`, dari sesi paling awal ke paling akhir):
+- **Previous** = round terakhir yang weekend-nya sudah selesai sebelum waktu prefetch.
+- **Now** = round yang weekend-nya sedang berlangsung saat prefetch (bisa `null` kalau prefetch dilakukan di luar masa race weekend mana pun).
+- **Next** = round terdekat yang weekend-nya belum mulai.
+
+Kolom `round_relation` (`'previous'|'now'|'next'`) di tabel `sessions` ditulis oleh fetcher berdasarkan hasil filter ini — dipakai backend LiveOverlay untuk grouping data jadi struktur stabil, **bukan** array index yang bisa geser posisi tergantung ada/tidaknya "Now".
+
+**Backend** (`src/index.ts`): endpoint `GET /api/f1-data` return snapshot dalam bentuk:
+```
+{
+  season, lastFetchedAt,
+  previousRound: { round, raceName, circuitName, countryFlag, sessions: [{sessionType, startTimeUtc}] } | null,
+  nowRound: (sama, bisa null),
+  nextRound: (sama, bisa null),
+  driverStandings: [{position, driverName, driverAbbr, teamName, points, wins, podiums, dnfDns}],
+  constructorStandings: [{position, teamName, points, wins, podiums, dnfDns}],
+  available, error
+}
+```
+`buildRoundGroup()` mengelompokkan raw session rows (query `sessions` table) berdasarkan `roundRelation` jadi 3 objek stabil di atas.
+
+**Overlay & Editor**: `resolveElementText`/`collectF1FieldPaths` sudah generic (rekursif via `getValueAtPath`) sejak Fase 5b, jadi source binding baru `f1data` otomatis kompatibel tanpa perlu logic tambahan — cukup daftar field path lewat auto-complete datalist di editor. Poll interval 30 detik (bukan 2 detik seperti live-stats) karena data ini tidak perlu update selama live.
+
+**Country flag**: disimpan di database sudah dalam bentuk emoji siap pakai (bukan kode ISO mentah) — konversi dilakukan di sisi fetcher Python (`country_code_to_flag_emoji()` + mapping nama negara FastF1/Ergast → ISO alpha-2 di `COUNTRY_NAME_TO_ISO2`), bukan di LiveOverlay.
+
+**Catatan pengembangan**:
+- Sempat ada error `table sessions has no column named round_relation` saat nambah kolom baru ke skema — karena `CREATE TABLE IF NOT EXISTS` tidak migrate skema tabel yang sudah ada. Fixed dengan `_migrate_schema()` di fetcher yang cek `PRAGMA table_info` lalu `ALTER TABLE ADD COLUMN` kalau kolom belum ada — idempotent, aman dijalankan berkali-kali.
+- Index array `sessions.N` dalam satu round **bisa geser** tergantung format weekend (race biasa 5 sesi: FP1/FP2/FP3/Quali/Race; sprint weekend format beda: FP1/Sprint Quali/Sprint/Quali/Race). Kalau butuh binding stabil ke sesi tertentu, cek urutan aktual lewat datalist auto-complete di editor, jangan asumsi index secara manual.
+
 ---
 
 ## Technical Debt (kandidat Fase 7)
@@ -54,6 +96,7 @@ Fitur sisipan sebelum lanjut ke Fase 7, dikerjakan di branch `feat/running-text-
 - Google Fonts di-load all-upfront (7 keluarga font) padahal biasanya cuma 1-2 dipakai per scene. Font favorit user: **Manrope, Quicksand, Limelight** — pastikan 3 ini tetap tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
 - `gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).
 - Browser Source dimension tidak auto-sync ke Canvas Settings scene — lihat detail di bawah.
+- File `f1gstats.sqlite` bisa ter-lock oleh proses lain (misal server LiveOverlay yang masih jalan) saat fetcher F1GStats coba overwrite — di Windows ini gagal keras (`The process cannot access the file`), bukan cuma warning. Perlu SOP jelas: stop server LiveOverlay dulu sebelum re-run fetcher, atau ke depannya pertimbangkan skema "write ke file sementara lalu atomic rename" supaya tidak perlu stop service.
 
 ---
 
@@ -64,3 +107,7 @@ Kemampuan bind text/shape/element lain ke satu object "master" sehingga saat obj
 
 ### Browser Source dimension tidak auto-sync ke Canvas Settings scene
 `scene.canvas.width/height` cuma ngatur ukuran artboard di dalam overlay — tidak otomatis mengubah ukuran window Browser Source di OBS/TikTok Studio. User harus set manual dimensi Browser Source (Properties) supaya sesuai scene (misal 1080×1920 untuk portrait), termasuk pastikan `?scene=` yang dipakai sudah benar. Untuk sekarang diakali manual (desain disesuaikan ke browser source). Kemungkinan penyebab teknis kalau mau digali: `scaleViewport()`/CSS transform overlay belum proper handle aspect ratio non-landscape — belum diverifikasi.
+
+### F1GStats — kemungkinan pengembangan lanjutan
+- Auto-refresh terjadwal (misal cron/scheduled task) yang jalanin fetcher otomatis di waktu tertentu sebelum sesi live, biar tidak perlu diingat manual tiap kali. Belum diprioritaskan karena workflow manual saat ini masih cukup ringan (1 command).
+- Kalau ke depannya butuh histori multi-season (bukan cuma musim berjalan), perlu redesain skema (tambah kolom `season` eksplisit di tiap tabel, bukan cuma di `meta`).

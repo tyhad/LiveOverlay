@@ -743,6 +743,7 @@
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                   <option value="platform">Platform Stats</option>
                   <option value="external">External API Cache</option>
+                  <option value="f1data">F1 Data (Local DB)</option>
                 </select>
               </div>
               <div>
@@ -786,6 +787,17 @@
                   placeholder="current.temperature_2m">
                 <datalist id="external-field-paths"></datalist>
               </div>
+            </div>
+
+            <div id="f1data-binding-group" class="hidden space-y-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">F1 Field Path</label>
+                <input type="text" id="prop-text-binding-f1-field-path" list="f1-field-paths"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="driverStandings.0.driverName">
+                <datalist id="f1-field-paths"></datalist>
+              </div>
+              <p class="text-[10px] text-slate-500">Contoh: <code>driverStandings.0.driverName</code> (P1 driver), <code>constructorStandings.1.points</code> (poin tim P2), <code>sessions.2.startTimeUtc</code> (waktu sesi ke-3). Index mulai dari 0.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -1110,6 +1122,8 @@
     let lastLiveStatsHash = ''
     let externalData = { sources: [] }
     let lastExternalDataHash = ''
+    let f1Data = { sessions: [], driverStandings: [], constructorStandings: [] }
+    let lastF1DataHash = ''
 
     function updateOverlayPreviewLink() {
       const overlayUrl = `/overlay.html?scene=${encodeURIComponent(currentSceneId || scene.id || 'default')}`
@@ -1202,6 +1216,12 @@
         return `Source: ${source.name} | Status: ${source.status} | Updated: ${stamp}${errorText}`
       }
 
+      if (binding?.source === 'f1data') {
+        if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
+        const stamp = f1Data.lastFetchedAt ? new Date(f1Data.lastFetchedAt).toLocaleString() : 'never'
+        return `Source: F1GStats (Local DB) | Season: ${f1Data.season || '-'} | Fetched: ${stamp}`
+      }
+
       const stamp = liveStats.lastUpdatedAt ? new Date(liveStats.lastUpdatedAt).toLocaleString() : 'never'
       return `Source: ${liveStats.platform || 'platform'} | Updated: ${stamp}`
     }
@@ -1247,10 +1267,13 @@
       const el = scene.elements.find(item => item.id === selectedElementId)
       const binding = el ? ensureTextBinding(el) : null
       const isExternal = binding?.source === 'external'
+      const isF1Data = binding?.source === 'f1data'
+      const isPlatform = !isExternal && !isF1Data
       const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
 
-      document.getElementById('platform-binding-group').classList.toggle('hidden', isExternal)
+      document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
       document.getElementById('external-binding-group').classList.toggle('hidden', !isExternal)
+      document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
 
         ;[
           'prop-text-binding-source',
@@ -1260,13 +1283,15 @@
           'prop-text-binding-suffix',
           'prop-text-binding-fallback',
           'prop-text-binding-external-source',
-          'prop-text-binding-field-path'
+          'prop-text-binding-field-path',
+          'prop-text-binding-f1-field-path'
         ].forEach(id => {
           const input = document.getElementById(id)
           if (input) input.disabled = !isEnabled
         })
 
       populateExternalFieldOptions(binding)
+      if (isF1Data) populateF1FieldPaths()
     }
 
     function formatBoundValue(value, format) {
@@ -1288,6 +1313,8 @@
       let rawValue
       if (binding.source === 'external') {
         rawValue = getValueAtPath(getExternalSourceSnapshot(binding.externalSourceId)?.data, binding.fieldPath)
+      } else if (binding.source === 'f1data') {
+        rawValue = getValueAtPath(f1Data, binding.fieldPath)
       } else {
         rawValue = liveStats?.[binding.field]
       }
@@ -1511,6 +1538,47 @@
         updateBindingPreview()
       } catch (err) {
         console.error('Failed to load external data:', err)
+      }
+    }
+
+    function collectF1FieldPaths(data, prefix = '') {
+      if (data === null || data === undefined) return []
+      if (Array.isArray(data)) {
+        return data.flatMap((item, index) => collectF1FieldPaths(item, prefix ? `${prefix}.${index}` : String(index)))
+      }
+      if (typeof data !== 'object') return prefix ? [prefix] : []
+      return Object.entries(data).flatMap(([k, v]) => collectF1FieldPaths(v, prefix ? `${prefix}.${k}` : k))
+    }
+
+    function populateF1FieldPaths() {
+      const datalist = document.getElementById('f1-field-paths')
+      if (!datalist) return
+      datalist.replaceChildren()
+      const paths = collectF1FieldPaths({
+        sessions: f1Data.sessions,
+        driverStandings: f1Data.driverStandings,
+        constructorStandings: f1Data.constructorStandings,
+      })
+      paths.forEach(path => {
+        const option = document.createElement('option')
+        option.value = path
+        datalist.appendChild(option)
+      })
+    }
+
+    async function loadF1Data() {
+      try {
+        const res = await fetch('/api/f1-data')
+        if (!res.ok) return
+        const text = await res.text()
+        if (!text || text === lastF1DataHash) return
+        lastF1DataHash = text
+        f1Data = JSON.parse(text)
+        populateF1FieldPaths()
+        renderCanvas()
+        updateBindingPreview()
+      } catch (err) {
+        console.error('Failed to load F1 data:', err)
       }
     }
 
@@ -2107,6 +2175,7 @@
         populateExternalSourceOptions(binding.externalSourceId || '')
         document.getElementById('prop-text-binding-external-source').value = binding.externalSourceId || document.getElementById('prop-text-binding-external-source').value
         document.getElementById('prop-text-binding-field-path').value = binding.fieldPath || ''
+        document.getElementById('prop-text-binding-f1-field-path').value = binding.source === 'f1data' ? (binding.fieldPath || '') : ''
         updateBindingPreview()
 
         const marquee = ensureMarqueeConfig(el)
@@ -2341,6 +2410,13 @@
         updateBindingPreview()
       })
       document.getElementById('prop-text-binding-field-path').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).fieldPath = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-f1-field-path').addEventListener('input', (e) => {
         const el = getSelected()
         if (!el) return
         ensureTextBinding(el).fieldPath = e.target.value
@@ -2798,6 +2874,7 @@
       attachPropertyListeners()
       loadDataSources()
       loadExternalData(true)
+      loadF1Data()
       await loadAvailableScenes()
       await loadScene(currentSceneId)
       loadLiveStats()
@@ -2806,6 +2883,7 @@
       fitZoom()
       setInterval(loadLiveStats, 2000)
       setInterval(loadExternalData, 5000)
+      setInterval(loadF1Data, 30000)
       setInterval(loadPlatformConnectorStatus, 4000)
     })
 

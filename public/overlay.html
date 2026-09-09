@@ -73,6 +73,8 @@
     }
     let externalData = { sources: [] }
     let lastExternalDataHash = ''
+    let f1Data = { sessions: [], driverStandings: [], constructorStandings: [] }
+    let lastF1DataHash = ''
     let displayedChat = { author: '', message: '' }
     let chatDisplayQueue = []
     let displayedChatIds = new Set()
@@ -304,6 +306,8 @@
       let rawValue
       if (binding.source === 'external') {
         rawValue = getValueAtPath(getExternalSourceSnapshot(binding.externalSourceId)?.data, binding.fieldPath)
+      } else if (binding.source === 'f1data') {
+        rawValue = getValueAtPath(f1Data, binding.fieldPath)
       } else if (binding.field === 'latestChatAuthor') {
         rawValue = displayedChat.author
       } else if (binding.field === 'latestChatMessage') {
@@ -574,18 +578,35 @@
       }
     }
 
+    async function syncF1Data(isInitial = false) {
+      try {
+        const res = await fetch('/api/f1-data')
+        if (!res.ok) return
+        const text = await res.text()
+        if (text !== lastF1DataHash || isInitial) {
+          lastF1DataHash = text
+          f1Data = JSON.parse(text)
+          if (currentScene) renderScene(currentScene)
+        }
+      } catch (err) {
+        console.error('Failed to sync F1 data:', err)
+      }
+    }
+
     window.addEventListener('resize', scaleViewport)
 
     document.addEventListener('DOMContentLoaded', () => {
       scaleViewport()
       syncLiveStats(true)
       syncExternalData(true)
+      syncF1Data(true)
       syncScene(true)
       syncPlatformConnectorConfig()
       restartChatDisplayTimer()
       setInterval(() => syncScene(false), 2000)
       setInterval(() => syncLiveStats(false), 2000)
       setInterval(() => syncExternalData(false), 5000)
+      setInterval(() => syncF1Data(false), 30000)
       setInterval(syncPlatformConnectorConfig, 5000)
     })
   </script>

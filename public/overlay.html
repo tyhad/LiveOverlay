@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Limelight&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@400;500;600;700&family=Roboto:wght@400;500;700;900&display=swap"
     rel="stylesheet">
   <style>
     * {
@@ -71,8 +71,6 @@
       lastUpdatedAt: '',
       chatMessages: []
     }
-    let externalData = { sources: [] }
-    let lastExternalDataHash = ''
     let f1Data = { sessions: [], driverStandings: [], constructorStandings: [] }
     let lastF1DataHash = ''
     let displayedChat = { author: '', message: '' }
@@ -94,10 +92,6 @@
     function getValueAtPath(data, path) {
       if (!path) return data
       return path.split(/[.[\]]+/).filter(Boolean).reduce((curr, key) => (curr && typeof curr === 'object' ? curr[key] : undefined), data)
-    }
-
-    function getExternalSourceSnapshot(sourceId) {
-      return externalData.sources.find(source => source.id === sourceId)
     }
 
     function scaleViewport() {
@@ -304,9 +298,7 @@
       if (!binding?.enabled) return el?.style?.text || fallback
 
       let rawValue
-      if (binding.source === 'external') {
-        rawValue = getValueAtPath(getExternalSourceSnapshot(binding.externalSourceId)?.data, binding.fieldPath)
-      } else if (binding.source === 'f1data') {
+      if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
       } else if (binding.field === 'latestChatAuthor') {
         rawValue = displayedChat.author
@@ -563,21 +555,6 @@
       }
     }
 
-    async function syncExternalData(isInitial = false) {
-      try {
-        const res = await fetch('/api/external-data')
-        if (!res.ok) return
-        const text = await res.text()
-        if (text !== lastExternalDataHash || isInitial) {
-          lastExternalDataHash = text
-          externalData = JSON.parse(text)
-          if (currentScene) renderScene(currentScene)
-        }
-      } catch (err) {
-        console.error('Failed to sync external data:', err)
-      }
-    }
-
     async function syncF1Data(isInitial = false) {
       try {
         const res = await fetch('/api/f1-data')
@@ -598,14 +575,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       scaleViewport()
       syncLiveStats(true)
-      syncExternalData(true)
       syncF1Data(true)
       syncScene(true)
       syncPlatformConnectorConfig()
       restartChatDisplayTimer()
       setInterval(() => syncScene(false), 2000)
       setInterval(() => syncLiveStats(false), 2000)
-      setInterval(() => syncExternalData(false), 5000)
       setInterval(() => syncF1Data(false), 30000)
       setInterval(syncPlatformConnectorConfig, 5000)
     })

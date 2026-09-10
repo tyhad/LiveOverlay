@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Roboto:wght@400;500;700;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Limelight&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@400;500;600;700&family=Roboto:wght@400;500;700;900&display=swap"
     rel="stylesheet">
 
   <style>
@@ -248,37 +248,8 @@
         </div>
       </div>
 
-      <!-- Section 3: External Data Sources -->
-      <div class="border-b border-slate-800">
-        <button id="external-sources-toggle-btn"
-          class="w-full flex items-center justify-between gap-2 p-3 hover:bg-slate-800/50 transition">
-          <div class="text-left">
-            <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">External API Sources</h2>
-            <p class="text-[10px] text-slate-500 mt-1">Isi array JSON source API. Renderer overlay akan membaca cache
-              backend, bukan request langsung ke API luar.</p>
-          </div>
-          <svg id="external-sources-chevron" class="w-4 h-4 shrink-0 text-slate-400 transition-transform duration-200"
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        <div id="external-sources-content" class="hidden p-3 pt-0 space-y-2">
-          <div class="flex justify-end">
-            <button id="refresh-external-data-btn"
-              class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-200 transition">Refresh</button>
-          </div>
-          <textarea id="external-sources-json" rows="9"
-            class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-[11px] text-slate-200 font-mono focus:outline-none focus:border-indigo-500 resize-none"
-            spellcheck="false"></textarea>
-          <div class="flex items-center justify-between gap-2">
-            <button id="save-external-sources-btn"
-              class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition">Save
-              Sources</button>
-            <p id="external-sources-status" class="text-[10px] text-slate-500 text-right">Belum ada source eksternal.
-            </p>
-          </div>
-          <!-- Section 4: Platform Live Stats Connector -->
-          <div class="p-3 border-b border-slate-800 space-y-2">
+      <!-- Section 4: Platform Live Stats Connector -->
+      <div class="p-3 border-b border-slate-800 space-y-2">
             <div class="flex items-center justify-between gap-2">
               <div>
                 <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Live Stats</h2>
@@ -366,8 +337,8 @@
             </div>
           </div>
 
-          <!-- Section 5: Layers List -->
-          <div class="flex flex-col min-h-0">
+      <!-- Section 5: Layers List -->
+      <div class="flex flex-col min-h-0">
             <div
               class="p-3 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 z-10">
               <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
@@ -387,10 +358,10 @@
               </div>
             </div>
 
-            <div id="layers-list" class="min-h-[160px] p-2 space-y-1.5">
-              <!-- Layer items injected dynamically -->
-            </div>
-          </div>
+        <div id="layers-list" class="min-h-[160px] p-2 space-y-1.5">
+          <!-- Layer items injected dynamically -->
+        </div>
+      </div>
     </aside>
 
     <!-- CENTER: Canvas Workspace -->
@@ -742,7 +713,6 @@
                 <select id="prop-text-binding-source"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                   <option value="platform">Platform Stats</option>
-                  <option value="external">External API Cache</option>
                   <option value="f1data">F1 Data (Local DB)</option>
                 </select>
               </div>
@@ -772,21 +742,6 @@
                 <option value="platform">Platform Name</option>
                 <option value="isLive">Live Status</option>
               </select>
-            </div>
-
-            <div id="external-binding-group" class="hidden grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">External Source</label>
-                <select id="prop-text-binding-external-source"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"></select>
-              </div>
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Field Path</label>
-                <input type="text" id="prop-text-binding-field-path" list="external-field-paths"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  placeholder="current.temperature_2m">
-                <datalist id="external-field-paths"></datalist>
-              </div>
             </div>
 
             <div id="f1data-binding-group" class="hidden space-y-2">
@@ -838,6 +793,9 @@
               <option value="Bebas Neue, sans-serif">Bebas Neue (Impact Display)</option>
               <option value="Plus Jakarta Sans, sans-serif">Plus Jakarta Sans</option>
               <option value="Roboto, sans-serif">Roboto</option>
+              <option value="Manrope, sans-serif">Manrope (Modern Friendly)</option>
+              <option value="Quicksand, sans-serif">Quicksand (Soft Rounded)</option>
+              <option value="Limelight, cursive">Limelight (Vintage Display)</option>
             </select>
           </div>
 
@@ -1120,8 +1078,6 @@
       chatMessages: []
     }
     let lastLiveStatsHash = ''
-    let externalData = { sources: [] }
-    let lastExternalDataHash = ''
     let f1Data = { sessions: [], driverStandings: [], constructorStandings: [] }
     let lastF1DataHash = ''
 
@@ -1203,19 +1159,7 @@
       }, data)
     }
 
-    function getExternalSourceSnapshot(sourceId) {
-      return externalData.sources.find(source => source.id === sourceId)
-    }
-
     function formatBindingStatus(binding) {
-      if (binding?.source === 'external') {
-        const source = getExternalSourceSnapshot(binding.externalSourceId)
-        if (!source) return 'Source: external cache | source belum dipilih'
-        const stamp = source.lastSuccessAt ? new Date(source.lastSuccessAt).toLocaleString() : 'never'
-        const errorText = source.lastError ? ` | Error: ${source.lastError}` : ''
-        return `Source: ${source.name} | Status: ${source.status} | Updated: ${stamp}${errorText}`
-      }
-
       if (binding?.source === 'f1data') {
         if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
         const stamp = f1Data.lastFetchedAt ? new Date(f1Data.lastFetchedAt).toLocaleString() : 'never'
@@ -1226,53 +1170,14 @@
       return `Source: ${liveStats.platform || 'platform'} | Updated: ${stamp}`
     }
 
-    function populateExternalFieldOptions(binding) {
-      const datalist = document.getElementById('external-field-paths')
-      if (!datalist) return
-      datalist.replaceChildren()
-
-      const source = getExternalSourceSnapshot(binding?.externalSourceId)
-      const fieldPaths = source?.fieldPaths || []
-      fieldPaths.forEach(path => {
-        const option = document.createElement('option')
-        option.value = path
-        datalist.appendChild(option)
-      })
-    }
-
-    function populateExternalSourceOptions(selectedId = '') {
-      const select = document.getElementById('prop-text-binding-external-source')
-      if (!select) return
-      select.replaceChildren()
-
-      if (!externalData.sources.length) {
-        const option = document.createElement('option')
-        option.value = ''
-        option.textContent = 'No external sources'
-        select.appendChild(option)
-        return
-      }
-
-      externalData.sources.forEach(source => {
-        const option = document.createElement('option')
-        option.value = source.id
-        option.textContent = `${source.name} (${source.status})`
-        select.appendChild(option)
-      })
-
-      select.value = selectedId || externalData.sources[0].id
-    }
-
     function updateBindingControls() {
       const el = scene.elements.find(item => item.id === selectedElementId)
       const binding = el ? ensureTextBinding(el) : null
-      const isExternal = binding?.source === 'external'
       const isF1Data = binding?.source === 'f1data'
-      const isPlatform = !isExternal && !isF1Data
+      const isPlatform = !isF1Data
       const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
 
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
-      document.getElementById('external-binding-group').classList.toggle('hidden', !isExternal)
       document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
 
         ;[
@@ -1282,15 +1187,12 @@
           'prop-text-binding-prefix',
           'prop-text-binding-suffix',
           'prop-text-binding-fallback',
-          'prop-text-binding-external-source',
-          'prop-text-binding-field-path',
           'prop-text-binding-f1-field-path'
         ].forEach(id => {
           const input = document.getElementById(id)
           if (input) input.disabled = !isEnabled
         })
 
-      populateExternalFieldOptions(binding)
       if (isF1Data) populateF1FieldPaths()
     }
 
@@ -1311,9 +1213,7 @@
       if (!binding?.enabled) return el?.style?.text || fallback
 
       let rawValue
-      if (binding.source === 'external') {
-        rawValue = getValueAtPath(getExternalSourceSnapshot(binding.externalSourceId)?.data, binding.fieldPath)
-      } else if (binding.source === 'f1data') {
+      if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
       } else {
         rawValue = liveStats?.[binding.field]
@@ -1507,40 +1407,6 @@
       }
     }
 
-    async function loadDataSources() {
-      try {
-        const res = await fetch('/api/data-sources')
-        if (!res.ok) return
-        const payload = await res.json()
-        const sources = Array.isArray(payload?.sources) ? payload.sources : []
-        document.getElementById('external-sources-json').value = JSON.stringify(sources, null, 2)
-        document.getElementById('external-sources-status').textContent = sources.length
-          ? `${sources.length} source configured`
-          : 'Belum ada source eksternal.'
-      } catch (err) {
-        console.error('Failed to load data sources:', err)
-        document.getElementById('external-sources-status').textContent = 'Gagal memuat data source.'
-      }
-    }
-
-    async function loadExternalData(force = false) {
-      try {
-        const res = await fetch(`/api/external-data${force ? '?refresh=1' : ''}`)
-        if (!res.ok) return
-        const text = await res.text()
-        if (!text || text === lastExternalDataHash) return
-        lastExternalDataHash = text
-        externalData = JSON.parse(text)
-        const selectedBinding = scene.elements.find(item => item.id === selectedElementId)?.textBinding
-        populateExternalSourceOptions(selectedBinding?.externalSourceId || '')
-        populateExternalFieldOptions(selectedBinding)
-        renderCanvas()
-        updateBindingPreview()
-      } catch (err) {
-        console.error('Failed to load external data:', err)
-      }
-    }
-
     function collectF1FieldPaths(data, prefix = '') {
       if (data === null || data === undefined) return []
       if (Array.isArray(data)) {
@@ -1579,32 +1445,6 @@
         updateBindingPreview()
       } catch (err) {
         console.error('Failed to load F1 data:', err)
-      }
-    }
-
-    async function saveDataSources() {
-      const statusEl = document.getElementById('external-sources-status')
-      try {
-        const parsed = JSON.parse(document.getElementById('external-sources-json').value || '[]')
-        if (!Array.isArray(parsed)) throw new Error('JSON harus berupa array')
-
-        const res = await fetch('/api/data-sources', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sources: parsed })
-        })
-
-        if (!res.ok) {
-          const error = await res.text()
-          throw new Error(error || 'Failed to save external data sources')
-        }
-
-        statusEl.textContent = 'Data sources tersimpan.'
-        await loadDataSources()
-        await loadExternalData(true)
-      } catch (err) {
-        console.error('Failed to save data sources:', err)
-        statusEl.textContent = `Gagal simpan: ${err.message || err}`
       }
     }
 
@@ -2172,9 +2012,6 @@
         document.getElementById('prop-text-binding-prefix').value = binding.prefix || ''
         document.getElementById('prop-text-binding-suffix').value = binding.suffix || ''
         document.getElementById('prop-text-binding-fallback').value = binding.fallback || el.style?.text || ''
-        populateExternalSourceOptions(binding.externalSourceId || '')
-        document.getElementById('prop-text-binding-external-source').value = binding.externalSourceId || document.getElementById('prop-text-binding-external-source').value
-        document.getElementById('prop-text-binding-field-path').value = binding.fieldPath || ''
         document.getElementById('prop-text-binding-f1-field-path').value = binding.source === 'f1data' ? (binding.fieldPath || '') : ''
         updateBindingPreview()
 
@@ -2387,9 +2224,6 @@
         if (!el) return
         const binding = ensureTextBinding(el)
         binding.source = e.target.value
-        if (binding.source === 'external' && !binding.externalSourceId && externalData.sources.length) {
-          binding.externalSourceId = externalData.sources[0].id
-        }
         renderCanvas()
         updateBindingPreview()
       })
@@ -2397,22 +2231,6 @@
         const el = getSelected()
         if (!el) return
         ensureTextBinding(el).field = e.target.value
-        renderCanvas()
-        updateBindingPreview()
-      })
-      document.getElementById('prop-text-binding-external-source').addEventListener('change', (e) => {
-        const el = getSelected()
-        if (!el) return
-        const binding = ensureTextBinding(el)
-        binding.externalSourceId = e.target.value
-        populateExternalFieldOptions(binding)
-        renderCanvas()
-        updateBindingPreview()
-      })
-      document.getElementById('prop-text-binding-field-path').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (!el) return
-        ensureTextBinding(el).fieldPath = e.target.value
         renderCanvas()
         updateBindingPreview()
       })
@@ -2603,30 +2421,6 @@
     })
 
     document.getElementById('upload-asset-btn').addEventListener('click', () => assetFileInput.click())
-    document.getElementById('save-external-sources-btn').addEventListener('click', saveDataSources)
-    document.getElementById('refresh-external-data-btn').addEventListener('click', () => loadExternalData(true))
-
-      // External API Sources panel: collapsible, state remembered per browser
-      ; (() => {
-        const toggleBtn = document.getElementById('external-sources-toggle-btn')
-        const content = document.getElementById('external-sources-content')
-        const chevron = document.getElementById('external-sources-chevron')
-        const STORAGE_KEY = 'liveoverlay:external-sources-panel-open'
-
-        const setOpen = (open) => {
-          content.classList.toggle('hidden', !open)
-          chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)'
-          localStorage.setItem(STORAGE_KEY, open ? '1' : '0')
-        }
-
-        // Default: collapsed on first visit (saves space), remembers last state after that
-        const saved = localStorage.getItem(STORAGE_KEY)
-        setOpen(saved === '1')
-
-        toggleBtn.addEventListener('click', () => {
-          setOpen(content.classList.contains('hidden'))
-        })
-      })()
     assetFileInput.addEventListener('change', async () => {
       const [file] = assetFileInput.files
       if (!file) return
@@ -2872,8 +2666,6 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       attachPropertyListeners()
-      loadDataSources()
-      loadExternalData(true)
       loadF1Data()
       await loadAvailableScenes()
       await loadScene(currentSceneId)
@@ -2882,7 +2674,6 @@
       initPlatformConnector()
       fitZoom()
       setInterval(loadLiveStats, 2000)
-      setInterval(loadExternalData, 5000)
       setInterval(loadF1Data, 30000)
       setInterval(loadPlatformConnectorStatus, 4000)
     })

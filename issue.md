@@ -13,7 +13,7 @@
 | 3 | Sistem Animasi (GSAP) | ✅ Selesai |
 | 4 | Asset & SVG Import | ✅ Selesai |
 | 5a | Platform Live Stats (TikTok/YouTube) | ✅ Selesai |
-| 5b | External Data Source (Generic API Binding) | ✅ Selesai (minor gap, lihat Technical Debt) |
+| 5b | External Data Source (Generic API Binding) | ❌ Dihapus — lihat "External Data Source — Dihapus" di bawah |
 | 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
 | — | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
 | — | F1GStats Integration — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
@@ -77,7 +77,7 @@ Kolom `round_relation` (`'previous'|'now'|'next'`) di tabel `sessions` ditulis o
 ```
 `buildRoundGroup()` mengelompokkan raw session rows (query `sessions` table) berdasarkan `roundRelation` jadi 3 objek stabil di atas.
 
-**Overlay & Editor**: `resolveElementText`/`collectF1FieldPaths` sudah generic (rekursif via `getValueAtPath`) sejak Fase 5b, jadi source binding baru `f1data` otomatis kompatibel tanpa perlu logic tambahan — cukup daftar field path lewat auto-complete datalist di editor. Poll interval 30 detik (bukan 2 detik seperti live-stats) karena data ini tidak perlu update selama live.
+**Overlay & Editor**: `resolveElementText`/`collectF1FieldPaths` generic (rekursif via `getValueAtPath`), jadi source binding `f1data` kompatibel tanpa perlu logic tambahan — cukup daftar field path lewat auto-complete datalist di editor. Poll interval 30 detik (bukan 2 detik seperti live-stats) karena data ini tidak perlu update selama live.
 
 **Country flag**: disimpan di database sudah dalam bentuk emoji siap pakai (bukan kode ISO mentah) — konversi dilakukan di sisi fetcher Python (`country_code_to_flag_emoji()` + mapping nama negara FastF1/Ergast → ISO alpha-2 di `COUNTRY_NAME_TO_ISO2`), bukan di LiveOverlay.
 
@@ -85,15 +85,28 @@ Kolom `round_relation` (`'previous'|'now'|'next'`) di tabel `sessions` ditulis o
 - Sempat ada error `table sessions has no column named round_relation` saat nambah kolom baru ke skema — karena `CREATE TABLE IF NOT EXISTS` tidak migrate skema tabel yang sudah ada. Fixed dengan `_migrate_schema()` di fetcher yang cek `PRAGMA table_info` lalu `ALTER TABLE ADD COLUMN` kalau kolom belum ada — idempotent, aman dijalankan berkali-kali.
 - Index array `sessions.N` dalam satu round **bisa geser** tergantung format weekend (race biasa 5 sesi: FP1/FP2/FP3/Quali/Race; sprint weekend format beda: FP1/Sprint Quali/Sprint/Quali/Race). Kalau butuh binding stabil ke sesi tertentu, cek urutan aktual lewat datalist auto-complete di editor, jangan asumsi index secara manual.
 
+## External Data Source (Fase 5b) — Dihapus
+
+Fitur ini **dibatalkan dan kodenya dihapus sepenuhnya** dari `main`. Alasan: use case awal (data balapan F1 real-time) tidak feasible dengan API gratis (butuh tier berbayar untuk akses live), dan sudah tergantikan sepenuhnya oleh F1GStats Integration (baca lokal SQLite, bukan hit API eksternal saat live).
+
+**Yang dihapus** (backend, overlay, editor):
+- Backend: endpoint `GET/POST /api/data-sources`, `GET /api/external-data`; fungsi `getExternalDataSources`, `saveExternalDataSources`, `normalizeExternalDataSourceConfig`, `refreshExternalDataSource`, `getExternalDataSnapshot`, `getValueAtPath`/`collectFieldPaths` (versi backend — versi client-side di overlay/editor tetap ada karena dipakai binding F1 data); interface `ExternalDataSourceConfig`, `ExternalDataSourceCacheEntry`, `ExternalTextBinding`; konstanta `DATA_SOURCES_FILE`, `EXAMPLE_DATA_SOURCES_FILE`, `DEFAULT_EXTERNAL_POLL_INTERVAL_MS`, `DEFAULT_EXTERNAL_TIMEOUT_MS`; file `data-sources.json`/`data-sources.example.json` sudah tidak dipakai (boleh dihapus manual dari disk kalau masih ada).
+- Overlay (`overlay.html`): state `externalData`/`lastExternalDataHash`, fungsi `getExternalSourceSnapshot`, `syncExternalData`, cabang `binding.source === 'external'` di `resolveElementText`.
+- Editor (`index.html`): panel UI "External API Sources" (textarea JSON, tombol save/refresh, toggle collapsible) — **termasuk perbaikan struktur HTML**, karena panel ini ternyata membungkus (wrap) section "Platform Live Stats Connector" dan "Layers List" di dalam div collapsible-nya; keduanya dipindah keluar supaya tidak ikut hilang saat panel External API Sources dihapus. Juga dihapus: opsi `external` di dropdown Binding Source, blok `external-binding-group`, state `externalData`, fungsi `loadDataSources`/`loadExternalData`/`saveDataSources`/`populateExternalSourceOptions`/`populateExternalFieldOptions`/`getExternalSourceSnapshot`, dan semua listener terkait.
+
+**Dampak ke data lama**: kalau ada scene tersimpan dengan elemen `textBinding.source === 'external'`, elemen itu tidak akan crash (tetap fallback ke `fallback` text seperti biasa via guard yang sudah ada di `resolveElementText`), tapi field khusus itu tidak lagi ter-resolve. Perlu dicek manual di `scenes.json` kalau ada binding lama semacam ini dan diarahkan ulang ke `platform` atau `f1data`.
+
+## Concurrent Rendering Multi-Scene — Tested, Finish
+
+Item technical debt "concurrent rendering 2+ browser source beda `?scene=`" sudah ditest dan dikonfirmasi **aman**. Dipindahkan dari Technical Debt ke sini sebagai selesai/lulus verifikasi.
+
 ---
 
 ## Technical Debt (kandidat Fase 7)
 
-- Concurrent rendering multi-scene (2+ browser source beda `?scene=` render bersamaan) belum di-test langsung. Desain kode kemungkinan besar aman (`getScenes()`/`getSceneById()` pure file-read), tapi belum diverifikasi eksplisit.
 - Race condition di `persistSceneStore()`: dua `Bun.write()` berurutan tanpa lock — kalau dua save scene terjadi nyaris bersamaan, berpotensi `scenes.json` sempat inkonsisten.
-- Config source Fase 5b masih via raw JSON textarea di editor, belum form UI per-field.
-- Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`. Sekarang marquee juga menambah sedikit duplikasi kecil (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis).
-- Google Fonts di-load all-upfront (7 keluarga font) padahal biasanya cuma 1-2 dipakai per scene. Font favorit user: **Manrope, Quicksand, Limelight** — pastikan 3 ini tetap tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
+- Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`. Marquee juga menambah sedikit duplikasi kecil (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis).
+- Google Fonts di-load all-upfront (10 keluarga font: Bebas Neue, Inter, Limelight, Manrope, Montserrat, Outfit, Plus Jakarta Sans, Poppins, Quicksand, Roboto) padahal biasanya cuma 1-2 dipakai per scene. **Manrope, Quicksand, Limelight sudah ditambahkan** ke Google Fonts `<link>` dan dropdown Font Family di editor — pastikan tetap tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
 - `gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).
 - Browser Source dimension tidak auto-sync ke Canvas Settings scene — lihat detail di bawah.
 - File `f1gstats.sqlite` bisa ter-lock oleh proses lain (misal server LiveOverlay yang masih jalan) saat fetcher F1GStats coba overwrite — di Windows ini gagal keras (`The process cannot access the file`), bukan cuma warning. Perlu SOP jelas: stop server LiveOverlay dulu sebelum re-run fetcher, atau ke depannya pertimbangkan skema "write ke file sementara lalu atomic rename" supaya tidak perlu stop service.

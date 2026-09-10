@@ -11,15 +11,11 @@ const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENES_FILE = 'scenes.json'
 const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
-const DATA_SOURCES_FILE = 'data-sources.json'
-const EXAMPLE_DATA_SOURCES_FILE = 'data-sources.example.json'
 const PLATFORM_CONFIG_FILE = 'platform-config.json'
 const ASSET_DIRECTORY = 'public/uploads'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
 const PORT = Number(process.env.PORT || 3000)
 const MAX_ASSET_SIZE = 10 * 1024 * 1024
-const DEFAULT_EXTERNAL_POLL_INTERVAL_MS = 15_000
-const DEFAULT_EXTERNAL_TIMEOUT_MS = 5_000
 const DEFAULT_PLATFORM_POLL_INTERVAL_MS = 30_000
 const ASSET_MIME_TYPES = new Map([
   ['image/svg+xml', 'svg'],
@@ -140,17 +136,6 @@ interface PlatformTextBinding {
   fallback?: string
 }
 
-interface ExternalTextBinding {
-  enabled?: boolean
-  source: 'external'
-  externalSourceId?: string
-  fieldPath?: string
-  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
 /** fieldPath examples: "sessions.0.raceName", "driverStandings.0.driverName", "constructorStandings.1.points" */
 interface F1TextBinding {
   enabled?: boolean
@@ -162,7 +147,7 @@ interface F1TextBinding {
   fallback?: string
 }
 
-type TextBinding = PlatformTextBinding | ExternalTextBinding | F1TextBinding
+type TextBinding = PlatformTextBinding | F1TextBinding
 
 interface MarqueeConfig {
   enabled?: boolean
@@ -399,30 +384,6 @@ function getF1DataSnapshot(): F1DataSnapshot {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-
-interface ExternalDataSourceConfig {
-  id: string
-  name: string
-  url: string
-  enabled?: boolean
-  method?: 'GET'
-  headers?: Record<string, string>
-  pollIntervalMs?: number
-  timeoutMs?: number
-  rootPath?: string
-}
-
-interface ExternalDataSourceCacheEntry {
-  id: string
-  name: string
-  status: 'idle' | 'success' | 'error' | 'disabled'
-  pollIntervalMs: number
-  lastFetchedAt: string | null
-  lastSuccessAt: string | null
-  lastError: string | null
-  fieldPaths: string[]
-  data: unknown
-}
 
 const DEFAULT_SETTINGS: Settings = {
   tiktokUsername: '@creator',
@@ -705,181 +666,6 @@ async function saveLiveStats(data: LiveStatsUpdate): Promise<LiveStatsData> {
 
   await Bun.write(LIVE_STATS_FILE, JSON.stringify(updated, null, 2))
   return updated
-}
-
-const DEFAULT_EXTERNAL_DATA_SOURCES: ExternalDataSourceConfig[] = []
-
-const externalDataCache = new Map<string, ExternalDataSourceCacheEntry>()
-const externalDataInflight = new Map<string, Promise<ExternalDataSourceCacheEntry>>()
-
-function normalizeExternalDataSourceConfig(source: Partial<ExternalDataSourceConfig>, index: number): ExternalDataSourceConfig {
-  const safeId = String(source.id || `source_${index + 1}`)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '') || `source_${index + 1}`
-
-  return {
-    id: safeId,
-    name: String(source.name || `External Source ${index + 1}`).trim() || `External Source ${index + 1}`,
-    url: String(source.url || '').trim(),
-    enabled: source.enabled !== false,
-    method: 'GET',
-    headers: source.headers && typeof source.headers === 'object'
-      ? Object.fromEntries(
-        Object.entries(source.headers)
-          .filter(([key, value]) => key && value !== undefined && value !== null)
-          .map(([key, value]) => [String(key).trim(), String(value)])
-      )
-      : {},
-    pollIntervalMs: Math.max(5_000, Math.min(300_000, Number(source.pollIntervalMs) || DEFAULT_EXTERNAL_POLL_INTERVAL_MS)),
-    timeoutMs: Math.max(1_000, Math.min(30_000, Number(source.timeoutMs) || DEFAULT_EXTERNAL_TIMEOUT_MS)),
-    rootPath: String(source.rootPath || '').trim(),
-  }
-}
-
-async function getExternalDataSources(): Promise<ExternalDataSourceConfig[]> {
-  const file = Bun.file(DATA_SOURCES_FILE)
-  if (await file.exists()) {
-    try {
-      const text = await file.text()
-      const parsed = JSON.parse(text)
-      if (Array.isArray(parsed)) {
-        return parsed.map((source, index) => normalizeExternalDataSourceConfig(source, index))
-      }
-    } catch {
-      // Fallback if parsing fails
-    }
-  }
-
-  const exampleFile = Bun.file(EXAMPLE_DATA_SOURCES_FILE)
-  let initialData = DEFAULT_EXTERNAL_DATA_SOURCES
-  if (await exampleFile.exists()) {
-    try {
-      const parsed = JSON.parse(await exampleFile.text())
-      if (Array.isArray(parsed)) {
-        initialData = parsed.map((source, index) => normalizeExternalDataSourceConfig(source, index))
-      }
-    } catch {
-      initialData = DEFAULT_EXTERNAL_DATA_SOURCES
-    }
-  }
-
-  await Bun.write(DATA_SOURCES_FILE, JSON.stringify(initialData, null, 2))
-  return initialData
-}
-
-async function saveExternalDataSources(data: Partial<ExternalDataSourceConfig>[]): Promise<ExternalDataSourceConfig[]> {
-  const normalized = data.map((source, index) => normalizeExternalDataSourceConfig(source, index))
-  await Bun.write(DATA_SOURCES_FILE, JSON.stringify(normalized, null, 2))
-
-  const validIds = new Set(normalized.map((source) => source.id))
-  for (const id of externalDataCache.keys()) {
-    if (!validIds.has(id)) {
-      externalDataCache.delete(id)
-      externalDataInflight.delete(id)
-    }
-  }
-
-  return normalized
-}
-
-function getValueAtPath(data: unknown, path?: string): unknown {
-  if (!path) return data
-  return path.split(/[.[\]]+/).filter(Boolean).reduce<unknown>((curr, key) => (curr && typeof curr === 'object' ? (curr as Record<string, unknown>)[key] : undefined), data)
-}
-
-function collectFieldPaths(data: unknown, prefix = ''): string[] {
-  if (data === null || data === undefined) return []
-  if (typeof data !== 'object') return prefix ? [prefix] : []
-  return Object.entries(data as Record<string, unknown>).flatMap(([k, v]) => collectFieldPaths(v, prefix ? `${prefix}.${k}` : k))
-}
-
-async function refreshExternalDataSource(source: ExternalDataSourceConfig, force = false): Promise<ExternalDataSourceCacheEntry> {
-  const current = externalDataCache.get(source.id)
-  const now = Date.now()
-  const pollIntervalMs = source.pollIntervalMs || DEFAULT_EXTERNAL_POLL_INTERVAL_MS
-
-  if (!source.enabled) {
-    const disabledEntry: ExternalDataSourceCacheEntry = {
-      id: source.id,
-      name: source.name,
-      status: 'disabled',
-      pollIntervalMs,
-      lastFetchedAt: current?.lastFetchedAt || null,
-      lastSuccessAt: current?.lastSuccessAt || null,
-      lastError: null,
-      fieldPaths: current?.fieldPaths || [],
-      data: current?.data ?? null,
-    }
-    externalDataCache.set(source.id, disabledEntry)
-    return disabledEntry
-  }
-
-  if (!force && current?.status === 'success' && current.lastFetchedAt) {
-    const age = now - new Date(current.lastFetchedAt).getTime()
-    if (age < pollIntervalMs) return current
-  }
-
-  const existingFetch = externalDataInflight.get(source.id)
-  if (existingFetch) return existingFetch
-
-  const requestPromise = (async () => {
-    const fetchedAt = new Date().toISOString()
-    try {
-      const response = await fetch(source.url, {
-        method: 'GET',
-        headers: source.headers,
-        signal: AbortSignal.timeout(source.timeoutMs || DEFAULT_EXTERNAL_TIMEOUT_MS),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`)
-      }
-
-      const payload = await response.json()
-      const selectedData = source.rootPath ? getValueAtPath(payload, source.rootPath) : payload
-      const nextEntry: ExternalDataSourceCacheEntry = {
-        id: source.id,
-        name: source.name,
-        status: 'success',
-        pollIntervalMs,
-        lastFetchedAt: fetchedAt,
-        lastSuccessAt: fetchedAt,
-        lastError: null,
-        fieldPaths: collectFieldPaths(selectedData),
-        data: selectedData ?? null,
-      }
-      externalDataCache.set(source.id, nextEntry)
-      return nextEntry
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown fetch error'
-      const failedEntry: ExternalDataSourceCacheEntry = {
-        id: source.id,
-        name: source.name,
-        status: 'error',
-        pollIntervalMs,
-        lastFetchedAt: fetchedAt,
-        lastSuccessAt: current?.lastSuccessAt || null,
-        lastError: message,
-        fieldPaths: current?.fieldPaths || [],
-        data: current?.data ?? null,
-      }
-      externalDataCache.set(source.id, failedEntry)
-      return failedEntry
-    } finally {
-      externalDataInflight.delete(source.id)
-    }
-  })()
-
-  externalDataInflight.set(source.id, requestPromise)
-  return requestPromise
-}
-
-async function getExternalDataSnapshot(force = false) {
-  const sources = await getExternalDataSources()
-  const entries = await Promise.all(sources.map((source) => refreshExternalDataSource(source, force)))
-  return { sources, cache: entries }
 }
 
 async function listAssets() {
@@ -1500,28 +1286,6 @@ const app = new Elysia()
   .get('/api/assets', async () => {
     return { assets: await listAssets() }
   })
-  .get(
-    '/api/data-sources',
-    async () => {
-      return { sources: await getExternalDataSources() }
-    }
-  )
-  .get(
-    '/api/external-data',
-    async ({ query }) => {
-      const forceRefresh = query.refresh === '1' || query.refresh === 'true'
-      const snapshot = await getExternalDataSnapshot(forceRefresh)
-      return {
-        sources: snapshot.cache,
-        updatedAt: new Date().toISOString(),
-      }
-    },
-    {
-      query: t.Object({
-        refresh: t.Optional(t.String()),
-      }),
-    }
-  )
   .post(
     '/api/assets',
     async ({ request, headers, set }) => {
@@ -1588,45 +1352,6 @@ const app = new Elysia()
     }
   )
 
-  .post(
-    '/api/data-sources',
-    async ({ body, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
-      }
-
-      const updated = await saveExternalDataSources(body.sources)
-      await getExternalDataSnapshot(true)
-
-      return {
-        success: true,
-        message: 'External data sources saved successfully',
-        data: updated,
-      }
-    },
-    {
-      body: t.Object({
-        sources: t.Array(
-          t.Object({
-            id: t.Optional(t.String()),
-            name: t.Optional(t.String()),
-            url: t.Optional(t.String()),
-            enabled: t.Optional(t.Boolean()),
-            method: t.Optional(t.Literal('GET')),
-            headers: t.Optional(t.Record(t.String(), t.String())),
-            pollIntervalMs: t.Optional(t.Numeric()),
-            timeoutMs: t.Optional(t.Numeric()),
-            rootPath: t.Optional(t.String()),
-          })
-        ),
-      }),
-    }
-  )
   .post(
     '/api/live-stats',
     async ({ body, headers, set }) => {

@@ -17,6 +17,7 @@
 | 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
 | — | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
 | — | F1GStats Integration — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
+| 8 | Animation Sequence & Property Transition System (overhaul Fase 3) | 🔄 Sedang berjalan — branch `feature/animation-sequence-system` |
 | 7 | Polish UX Editor | Belum dimulai |
 
 ---
@@ -100,12 +101,32 @@ Fitur ini **dibatalkan dan kodenya dihapus sepenuhnya** dari `main`. Alasan: use
 
 Item technical debt "concurrent rendering 2+ browser source beda `?scene=`" sudah ditest dan dikonfirmasi **aman**. Dipindahkan dari Technical Debt ke sini sebagai selesai/lulus verifikasi.
 
+## Fase 8 — Animation Sequence & Property Transition System (Sedang Berjalan)
+
+Overhaul total sistem animasi (dulu Fase 3), mengganti model `entrance/loop/exit` (3 slot preset tetap) menjadi model sequence generik berbasis property-transition (`animation.sequence: []`, step Q0→Q1→Q2→...). Keputusan arsitektur & prinsip yang sudah settled dicatat di `Vision.md` bagian 3.3.1. **Tidak ada backward-compat** untuk skema lama — migrasi langsung, karena project belum dipakai live dan data scene saat ini murni untuk testing.
+
+**System yang wajib dipertahankan fungsinya selama overhaul ini** (tidak boleh regresi):
+- Panel Add Elements, Assets, Platform Live Stats, Layers (catatan: tombol Bring to Top/Move Up/Move Down/Send to Bottom **memang sudah rusak dari sebelumnya**, bukan tanggung jawab overhaul ini — dicatat terpisah di Technical Debt/Todo), Canvas Settings, Running Text (Marquee), Data Binding, panel Multi-Scene & Multi-Output (catatan: teks header "LiveOverlay Studio"/"GSAP Animation" kepotong vertikal — bug CSS terpisah, tidak terkait overhaul ini).
+
+Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Panel, Canvas Alignment Panel, Transform & Position Panel, Typography Panel (Running Text & Data Binding boleh dipisah jadi panel sendiri), Fill & Background, Border & Corners, Drop Shadow & Glow.
+
+**Breakdown fase kerja** (checklist, dikerjakan bertahap — beberapa boleh paralel, dicatat di sub-poin):
+
+- [ ] **Fase 0 — Modularisasi**: extract logic animasi dari `index.html`/`overlay.html` jadi modul bersama (`animation-engine.js` atau setara) yang di-load oleh keduanya, supaya tidak ada duplikasi logic (menjawab technical debt "Logic animasi GSAP ke-duplikat" di bawah).
+- [ ] **Fase 1 — Migrasi skema data**: ganti `SceneElement.animation.{entrance,loop,exit}` → `animation.sequence: AnimationStep[]` di `src/index.ts` (tipe data) dan semua file contoh (`scene.example.json`, `scenes.example.json`).
+- [ ] **Fase 2 — Sequence Engine**: `AnimationController` + `buildTimelineFromSequence`. Step type `to` (prioritas awal), properti didukung: `x`, `y`, `opacity`, `scale`, `rotation`. Posisi dianimasikan via `left`/`top` (bukan `transform`), konsisten dengan representasi `el.x`/`el.y` pixel-absolut yang sudah ada. Timeline registry per elementId + cleanup saat elemen dihapus/scene diganti/timeline infinite (`repeat:-1`) dihentikan eksplisit.
+- [ ] **Fase 3 — GSAP Animations Panel jadi Sequence Editor**: list step Q0..Qn (add/delete/reorder/duplicate), field per step (type, duration, delay, ease, repeat, yoyo, target properties). **Quick-insert preset template** disediakan di UI (fade/slide/pulse/dst) — preset ini murni helper UI yang insert step generik sudah terisi, bukan konsep yang dikenal engine.
+- [ ] **Fase 4 — Transform & Position Panel** (dikerjakan bersamaan Fase 3): pastikan field x/y/scale/rotation/opacity current-state elemen jelas terlihat sebagai starting state implisit untuk step `to`.
+- [ ] **Fase 5 — Reorganisasi panel non-animasi** (dijadwalkan terpisah, effort/waktu sendiri setelah Fase 0-4 stabil): Canvas Alignment, Typography (pisah Running Text & Data Binding jadi panel sendiri), Fill & Background, Border & Corners, Drop Shadow & Glow.
+- [ ] **Fase 6 — Sync `overlay.html`**: playback live pakai engine yang sama dengan editor (otomatis terpenuhi kalau Fase 0 modularisasi selesai duluan).
+- [ ] **Fase 7 — Testing**: sequential order, posisi akhir (final x/y), multi-property simultan, delay, repeat (finite & infinite + terminasi), pause/resume, cleanup saat elemen dihapus, scene replacement (timeline lama tidak boleh pengaruhi elemen scene baru), regresi ke semua "system yang harus dipertahankan" di atas.
+
 ---
 
 ## Technical Debt (kandidat Fase 7)
 
 - Race condition di `persistSceneStore()`: dua `Bun.write()` berurutan tanpa lock — kalau dua save scene terjadi nyaris bersamaan, berpotensi `scenes.json` sempat inkonsisten.
-- Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`. Marquee juga menambah sedikit duplikasi kecil (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis).
+- ~~Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`.~~ Sedang ditangani sebagai bagian Fase 8 (lihat di atas — Fase 0 modularisasi). Marquee tetap punya sedikit duplikasi kecil terpisah (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis) — tidak termasuk scope Fase 8.
 - Google Fonts di-load all-upfront (10 keluarga font: Bebas Neue, Inter, Limelight, Manrope, Montserrat, Outfit, Plus Jakarta Sans, Poppins, Quicksand, Roboto) padahal biasanya cuma 1-2 dipakai per scene. **Manrope, Quicksand, Limelight sudah ditambahkan** ke Google Fonts `<link>` dan dropdown Font Family di editor — pastikan tetap tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
 - `gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).
 - Browser Source dimension tidak auto-sync ke Canvas Settings scene — lihat detail di bawah.

@@ -88,31 +88,44 @@ interface ElementStyle {
   shadowOffsetY?: number
 }
 
-interface EntranceAnimation {
-  type?: 'none' | 'fadeIn' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'zoomIn' | 'bounceIn' | 'flipX' | 'flipY' | 'elasticIn'
-  duration?: number
-  delay?: number
-  ease?: string
+/**
+ * Properti elemen yang bisa jadi target animasi. Sengaja dibatasi (bukan semua
+ * CSS property) — lihat Vision.md §3.3.1 dan public/animation-engine.js.
+ */
+interface AnimatableProperties {
+  x?: number
+  y?: number
+  opacity?: number
+  scale?: number
+  rotation?: number
 }
 
-interface ExitAnimation {
-  type?: 'none' | 'fadeOut' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'zoomOut' | 'bounceOut' | 'flipX'
-  duration?: number
+/**
+ * Satu step animasi dalam sequence (Q0, Q1, Q2, ...). Dieksekusi berurutan.
+ *   - 'to': animasi dari state elemen saat ini menuju `properties`.
+ *   - 'from': animasi dari `properties` menuju state elemen saat ini (state akhir
+ *     tidak berubah secara kanonis — dipakai untuk efek entrance seperti fadeIn/slideUp
+ *     tanpa mengubah x/y/opacity tersimpan elemen, supaya WYSIWYG di editor tetap akurat).
+ *   - 'fromTo': kedua state (`from` & `to`) dispesifikasikan eksplisit.
+ */
+interface AnimationStep {
+  id?: string
+  type: 'to' | 'from' | 'fromTo'
+  properties?: AnimatableProperties
+  from?: AnimatableProperties
+  to?: AnimatableProperties
+  duration: number
   delay?: number
   ease?: string
-}
-
-interface LoopAnimation {
-  type?: 'none' | 'pulse' | 'float' | 'shake' | 'glow' | 'bounce' | 'spin' | 'swing' | 'heartbeat'
-  duration?: number
-  intensity?: number
-  ease?: string
+  repeat?: number
+  yoyo?: boolean
 }
 
 interface AnimationConfig {
-  entrance?: EntranceAnimation
-  exit?: ExitAnimation
-  loop?: LoopAnimation
+  /** Kalau true, sequence otomatis restart dari step pertama setelah step terakhir selesai.
+   *  Kalau false/tidak diisi, sequence main sekali lalu bertahan di state step terakhir. */
+  loop?: boolean
+  sequence: AnimationStep[]
 }
 
 type PlatformTextBindingField =
@@ -166,6 +179,7 @@ interface SceneElement {
   height: number
   rotation?: number
   opacity?: number
+  scale?: number
   zIndex?: number
   hidden?: boolean
   locked?: boolean

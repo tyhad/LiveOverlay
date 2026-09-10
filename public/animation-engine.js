@@ -10,8 +10,9 @@
  *
  * Model data (SceneElement.animation):
  *   {
+ *     loop: false,   // true = restart dari Q0 setelah step terakhir; false = main sekali, diam di state akhir
  *     sequence: [
- *       { id, type: 'to', properties: { x, y, opacity, scale, rotation }, duration, delay, ease, repeat, yoyo },
+ *       { id, type: 'to'|'from'|'fromTo', properties, duration, delay, ease, repeat, yoyo },
  *       ...
  *     ]
  *   }
@@ -31,8 +32,8 @@
   /** Properti yang didukung di rilis awal. Jangan expose properti CSS lain dulu. */
   const SUPPORTED_PROPERTIES = ['x', 'y', 'opacity', 'scale', 'rotation'];
 
-  /** Tipe step yang didukung. 'from' dan 'fromTo' menyusul setelah 'to' stabil. */
-  const SUPPORTED_STEP_TYPES = ['to'];
+  /** Tipe step yang didukung. 'fromTo' menyusul setelah 'to'/'from' stabil. */
+  const SUPPORTED_STEP_TYPES = ['to', 'from'];
 
   // ---------------------------------------------------------------------
   // Normalizer
@@ -58,7 +59,7 @@
       const cleaned = rawAnimationConfig.sequence
         .map(normalizeStep)
         .filter(Boolean);
-      return { sequence: cleaned };
+      return { sequence: cleaned, loop: Boolean(rawAnimationConfig.loop) };
     }
 
     if (rawAnimationConfig.entrance || rawAnimationConfig.loop || rawAnimationConfig.exit) {
@@ -68,7 +69,7 @@
       );
     }
 
-    return { sequence: [] };
+    return { sequence: [], loop: false };
   }
 
   /**

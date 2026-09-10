@@ -132,21 +132,46 @@
   const timelineRegistry = new Map();
 
   /**
+   * Set node DOM ke posisi/opacity/scale/rotation kanonis dari data elemen
+   * (tanpa animasi). Dipakai sebelum (re)membangun timeline, supaya titik awal
+   * animasi selalu konsisten dengan state kanonis elemen (Vision.md §3.3.1).
+   *
+   * @param {HTMLElement} node
+   * @param {{x:number,y:number,opacity?:number,scale?:number,rotation?:number}} el
+   */
+  function setBaselineState(node, el) {
+    if (!node || typeof gsap === 'undefined') return;
+    gsap.set(node, {
+      left: el.x,
+      top: el.y,
+      opacity: el.opacity !== undefined ? el.opacity : 1,
+      scale: el.scale !== undefined ? el.scale : 1,
+      rotation: el.rotation || 0,
+    });
+  }
+
+  /**
    * Bangun & jalankan GSAP timeline dari sequence steps untuk satu elemen DOM.
    * Membunuh timeline lama untuk elementId yang sama sebelum membuat yang baru,
    * supaya tidak pernah ada dua timeline aktif mengontrol elemen yang sama.
    *
-   * TODO (Fase 2): implementasi nyata pemanggilan gsap.timeline().to(...) per step.
+   * Posisi (x/y) di-map ke properti CSS 'left'/'top' (bukan transform GSAP),
+   * konsisten dengan representasi kanonis pixel-absolut LiveOverlay — lihat
+   * Vision.md §3.3.1 (Opsi A: animate left/top langsung).
    *
    * @param {string} elementId
    * @param {HTMLElement} node
-   * @param {object[]} sequenceSteps - hasil normalizeAnimationConfig(...).sequence
+   * @param {{loop?: boolean, sequence: object[]}} normalizedConfig - hasil normalizeAnimationConfig(...)
    * @returns {gsap.core.Timeline|null}
    */
-  function buildTimelineFromSequence(elementId, node, sequenceSteps) {
+  function buildTimelineFromSequence(elementId, node, normalizedConfig) {
     killTimeline(elementId);
 
-    if (!node || !Array.isArray(sequenceSteps) || sequenceSteps.length === 0) {
+    const sequence = (normalizedConfig && Array.isArray(normalizedConfig.sequence))
+      ? normalizedConfig.sequence
+      : [];
+
+    if (!node || sequence.length === 0) {
       return null;
     }
 
@@ -155,8 +180,33 @@
       return null;
     }
 
-    // Placeholder — logic .to()/.from()/.fromTo() per step ditambahkan di Fase 2.
-    const timeline = gsap.timeline();
+    const shouldLoop = Boolean(normalizedConfig.loop);
+    const timeline = gsap.timeline({ repeat: shouldLoop ? -1 : 0 });
+
+    sequence.forEach((step) => {
+      const tweenVars = {
+        duration: step.duration,
+        ease: step.ease,
+      };
+      if (step.delay) tweenVars.delay = step.delay;
+      if (step.repeat) tweenVars.repeat = step.repeat;
+      if (step.yoyo) tweenVars.yoyo = step.yoyo;
+
+      // x/y (posisi kanvas pixel-absolut) di-map ke 'left'/'top'. Properti lain
+      // (opacity, scale, rotation) diteruskan apa adanya ke GSAP.
+      const mappedProps = {};
+      for (const key of Object.keys(step.properties)) {
+        if (key === 'x') mappedProps.left = step.properties.x;
+        else if (key === 'y') mappedProps.top = step.properties.y;
+        else mappedProps[key] = step.properties[key];
+      }
+
+      if (step.type === 'to') {
+        timeline.to(node, { ...mappedProps, ...tweenVars });
+      } else if (step.type === 'from') {
+        timeline.from(node, { ...mappedProps, ...tweenVars });
+      }
+    });
 
     timelineRegistry.set(elementId, timeline);
     return timeline;
@@ -192,6 +242,7 @@
     SUPPORTED_STEP_TYPES,
     normalizeAnimationConfig,
     normalizeStep,
+    setBaselineState,
     buildTimelineFromSequence,
     killTimeline,
     killAllTimelines,

@@ -7,7 +7,7 @@
   <title>LiveOverlay - Stream Overlay Renderer</title>
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="/animation-engine.js"></script>
+  <script src="/animation-engine.js?v=2"></script>
   <!-- Google Fonts for Stream Overlays -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,7 +81,6 @@
     let chatDisplayTimer = null
     let isFirstStatsSync = true
     const renderedElements = new Map()
-    const loopAnimations = new Map()
 
     function getSceneCanvasSize(scene) {
       return {
@@ -113,81 +112,9 @@
       }
     }
 
-    function stopLoopAnimation(node) {
-      const animation = loopAnimations.get(node)
-      if (animation) animation.kill()
-      loopAnimations.delete(node)
-    }
-
-    function playLoopAnimation(node, loop) {
-      stopLoopAnimation(node)
-      if (!node || !loop || loop.type === 'none') return
-      const dur = loop.duration || 2.5
-      let animation
-
-      switch (loop.type) {
-        case 'pulse':
-          animation = gsap.to(node, { scale: 1.04, duration: dur / 2, repeat: -1, yoyo: true, ease: 'power1.inOut' })
-          break
-        case 'float':
-          animation = gsap.to(node, { y: '-=10', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
-          break
-        case 'glow':
-          animation = gsap.to(node, { filter: 'drop-shadow(0 0 16px rgba(99,102,241,0.8))', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
-          break
-        case 'swing':
-          animation = gsap.to(node, { rotation: '+=4', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
-          break
-        case 'heartbeat':
-          animation = gsap.timeline({ repeat: -1, repeatDelay: Math.max(0, dur - 0.6) })
-          animation.to(node, { scale: 1.08, duration: 0.15, ease: 'power1.out' })
-            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
-            .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
-            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
-          break
-        case 'bounce':
-          animation = gsap.to(node, { y: '-=14', duration: dur / 2, repeat: -1, yoyo: true, ease: 'power2.out' })
-          break
-        case 'shake':
-          animation = gsap.timeline({ repeat: -1, repeatDelay: dur })
-          animation.to(node, { x: '+=5', duration: 0.08 })
-            .to(node, { x: '-=10', duration: 0.08 })
-            .to(node, { x: '+=8', duration: 0.08 })
-            .to(node, { x: '-=6', duration: 0.08 })
-            .to(node, { x: 0, duration: 0.08 })
-          break
-      }
-
-      if (animation) loopAnimations.set(node, animation)
-    }
-
-    function restartLoopAnimation(node, loop, rotation) {
-      stopLoopAnimation(node)
-      gsap.set(node, { x: 0, y: 0, scale: 1, rotation, clearProps: 'filter' })
-      playLoopAnimation(node, loop)
-    }
-
-    function playExitAnimation(node, config, onComplete) {
-      const exit = config?.exit || {}
-      const duration = exit.duration || 0.5
-      const delay = exit.delay || 0
-      const ease = exit.ease || 'power2.in'
-      stopLoopAnimation(node)
-      gsap.killTweensOf(node)
-      const complete = onComplete || (() => { })
-
-      switch (exit.type) {
-        case 'fadeOut': return gsap.to(node, { opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideUp': return gsap.to(node, { y: '-=60', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideDown': return gsap.to(node, { y: '+=60', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideLeft': return gsap.to(node, { x: '-=80', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideRight': return gsap.to(node, { x: '+=80', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'zoomOut': return gsap.to(node, { scale: 0.3, opacity: 0, duration, delay, ease: 'back.in(1.7)', onComplete: complete })
-        case 'bounceOut': return gsap.to(node, { y: '-=80', scale: 0.8, opacity: 0, duration, delay, ease: 'power2.in', onComplete: complete })
-        case 'flipX': return gsap.to(node, { rotationX: -90, opacity: 0, duration, delay, ease, onComplete: complete })
-        default: complete()
-      }
-    }
+    // Animasi elemen (entrance/loop/exit lama) sekarang ditangani oleh
+    // AnimationEngine (public/animation-engine.js) via animation.sequence.
+    // Lihat renderScene() di bawah untuk titik integrasinya.
 
     function formatBoundValue(value, format) {
       if (value === undefined || value === null || value === '') return ''
@@ -314,7 +241,7 @@
       return `${binding.prefix || ''}${value}${binding.suffix || ''}`
     }
 
-    function applyElement(node, el) {
+    function applyElementBox(node, el) {
       node.style.left = `${el.x}px`
       node.style.top = `${el.y}px`
       node.style.width = `${el.width}px`
@@ -340,7 +267,9 @@
       } else {
         node.style.boxShadow = 'none'
       }
+    }
 
+    function applyElementContent(node, el) {
       if (el.type === 'image' && el.src) {
         let image = node.querySelector('img[data-asset-image]')
         if (!image) {
@@ -387,29 +316,10 @@
       }
     }
 
-    function playEntranceAnimation(node, config) {
-      const entrance = config?.entrance || {}
-      const duration = entrance.duration || 0.8
-      const delay = entrance.delay || 0
-      const ease = entrance.ease || 'power3.out'
-      const finish = () => {
-        const latestConfig = renderedElements.get(node.dataset.elementId)?.config || config
-        playLoopAnimation(node, latestConfig?.loop || {})
-      }
-      const options = { opacity: 0, duration, delay, ease, onComplete: finish }
-
-      switch (entrance.type) {
-        case 'fadeIn': return gsap.from(node, options)
-        case 'slideUp': return gsap.from(node, { ...options, y: '+=60' })
-        case 'slideDown': return gsap.from(node, { ...options, y: '-=60' })
-        case 'slideLeft': return gsap.from(node, { ...options, x: '+=80' })
-        case 'slideRight': return gsap.from(node, { ...options, x: '-=80' })
-        case 'zoomIn': return gsap.from(node, { ...options, scale: 0.3, ease: 'back.out(1.7)' })
-        case 'bounceIn': return gsap.from(node, { ...options, y: '+=100', scale: 0.8, ease: 'bounce.out' })
-        case 'flipX': return gsap.from(node, { ...options, rotationX: 90 })
-        case 'elasticIn': return gsap.from(node, { ...options, scale: 0.1, ease: 'elastic.out(1, 0.4)' })
-        default: finish()
-      }
+    /** Kompatibilitas: apply box + content sekaligus (dipakai saat mount elemen baru). */
+    function applyElement(node, el) {
+      applyElementBox(node, el)
+      applyElementContent(node, el)
     }
 
     function renderScene(scene) {
@@ -418,30 +328,39 @@
       const visibleElements = scene.elements.filter(el => !el.hidden)
       const visibleIds = new Set(visibleElements.map(el => el.id))
 
-      renderedElements.forEach(({ node, config, marqueeTween }, id) => {
+      renderedElements.forEach(({ node, marqueeTween }, id) => {
         if (visibleIds.has(id)) return
         if (marqueeTween) marqueeTween.kill()
+        AnimationEngine.killTimeline(id)
         renderedElements.delete(id)
-        playExitAnimation(node, config, () => node.remove())
+        node.remove()
       })
 
       visibleElements.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)).forEach(el => {
         const existing = renderedElements.get(el.id)
+        const nextAnimConfig = AnimationEngine.normalizeAnimationConfig(el.animation)
+        const nextAnimSignature = JSON.stringify(nextAnimConfig)
+        const hasActiveSequence = nextAnimConfig.sequence.length > 0
+
         if (existing) {
-          applyElement(existing.node, el)
-          const nextLoop = el.animation?.loop || {}
-          const loopChanged = JSON.stringify(existing.config?.loop || {}) !== JSON.stringify(nextLoop)
-          const rotation = el.rotation || 0
-          const rotationChanged = existing.rotation !== rotation
+          // Data binding/teks harus tetap live-update meski elemen sedang dianimasikan.
+          applyElementContent(existing.node, el)
 
-          if (loopChanged || (rotationChanged && nextLoop.type === 'swing')) {
-            restartLoopAnimation(existing.node, nextLoop, rotation)
-          } else if (nextLoop.type !== 'swing') {
-            gsap.set(existing.node, { rotation })
+          if (existing.animationSignature !== nextAnimSignature) {
+            // Definisi animasi berubah (mis. disunting ulang) -> reset ke baseline kanonis dulu,
+            // baru bangun ulang timeline dari awal.
+            applyElementBox(existing.node, el)
+            AnimationEngine.setBaselineState(existing.node, el)
+            AnimationEngine.buildTimelineFromSequence(el.id, existing.node, nextAnimConfig)
+            existing.animationSignature = nextAnimSignature
+          } else if (!hasActiveSequence) {
+            // Tidak ada animasi sama sekali -> tetap sinkronkan posisi/opacity/style setiap poll
+            // (supaya perubahan dari editor, drag, dll tetap tercermin).
+            applyElementBox(existing.node, el)
+            AnimationEngine.setBaselineState(existing.node, el)
           }
-
-          existing.config = el.animation
-          existing.rotation = rotation
+          // Kalau signature sama & sequence aktif: sengaja TIDAK menyentuh posisi/opacity/box-style,
+          // supaya timeline yang sedang berjalan (termasuk loop infinite) tidak "distop" tiap poll.
           return
         }
 
@@ -449,11 +368,12 @@
         div.className = 'overlay-element'
         div.id = `render-el-${el.id}`
         div.dataset.elementId = el.id
-        applyElement(div, el)
-        gsap.set(div, { rotation: el.rotation || 0, transformPerspective: 800 })
+        applyElementBox(div, el)
+        applyElementContent(div, el)
+        AnimationEngine.setBaselineState(div, el)
         viewport.appendChild(div)
-        renderedElements.set(el.id, { node: div, config: el.animation, rotation: el.rotation || 0 })
-        playEntranceAnimation(div, el.animation)
+        renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature })
+        AnimationEngine.buildTimelineFromSequence(el.id, div, nextAnimConfig)
       })
     }
 

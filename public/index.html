@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/styles.css">
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="/animation-engine.js"></script>
+  <script src="/animation-engine.js?v=2"></script>
   <!-- Google Fonts for Stream Overlays & Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1591,118 +1591,9 @@
       }
     }
 
-    // GSAP Animation Helper for Elements
-    function playElementAnimation(node, animConfig) {
-      if (!node || !animConfig) return
-      gsap.killTweensOf(node)
-      gsap.set(node, { clearProps: 'transform,opacity' })
-
-      const entrance = animConfig.entrance || {}
-      const loop = animConfig.loop || {}
-      const tl = gsap.timeline({
-        onComplete: () => {
-          // Trigger loop after entrance
-          playElementLoopAnimation(node, loop)
-        }
-      })
-
-      const duration = entrance.duration || 0.8
-      const delay = entrance.delay || 0
-      const ease = entrance.ease || 'power3.out'
-
-      switch (entrance.type) {
-        case 'fadeIn':
-          tl.from(node, { opacity: 0, duration, delay, ease })
-          break
-        case 'slideUp':
-          tl.from(node, { y: '+=60', opacity: 0, duration, delay, ease })
-          break
-        case 'slideDown':
-          tl.from(node, { y: '-=60', opacity: 0, duration, delay, ease })
-          break
-        case 'slideLeft':
-          tl.from(node, { x: '+=80', opacity: 0, duration, delay, ease })
-          break
-        case 'slideRight':
-          tl.from(node, { x: '-=80', opacity: 0, duration, delay, ease })
-          break
-        case 'zoomIn':
-          tl.from(node, { scale: 0.3, opacity: 0, duration, delay, ease: 'back.out(1.7)' })
-          break
-        case 'bounceIn':
-          tl.from(node, { y: '+=100', scale: 0.8, opacity: 0, duration, delay, ease: 'bounce.out' })
-          break
-        case 'flipX':
-          tl.from(node, { rotationX: 90, opacity: 0, duration, delay, ease })
-          break
-        case 'elasticIn':
-          tl.from(node, { scale: 0.1, opacity: 0, duration, delay, ease: 'elastic.out(1, 0.4)' })
-          break
-        default:
-          playElementLoopAnimation(node, loop)
-          break
-      }
-    }
-
-    function playElementLoopAnimation(node, loop) {
-      if (!node || !loop || loop.type === 'none') return
-      const dur = loop.duration || 2.5
-
-      switch (loop.type) {
-        case 'pulse':
-          gsap.to(node, { scale: 1.04, duration: dur / 2, repeat: -1, yoyo: true, ease: 'power1.inOut' })
-          break
-        case 'float':
-          gsap.to(node, { y: '-=10', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
-          break
-        case 'glow':
-          gsap.to(node, { filter: 'drop-shadow(0 0 16px rgba(99,102,241,0.8))', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
-          break
-        case 'swing':
-          gsap.to(node, { rotation: '+=4', duration: dur / 2, repeat: -1, yoyo: true, ease: 'sine.inOut' })
-          break
-        case 'heartbeat':
-          const htl = gsap.timeline({ repeat: -1, repeatDelay: dur - 0.6 })
-          htl.to(node, { scale: 1.08, duration: 0.15, ease: 'power1.out' })
-            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
-            .to(node, { scale: 1.05, duration: 0.15, ease: 'power1.out' })
-            .to(node, { scale: 1.0, duration: 0.15, ease: 'power1.in' })
-          break
-        case 'bounce':
-          gsap.to(node, { y: '-=14', duration: dur / 2, repeat: -1, yoyo: true, ease: 'power2.out' })
-          break
-        case 'shake':
-          const stl = gsap.timeline({ repeat: -1, repeatDelay: dur })
-          stl.to(node, { x: '+=5', duration: 0.08 })
-            .to(node, { x: '-=10', duration: 0.08 })
-            .to(node, { x: '+=8', duration: 0.08 })
-            .to(node, { x: '-=6', duration: 0.08 })
-            .to(node, { x: 0, duration: 0.08 })
-          break
-      }
-    }
-
-    function playElementExitAnimation(node, animConfig, onComplete) {
-      if (!node) return
-      const exit = animConfig?.exit || {}
-      const duration = exit.duration || 0.5
-      const delay = exit.delay || 0
-      const ease = exit.ease || 'power2.in'
-      gsap.killTweensOf(node)
-
-      const complete = onComplete || (() => { })
-      switch (exit.type) {
-        case 'fadeOut': return gsap.to(node, { opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideUp': return gsap.to(node, { y: '-=60', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideDown': return gsap.to(node, { y: '+=60', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideLeft': return gsap.to(node, { x: '-=80', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'slideRight': return gsap.to(node, { x: '+=80', opacity: 0, duration, delay, ease, onComplete: complete })
-        case 'zoomOut': return gsap.to(node, { scale: 0.3, opacity: 0, duration, delay, ease: 'back.in(1.7)', onComplete: complete })
-        case 'bounceOut': return gsap.to(node, { y: '-=80', scale: 0.8, opacity: 0, duration, delay, ease: 'power2.in', onComplete: complete })
-        case 'flipX': return gsap.to(node, { rotationX: -90, opacity: 0, duration, delay, ease, onComplete: complete })
-        default: complete()
-      }
-    }
+    // Animasi elemen (entrance/loop/exit lama) sekarang ditangani oleh
+    // AnimationEngine (public/animation-engine.js). Lihat tombol "Test" di
+    // attachPropertyListeners() untuk titik pemanggilannya di editor.
 
     // Render Canvas
     function renderCanvas() {
@@ -1977,22 +1868,19 @@
       document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
       document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
 
-      // Animations Inspector
-      const anim = el.animation || {}
-      const entrance = anim.entrance || {}
-      const exit = anim.exit || {}
-      const loop = anim.loop || {}
+      // Animations Inspector — placeholder lama, belum terhubung ke skema sequence baru.
+      // Dropdown ini sengaja dibiarkan menunjukkan default kosong sampai Sequence Editor
+      // UI (Fase 8/Fase 3) menggantikannya. Tidak mempengaruhi data el.animation.
+      document.getElementById('prop-anim-entrance-type').value = 'none'
+      document.getElementById('prop-anim-entrance-duration').value = 0.8
+      document.getElementById('prop-anim-entrance-delay').value = 0.0
+      document.getElementById('prop-anim-entrance-ease').value = 'power3.out'
 
-      document.getElementById('prop-anim-entrance-type').value = entrance.type || 'none'
-      document.getElementById('prop-anim-entrance-duration').value = entrance.duration || 0.8
-      document.getElementById('prop-anim-entrance-delay').value = entrance.delay || 0.0
-      document.getElementById('prop-anim-entrance-ease').value = entrance.ease || 'power3.out'
-
-      document.getElementById('prop-anim-loop-type').value = loop.type || 'none'
-      document.getElementById('prop-anim-loop-duration').value = loop.duration || 2.5
-      document.getElementById('prop-anim-exit-type').value = exit.type || 'none'
-      document.getElementById('prop-anim-exit-duration').value = exit.duration || 0.5
-      document.getElementById('prop-anim-exit-delay').value = exit.delay || 0
+      document.getElementById('prop-anim-loop-type').value = 'none'
+      document.getElementById('prop-anim-loop-duration').value = 2.5
+      document.getElementById('prop-anim-exit-type').value = 'none'
+      document.getElementById('prop-anim-exit-duration').value = 0.5
+      document.getElementById('prop-anim-exit-delay').value = 0
 
       // Typography
       const textSection = document.getElementById('text-props-section')
@@ -2071,77 +1959,23 @@
     function attachPropertyListeners() {
       const getSelected = () => scene.elements.find(item => item.id === selectedElementId)
 
-      // Test Element Animation Button
+      // Test Element Animation Button — preview sequence baru langsung di kanvas editor.
+      // Panel input di bawah (entrance/loop/exit) masih placeholder visual lama, BELUM
+      // terhubung ke data — Sequence Editor UI yang sesungguhnya menyusul di Fase 3.
+      // Lihat issue.md Fase 8.
       document.getElementById('test-element-animation-btn').addEventListener('click', () => {
         const el = getSelected()
         if (el) {
           const node = document.getElementById(`el-node-${el.id}`)
-          playElementAnimation(node, el.animation)
+          const normalized = AnimationEngine.normalizeAnimationConfig(el.animation)
+          AnimationEngine.setBaselineState(node, el)
+          AnimationEngine.buildTimelineFromSequence(el.id, node, normalized)
         }
       })
 
-      // Animation property change listeners
-      const ensureAnimation = (el) => {
-        if (!el.animation) el.animation = { loop: false, sequence: [] }
-        if (!el.animation.entrance) el.animation.entrance = { type: 'none' }
-        if (!el.animation.exit) el.animation.exit = { type: 'none' }
-        if (!el.animation.loop) el.animation.loop = { type: 'none' }
-        return el.animation
-      }
-
-      document.getElementById('prop-anim-entrance-type').addEventListener('change', (e) => {
-        const el = getSelected()
-        if (el) {
-          ensureAnimation(el).entrance.type = e.target.value
-          renderLayers()
-        }
-      })
-
-      document.getElementById('prop-anim-entrance-duration').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) ensureAnimation(el).entrance.duration = parseFloat(e.target.value) || 0.8
-      })
-
-      document.getElementById('prop-anim-entrance-delay').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) ensureAnimation(el).entrance.delay = parseFloat(e.target.value) || 0.0
-      })
-
-      document.getElementById('prop-anim-entrance-ease').addEventListener('change', (e) => {
-        const el = getSelected()
-        if (el) ensureAnimation(el).entrance.ease = e.target.value
-      })
-
-      document.getElementById('prop-anim-loop-type').addEventListener('change', (e) => {
-        const el = getSelected()
-        if (el) {
-          ensureAnimation(el).loop.type = e.target.value
-          renderLayers()
-        }
-      })
-
-      document.getElementById('prop-anim-loop-duration').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) ensureAnimation(el).loop.duration = parseFloat(e.target.value) || 2.5
-      })
-
-      document.getElementById('prop-anim-exit-type').addEventListener('change', (e) => {
-        const el = getSelected()
-        if (el) {
-          ensureAnimation(el).exit.type = e.target.value
-          renderLayers()
-        }
-      })
-
-      document.getElementById('prop-anim-exit-duration').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) ensureAnimation(el).exit.duration = parseFloat(e.target.value) || 0.5
-      })
-
-      document.getElementById('prop-anim-exit-delay').addEventListener('input', (e) => {
-        const el = getSelected()
-        if (el) ensureAnimation(el).exit.delay = parseFloat(e.target.value) || 0
-      })
+      // NOTE: input entrance/loop/exit di bawah ini sudah tidak berpengaruh ke data
+      // (skema lama sudah dihapus di Fase 1). Dibiarkan tanpa listener aktif sampai
+      // Sequence Editor UI (Fase 8, Fase 3) menggantikan panel ini seluruhnya.
 
       document.getElementById('prop-image-fit').addEventListener('change', (e) => {
         const el = getSelected()
@@ -2417,7 +2251,9 @@
       scene.elements.forEach(el => {
         const node = document.getElementById(`el-node-${el.id}`)
         if (node && !el.hidden) {
-          playElementAnimation(node, el.animation)
+          const normalized = AnimationEngine.normalizeAnimationConfig(el.animation)
+          AnimationEngine.setBaselineState(node, el)
+          AnimationEngine.buildTimelineFromSequence(el.id, node, normalized)
         }
       })
     })

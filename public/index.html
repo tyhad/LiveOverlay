@@ -202,9 +202,12 @@
       class="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 z-20 overflow-y-auto min-h-0">
 
       <!-- Section 1: Quick Add Elements -->
-      <div class="p-3.5 border-b border-slate-800">
-        <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5">Add Elements</h2>
-        <div class="grid grid-cols-2 gap-2">
+      <details class="p-3.5 border-b border-slate-800 group" open>
+        <summary class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden flex items-center gap-1.5">
+          <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+          <span>Add Elements</span>
+        </summary>
+        <div class="grid grid-cols-2 gap-2 mt-2.5">
           <button id="add-text-btn"
             class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
             <span class="text-lg">🔤</span>
@@ -236,31 +239,38 @@
           <input id="asset-file-input" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif"
             class="hidden">
         </div>
-      </div>
+      </details>
 
       <!-- Section 2: Uploaded Assets -->
-      <div class="p-3 border-b border-slate-800">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Assets</h2>
+      <details class="p-3 border-b border-slate-800 group" open>
+        <summary class="flex items-center justify-between mb-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+          <span class="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-slate-400">
+            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Assets</span>
+          </span>
           <span class="text-[10px] text-slate-500">Click to add</span>
-        </div>
+        </summary>
         <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
           <p class="col-span-3 text-[11px] text-slate-500">No uploaded assets yet.</p>
         </div>
-      </div>
+      </details>
 
       <!-- Section 4: Platform Live Stats Connector -->
-      <div class="p-3 border-b border-slate-800 space-y-2">
-            <div class="flex items-center justify-between gap-2">
-              <div>
+      <details class="p-3 border-b border-slate-800 space-y-2 group" open>
+        <summary class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+              <div class="flex items-center gap-1.5">
+                <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px] shrink-0 mt-0.5">▶</span>
+                <div>
                 <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Live Stats</h2>
                 <p class="text-[10px] text-slate-500 mt-0.5">Auto-fetch dari TikTok / YouTube Live.</p>
+              </div>
               </div>
               <div class="flex items-center gap-1.5">
                 <span id="platform-connector-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
                 <span id="platform-connector-state-label" class="text-[10px] text-slate-500">OFF</span>
               </div>
-            </div>
+        </summary>
+        <div class="space-y-2 mt-2">
 
             <!-- Platform selector -->
             <div class="grid grid-cols-2 gap-1.5">
@@ -336,7 +346,8 @@
                   class="text-slate-300">—</span></p>
               <p id="connector-status-error" class="text-[10px] text-rose-400 hidden"></p>
             </div>
-          </div>
+        </div>
+      </details>
 
       <!-- Section 5: Layers List -->
       <div class="flex flex-col min-h-0">
@@ -467,122 +478,13 @@
             class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none w-full">
         </div>
 
-        <!-- Animation Sequence Editor (Fase 8 / Fase 3) — lihat issue.md -->
-        <div
-          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-1.5">
-              <span class="text-base">✨</span>
-              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300">Animation Sequence</h3>
-            </div>
-            <button id="test-element-animation-btn"
-              class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
-              <span>▶</span><span>Test</span>
-            </button>
-          </div>
-
-          <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none">
-            <input type="checkbox" id="anim-loop-toggle" class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
-            <span>🔁 Ulangi dari Q0 setelah step terakhir selesai</span>
-          </label>
-
-          <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
-          <div id="anim-step-list" class="space-y-2"></div>
-
-          <button id="anim-add-step-btn"
-            class="w-full py-1.5 rounded-lg border border-dashed border-indigo-500/40 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/70 transition">
-            + Add Step
-          </button>
-
-          <!-- Quick-insert preset: isi otomatis satu step generik, murni helper UI (lihat animation-engine.js) -->
-          <div class="pt-2 border-t border-indigo-500/20 space-y-1.5">
-            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</label>
-            <div class="grid grid-cols-2 gap-1.5" id="anim-preset-buttons"></div>
-          </div>
-        </div>
-
-        <template id="anim-step-template">
-          <div class="anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5">
-            <div class="flex items-center justify-between">
-              <span class="anim-step-label text-[11px] font-bold text-indigo-300 font-mono"></span>
-              <div class="flex items-center gap-1">
-                <button data-action="move-up" title="Pindah naik"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↑</button>
-                <button data-action="move-down" title="Pindah turun"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↓</button>
-                <button data-action="duplicate" title="Duplikat step"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">⧉</button>
-                <button data-action="delete" title="Hapus step"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px]">✕</button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-1.5">
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Type</label>
-                <select data-field="type"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
-                  <option value="to">to (menuju target)</option>
-                  <option value="from">from (dari state awal)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Ease</label>
-                <select data-field="ease"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
-                  <option value="power2.out">Power2 Out</option>
-                  <option value="power3.out">Power3 Out</option>
-                  <option value="power1.inOut">Power1 InOut</option>
-                  <option value="back.out(1.7)">Back Out</option>
-                  <option value="bounce.out">Bounce Out</option>
-                  <option value="elastic.out(1, 0.4)">Elastic Out</option>
-                  <option value="sine.inOut">Sine InOut</option>
-                  <option value="none">Linear</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
-                <input type="number" data-field="duration" step="0.1" min="0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
-                <input type="number" data-field="delay" step="0.1" min="0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Repeat (-1=infinite)</label>
-                <input type="number" data-field="repeat" step="1" min="-1"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none mt-3.5">
-                <input type="checkbox" data-field="yoyo"
-                  class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
-                <span>Yoyo (bolak-balik)</span>
-              </label>
-            </div>
-
-            <div class="pt-1.5 border-t border-slate-700/40">
-              <label class="block text-[10px] text-slate-400 mb-1">Target Properties</label>
-              <div class="grid grid-cols-2 gap-1.5" data-role="properties"></div>
-            </div>
-          </div>
-        </template>
-
-        <template id="anim-property-row-template">
-          <label class="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" data-role="prop-toggle"
-              class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500 shrink-0">
-            <span class="w-10 shrink-0" data-role="prop-name"></span>
-            <input type="number" step="0.01" data-role="prop-value" disabled
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40">
-          </label>
-        </template>
-
         <!-- Alignment Controls -->
-        <div class="space-y-2">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Canvas Alignment</h3>
-          <div class="grid grid-cols-6 gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+        <details class="space-y-2 group" open>
+          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Canvas Alignment</span>
+          </summary>
+          <div class="grid grid-cols-6 gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800 mt-2">
             <button id="align-left-btn"
               class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
               title="Align Left">⬅️</button>
@@ -602,85 +504,110 @@
               class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
               title="Align Bottom">⬇️</button>
           </div>
-        </div>
+        </details>
 
-        <!-- Transform: Dimensions, Position & Rotation -->
-        <div class="space-y-3 pt-2 border-t border-slate-800">
-          <div class="flex items-center justify-between">
-            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Transform & Position</h3>
-            <span class="text-[9px] text-indigo-400/80 italic" title="Nilai di sini jadi state awal (atau state akhir untuk step 'from') bagi Animation Sequence di atas">= start state animasi</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">X (px)</label>
-              <input type="number" id="prop-x"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Y (px)</label>
-              <input type="number" id="prop-y"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
-              <input type="number" id="prop-width" min="10"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
-              <input type="number" id="prop-height" min="10"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-            </div>
-          </div>
-
-          <!-- Rotation & Opacity -->
-          <div>
-            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Rotation (Deg)</span>
-              <span id="prop-rotation-val" class="font-mono text-white">0°</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-rotation-num" min="-180" max="180"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Scale</span>
-              <span id="prop-scale-val" class="font-mono text-white">1.00x</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-scale-num" min="0.1" max="3" step="0.01"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Opacity</span>
-              <span id="prop-opacity-val" class="font-mono text-white">100%</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="range" id="prop-opacity" min="0" max="100" value="100" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-opacity-num" min="0" max="100"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
-            </div>
-          </div>
-        </div>
 
         <!-- Typography Section (Text Elements) -->
-        <div id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Typography</h3>
+        <details id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
+          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Typography</span>
+          </summary>
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Text Content</label>
             <textarea id="prop-text-content" rows="2"
               class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
           </div>
+
+
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Font Family</label>
+            <select id="prop-font-family"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="Inter, sans-serif">Inter (Clean UI)</option>
+              <option value="Poppins, sans-serif">Poppins (Modern Rounded)</option>
+              <option value="Outfit, sans-serif">Outfit (Geometric Stream)</option>
+              <option value="Montserrat, sans-serif">Montserrat (Bold Header)</option>
+              <option value="Bebas Neue, sans-serif">Bebas Neue (Impact Display)</option>
+              <option value="Plus Jakarta Sans, sans-serif">Plus Jakarta Sans</option>
+              <option value="Roboto, sans-serif">Roboto</option>
+              <option value="Manrope, sans-serif">Manrope (Modern Friendly)</option>
+              <option value="Quicksand, sans-serif">Quicksand (Soft Rounded)</option>
+              <option value="Limelight, cursive">Limelight (Vintage Display)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Font Size (px)</label>
+              <input type="number" id="prop-font-size" min="8" max="180"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Weight</label>
+              <select id="prop-font-weight"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="300">Light (300)</option>
+                <option value="400">Regular (400)</option>
+                <option value="500">Medium (500)</option>
+                <option value="600">Semibold (600)</option>
+                <option value="700">Bold (700)</option>
+                <option value="800">Extra Bold (800)</option>
+                <option value="900">Black (900)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Text Align & Transform -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Align</label>
+              <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <button type="button" id="align-t-left"
+                  class="py-1 text-xs rounded text-slate-300 hover:text-white">◀</button>
+                <button type="button" id="align-t-center"
+                  class="py-1 text-xs rounded text-slate-300 hover:text-white">■</button>
+                <button type="button" id="align-t-right"
+                  class="py-1 text-xs rounded text-slate-300 hover:text-white">▶</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Transform</label>
+              <select id="prop-text-transform"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="none">Normal</option>
+                <option value="uppercase">UPPERCASE</option>
+                <option value="lowercase">lowercase</option>
+                <option value="capitalize">Capitalize</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
+              <input type="number" id="prop-letter-spacing" step="0.5" min="-5" max="30"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
+              <div class="flex items-center gap-1.5">
+                <input type="color" id="prop-text-color-picker"
+                  class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-text-color"
+                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Dynamic Content: Running Text (Marquee) & Data Binding -->
+        <details id="dynamic-content-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
+          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Dynamic Content</span>
+          </summary>
 
           <div class="space-y-2 rounded-xl border border-pink-500/20 bg-pink-600/10 p-3">
             <div class="flex items-center justify-between">
@@ -799,91 +726,199 @@
                 -</div>
             </div>
           </div>
+        </details>
+
+        <!-- Transform: Dimensions, Position & Rotation -->
+        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+          <summary class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 inline">Transform & Position</h3>
+            </span>
+            <span class="text-[9px] text-indigo-400/80 italic" title="Nilai di sini jadi state awal (atau state akhir untuk step 'from') bagi Animation Sequence di bawah">= start state animasi</span>
+          </summary>
+
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">X (px)</label>
+              <input type="number" id="prop-x"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Y (px)</label>
+              <input type="number" id="prop-y"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
+              <input type="number" id="prop-width" min="10"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
+              <input type="number" id="prop-height" min="10"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <!-- Rotation & Opacity -->
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Rotation (Deg)</span>
+              <span id="prop-rotation-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-rotation-num" min="-180" max="180"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Font Family</label>
-            <select id="prop-font-family"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="Inter, sans-serif">Inter (Clean UI)</option>
-              <option value="Poppins, sans-serif">Poppins (Modern Rounded)</option>
-              <option value="Outfit, sans-serif">Outfit (Geometric Stream)</option>
-              <option value="Montserrat, sans-serif">Montserrat (Bold Header)</option>
-              <option value="Bebas Neue, sans-serif">Bebas Neue (Impact Display)</option>
-              <option value="Plus Jakarta Sans, sans-serif">Plus Jakarta Sans</option>
-              <option value="Roboto, sans-serif">Roboto</option>
-              <option value="Manrope, sans-serif">Manrope (Modern Friendly)</option>
-              <option value="Quicksand, sans-serif">Quicksand (Soft Rounded)</option>
-              <option value="Limelight, cursive">Limelight (Vintage Display)</option>
-            </select>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Font Size (px)</label>
-              <input type="number" id="prop-font-size" min="8" max="180"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Scale</span>
+              <span id="prop-scale-val" class="font-mono text-white">1.00x</span>
             </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Weight</label>
-              <select id="prop-font-weight"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                <option value="300">Light (300)</option>
-                <option value="400">Regular (400)</option>
-                <option value="500">Medium (500)</option>
-                <option value="600">Semibold (600)</option>
-                <option value="700">Bold (700)</option>
-                <option value="800">Extra Bold (800)</option>
-                <option value="900">Black (900)</option>
-              </select>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-scale-num" min="0.1" max="3" step="0.01"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
           </div>
 
-          <!-- Text Align & Transform -->
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Align</label>
-              <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-                <button type="button" id="align-t-left"
-                  class="py-1 text-xs rounded text-slate-300 hover:text-white">◀</button>
-                <button type="button" id="align-t-center"
-                  class="py-1 text-xs rounded text-slate-300 hover:text-white">■</button>
-                <button type="button" id="align-t-right"
-                  class="py-1 text-xs rounded text-slate-300 hover:text-white">▶</button>
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Opacity</span>
+              <span id="prop-opacity-val" class="font-mono text-white">100%</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-opacity" min="0" max="100" value="100" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-opacity-num" min="0" max="100"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+        </details>
+
+        <!-- Animation Sequence Editor (Fase 8 / Fase 3) — lihat issue.md -->
+        <details
+          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30 group" open>
+          <summary class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="flex items-center space-x-1.5">
+              <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              <span class="text-base">✨</span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300 inline">Animation Sequence</h3>
+            </span>
+            <button id="test-element-animation-btn"
+              class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
+              <span>▶</span><span>Test</span>
+            </button>
+          </summary>
+
+          <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none mt-3">
+            <input type="checkbox" id="anim-loop-toggle" class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
+            <span>🔁 Ulangi dari Q0 setelah step terakhir selesai</span>
+          </label>
+
+          <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
+          <div id="anim-step-list" class="space-y-2"></div>
+
+          <button id="anim-add-step-btn"
+            class="w-full py-1.5 rounded-lg border border-dashed border-indigo-500/40 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/70 transition">
+            + Add Step
+          </button>
+
+          <!-- Quick-insert preset: isi otomatis satu step generik, murni helper UI (lihat animation-engine.js) -->
+          <div class="pt-2 border-t border-indigo-500/20 space-y-1.5">
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</label>
+            <div class="grid grid-cols-2 gap-1.5" id="anim-preset-buttons"></div>
+          </div>
+        </details>
+
+        <template id="anim-step-template">
+          <div class="anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5">
+            <div class="flex items-center justify-between">
+              <span class="anim-step-label text-[11px] font-bold text-indigo-300 font-mono"></span>
+              <div class="flex items-center gap-1">
+                <button data-action="move-up" title="Pindah naik"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↑</button>
+                <button data-action="move-down" title="Pindah turun"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↓</button>
+                <button data-action="duplicate" title="Duplikat step"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">⧉</button>
+                <button data-action="delete" title="Hapus step"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px]">✕</button>
               </div>
             </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Transform</label>
-              <select id="prop-text-transform"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                <option value="none">Normal</option>
-                <option value="uppercase">UPPERCASE</option>
-                <option value="lowercase">lowercase</option>
-                <option value="capitalize">Capitalize</option>
-              </select>
-            </div>
-          </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
-              <input type="number" id="prop-letter-spacing" step="0.5" min="-5" max="30"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-            </div>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
-              <div class="flex items-center gap-1.5">
-                <input type="color" id="prop-text-color-picker"
-                  class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
-                <input type="text" id="prop-text-color"
-                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+            <div class="grid grid-cols-2 gap-1.5">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Type</label>
+                <select data-field="type"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="to">to (menuju target)</option>
+                  <option value="from">from (dari state awal)</option>
+                </select>
               </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Ease</label>
+                <select data-field="ease"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="power2.out">Power2 Out</option>
+                  <option value="power3.out">Power3 Out</option>
+                  <option value="power1.inOut">Power1 InOut</option>
+                  <option value="back.out(1.7)">Back Out</option>
+                  <option value="bounce.out">Bounce Out</option>
+                  <option value="elastic.out(1, 0.4)">Elastic Out</option>
+                  <option value="sine.inOut">Sine InOut</option>
+                  <option value="none">Linear</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
+                <input type="number" data-field="duration" step="0.1" min="0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
+                <input type="number" data-field="delay" step="0.1" min="0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Repeat (-1=infinite)</label>
+                <input type="number" data-field="repeat" step="1" min="-1"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none mt-3.5">
+                <input type="checkbox" data-field="yoyo"
+                  class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
+                <span>Yoyo (bolak-balik)</span>
+              </label>
+            </div>
+
+            <div class="pt-1.5 border-t border-slate-700/40">
+              <label class="block text-[10px] text-slate-400 mb-1">Target Properties</label>
+              <div class="grid grid-cols-2 gap-1.5" data-role="properties"></div>
             </div>
           </div>
-        </div>
+        </template>
+
+        <template id="anim-property-row-template">
+          <label class="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer select-none">
+            <input type="checkbox" data-role="prop-toggle"
+              class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500 shrink-0">
+            <span class="w-10 shrink-0" data-role="prop-name"></span>
+            <input type="number" step="0.01" data-role="prop-value" disabled
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40">
+          </label>
+        </template>
+
 
         <!-- Image / SVG Section -->
-        <div id="image-props-section" class="hidden space-y-3 pt-2 border-t border-slate-800">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Image / SVG</h3>
+        <details id="image-props-section" class="hidden space-y-3 pt-2 border-t border-slate-800 group" open>
+          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Image / SVG</span>
+          </summary>
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Asset URL</label>
             <input type="text" id="prop-image-src" readonly
@@ -900,17 +935,20 @@
               <option value="scale-down">Scale Down</option>
             </select>
           </div>
-        </div>
+        </details>
 
         <!-- Fill & Gradient Section -->
-        <div class="space-y-3 pt-2 border-t border-slate-800">
-          <div class="flex items-center justify-between">
-            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fill & Background</h3>
-            <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300">
+        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+          <summary class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 inline">Fill & Background</h3>
+            </span>
+            <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300" onclick="event.stopPropagation()">
               <input type="checkbox" id="prop-gradient-toggle" class="rounded accent-indigo-500">
               <span class="text-[10px]">Gradient</span>
             </label>
-          </div>
+          </summary>
 
           <!-- Solid BG Color -->
           <div id="solid-fill-section">
@@ -960,11 +998,14 @@
             <input type="number" id="prop-padding" min="0" max="100"
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
           </div>
-        </div>
+        </details>
 
         <!-- Borders & Corners Section -->
-        <div class="space-y-3 pt-2 border-t border-slate-800">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Borders & Corners</h3>
+        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Borders & Corners</span>
+          </summary>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -1000,11 +1041,14 @@
               </div>
             </div>
           </div>
-        </div>
+        </details>
 
         <!-- Shadow & Glow Section -->
-        <div class="space-y-3 pt-2 border-t border-slate-800">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow & Glow</h3>
+        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Drop Shadow & Glow</span>
+          </summary>
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
@@ -1033,7 +1077,7 @@
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
           </div>
-        </div>
+        </details>
 
       </div>
     </aside>
@@ -1896,8 +1940,10 @@
 
       // Typography
       const textSection = document.getElementById('text-props-section')
+      const dynamicContentSection = document.getElementById('dynamic-content-section')
       if (el.type === 'text' || el.style?.text !== undefined) {
         textSection.classList.remove('hidden')
+        dynamicContentSection.classList.remove('hidden')
         document.getElementById('prop-text-content').value = el.style?.text || ''
         document.getElementById('prop-font-family').value = el.style?.fontFamily || 'Inter, sans-serif'
         document.getElementById('prop-font-size').value = el.style?.fontSize || 18
@@ -1924,6 +1970,7 @@
         document.getElementById('prop-marquee-direction').value = marquee.direction || 'rtl'
       } else {
         textSection.classList.add('hidden')
+        dynamicContentSection.classList.add('hidden')
       }
 
       const imageSection = document.getElementById('image-props-section')
@@ -2131,7 +2178,9 @@
       const getSelected = () => scene.elements.find(item => item.id === selectedElementId)
 
       // Test Element Animation Button — preview sequence langsung di kanvas editor.
-      document.getElementById('test-element-animation-btn').addEventListener('click', () => {
+      document.getElementById('test-element-animation-btn').addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
         const el = getSelected()
         if (el) {
           const node = document.getElementById(`el-node-${el.id}`)

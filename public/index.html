@@ -606,7 +606,10 @@
 
         <!-- Transform: Dimensions, Position & Rotation -->
         <div class="space-y-3 pt-2 border-t border-slate-800">
-          <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Transform & Position</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Transform & Position</h3>
+            <span class="text-[9px] text-indigo-400/80 italic" title="Nilai di sini jadi state awal (atau state akhir untuk step 'from') bagi Animation Sequence di atas">= start state animasi</span>
+          </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -640,6 +643,18 @@
             <div class="flex items-center gap-2">
               <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
               <input type="number" id="prop-rotation-num" min="-180" max="180"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Scale</span>
+              <span id="prop-scale-val" class="font-mono text-white">1.00x</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-scale-num" min="0.1" max="3" step="0.01"
                 class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
           </div>
@@ -1619,7 +1634,7 @@
         div.style.height = `${el.height}px`
         div.style.zIndex = el.zIndex || 1
         div.style.opacity = el.hidden ? 0.3 : (el.opacity !== undefined ? el.opacity : 1)
-        div.style.transform = `rotate(${el.rotation || 0}deg)`
+        div.style.transform = `rotate(${el.rotation || 0}deg) scale(${el.scale !== undefined ? el.scale : 1})`
         div.style.borderRadius = `${el.style?.borderRadius || 0}px`
         div.style.borderWidth = `${el.style?.borderWidth || 0}px`
         div.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
@@ -1862,6 +1877,11 @@
       document.getElementById('prop-rotation-num').value = rot
       document.getElementById('prop-rotation-val').textContent = `${rot}°`
 
+      const scaleVal = el.scale !== undefined ? el.scale : 1
+      document.getElementById('prop-scale').value = scaleVal
+      document.getElementById('prop-scale-num').value = scaleVal
+      document.getElementById('prop-scale-val').textContent = `${scaleVal.toFixed(2)}x`
+
       const op = Math.round((el.opacity !== undefined ? el.opacity : 1) * 100)
       document.getElementById('prop-opacity').value = op
       document.getElementById('prop-opacity-num').value = op
@@ -2047,22 +2067,24 @@
 
         // Target Properties: satu baris checkbox+angka per properti yang didukung engine.
         const propsContainer = card.querySelector('[data-role="properties"]')
+        const PROPERTY_DEFAULTS = { x: el.x, y: el.y, opacity: 1, scale: 1, rotation: 0 }
         AnimationEngine.SUPPORTED_PROPERTIES.forEach(propName => {
           const row = propRowTemplate.content.firstElementChild.cloneNode(true)
           const toggle = row.querySelector('[data-role="prop-toggle"]')
           const nameEl = row.querySelector('[data-role="prop-name"]')
           const valueInput = row.querySelector('[data-role="prop-value"]')
           const isActive = Object.prototype.hasOwnProperty.call(step.properties || {}, propName)
+          const fallback = el[propName] !== undefined ? el[propName] : PROPERTY_DEFAULTS[propName]
 
           nameEl.textContent = propName
           toggle.checked = isActive
           valueInput.disabled = !isActive
-          valueInput.value = isActive ? step.properties[propName] : (el[propName] ?? 0)
+          valueInput.value = isActive ? step.properties[propName] : fallback
 
           toggle.addEventListener('change', (e) => {
             if (!step.properties) step.properties = {}
             if (e.target.checked) {
-              step.properties[propName] = parseFloat(valueInput.value) || (el[propName] ?? 0)
+              step.properties[propName] = parseFloat(valueInput.value) || fallback
               valueInput.disabled = false
             } else {
               delete step.properties[propName]
@@ -2195,6 +2217,21 @@
       }
       document.getElementById('prop-rotation').addEventListener('input', (e) => handleRotationChange(e.target.value))
       document.getElementById('prop-rotation-num').addEventListener('input', (e) => handleRotationChange(e.target.value))
+
+      // Scale
+      const handleScaleChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const scale = Math.max(0.1, parseFloat(val) || 1)
+          el.scale = scale
+          document.getElementById('prop-scale').value = scale
+          document.getElementById('prop-scale-num').value = scale
+          document.getElementById('prop-scale-val').textContent = `${scale.toFixed(2)}x`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-scale').addEventListener('input', (e) => handleScaleChange(e.target.value))
+      document.getElementById('prop-scale-num').addEventListener('input', (e) => handleScaleChange(e.target.value))
 
       // Opacity
       const handleOpacityChange = (val) => {

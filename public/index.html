@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/styles.css">
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="/animation-engine.js?v=2"></script>
+  <script src="/animation-engine.js"></script>
   <!-- Google Fonts for Stream Overlays & Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -467,13 +467,13 @@
             class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none w-full">
         </div>
 
-        <!-- NEW: GSAP ANIMATION CONTROLS (FASE 3) -->
+        <!-- Animation Sequence Editor (Fase 8 / Fase 3) — lihat issue.md -->
         <div
           class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-1.5">
               <span class="text-base">✨</span>
-              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300">GSAP Animations</h3>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300">Animation Sequence</h3>
             </div>
             <button id="test-element-animation-btn"
               class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
@@ -481,101 +481,103 @@
             </button>
           </div>
 
-          <!-- Entrance Animation -->
-          <div class="space-y-2 pt-1 border-t border-indigo-500/20">
-            <label class="block text-[11px] font-semibold text-slate-300">Entrance Animation (Masuk)</label>
-            <select id="prop-anim-entrance-type"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="none">None (Instant)</option>
-              <option value="fadeIn">Fade In (Halus)</option>
-              <option value="slideUp">Slide Up (Dari Bawah)</option>
-              <option value="slideDown">Slide Down (Dari Atas)</option>
-              <option value="slideLeft">Slide Left (Dari Kanan)</option>
-              <option value="slideRight">Slide Right (Dari Kiri)</option>
-              <option value="zoomIn">Zoom / Pop In (Membal)</option>
-              <option value="bounceIn">Bounce In (Lentur)</option>
-              <option value="flipX">3D Flip In (Memutar)</option>
-              <option value="elasticIn">Elastic In (Kenyal)</option>
-            </select>
+          <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none">
+            <input type="checkbox" id="anim-loop-toggle" class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
+            <span>🔁 Ulangi dari Q0 setelah step terakhir selesai</span>
+          </label>
 
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
-                <input type="number" id="prop-anim-entrance-duration" step="0.1" min="0.1" max="5.0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
-                <input type="number" id="prop-anim-entrance-delay" step="0.1" min="0.0" max="5.0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-            </div>
+          <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
+          <div id="anim-step-list" class="space-y-2"></div>
 
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-0.5">Easing Curve</label>
-              <select id="prop-anim-entrance-ease"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-                <option value="power3.out">Smooth Ease Out (Power3)</option>
-                <option value="back.out(1.7)">Bouncy OverShoot (Back)</option>
-                <option value="elastic.out(1, 0.5)">Elastic Spring</option>
-                <option value="bounce.out">Bounce Drop</option>
-                <option value="circ.out">Circular Fast-Out</option>
-                <option value="none">Linear (Datar)</option>
-              </select>
-            </div>
-          </div>
+          <button id="anim-add-step-btn"
+            class="w-full py-1.5 rounded-lg border border-dashed border-indigo-500/40 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/70 transition">
+            + Add Step
+          </button>
 
-          <!-- Loop / Idle Animation -->
-          <div class="space-y-2 pt-2 border-t border-indigo-500/20">
-            <label class="block text-[11px] font-semibold text-slate-300">Loop / Idle Animation (Berulang)</label>
-            <select id="prop-anim-loop-type"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="none">None (Statis)</option>
-              <option value="pulse">Pulse (Nafas Skala)</option>
-              <option value="float">Float (Melayang Santai)</option>
-              <option value="glow">Glow Pulse (Pendaran Cahaya)</option>
-              <option value="swing">Gentle Swing (Goyang Santai)</option>
-              <option value="heartbeat">Heartbeat (Degub Ganda)</option>
-              <option value="bounce">Bounce (Lompat Ringan)</option>
-              <option value="shake">Shake (Getar Perhatian)</option>
-            </select>
-
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-0.5">Loop Cycle Speed (s)</label>
-              <input type="number" id="prop-anim-loop-duration" step="0.2" min="0.5" max="10.0"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-            </div>
-          </div>
-
-          <!-- Exit Animation -->
-          <div class="space-y-2 pt-2 border-t border-indigo-500/20">
-            <label class="block text-[11px] font-semibold text-slate-300">Exit Animation (Keluar)</label>
-            <select id="prop-anim-exit-type"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="none">None (Instant)</option>
-              <option value="fadeOut">Fade Out (Halus)</option>
-              <option value="slideUp">Slide Up (Ke Atas)</option>
-              <option value="slideDown">Slide Down (Ke Bawah)</option>
-              <option value="slideLeft">Slide Left (Ke Kiri)</option>
-              <option value="slideRight">Slide Right (Ke Kanan)</option>
-              <option value="zoomOut">Zoom / Pop Out</option>
-              <option value="bounceOut">Bounce Out</option>
-              <option value="flipX">3D Flip Out</option>
-            </select>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
-                <input type="number" id="prop-anim-exit-duration" step="0.1" min="0.1" max="5.0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
-                <input type="number" id="prop-anim-exit-delay" step="0.1" min="0.0" max="5.0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-            </div>
+          <!-- Quick-insert preset: isi otomatis satu step generik, murni helper UI (lihat animation-engine.js) -->
+          <div class="pt-2 border-t border-indigo-500/20 space-y-1.5">
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</label>
+            <div class="grid grid-cols-2 gap-1.5" id="anim-preset-buttons"></div>
           </div>
         </div>
+
+        <template id="anim-step-template">
+          <div class="anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5">
+            <div class="flex items-center justify-between">
+              <span class="anim-step-label text-[11px] font-bold text-indigo-300 font-mono"></span>
+              <div class="flex items-center gap-1">
+                <button data-action="move-up" title="Pindah naik"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↑</button>
+                <button data-action="move-down" title="Pindah turun"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↓</button>
+                <button data-action="duplicate" title="Duplikat step"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">⧉</button>
+                <button data-action="delete" title="Hapus step"
+                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px]">✕</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Type</label>
+                <select data-field="type"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="to">to (menuju target)</option>
+                  <option value="from">from (dari state awal)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Ease</label>
+                <select data-field="ease"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="power2.out">Power2 Out</option>
+                  <option value="power3.out">Power3 Out</option>
+                  <option value="power1.inOut">Power1 InOut</option>
+                  <option value="back.out(1.7)">Back Out</option>
+                  <option value="bounce.out">Bounce Out</option>
+                  <option value="elastic.out(1, 0.4)">Elastic Out</option>
+                  <option value="sine.inOut">Sine InOut</option>
+                  <option value="none">Linear</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
+                <input type="number" data-field="duration" step="0.1" min="0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
+                <input type="number" data-field="delay" step="0.1" min="0"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Repeat (-1=infinite)</label>
+                <input type="number" data-field="repeat" step="1" min="-1"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              </div>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none mt-3.5">
+                <input type="checkbox" data-field="yoyo"
+                  class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
+                <span>Yoyo (bolak-balik)</span>
+              </label>
+            </div>
+
+            <div class="pt-1.5 border-t border-slate-700/40">
+              <label class="block text-[10px] text-slate-400 mb-1">Target Properties</label>
+              <div class="grid grid-cols-2 gap-1.5" data-role="properties"></div>
+            </div>
+          </div>
+        </template>
+
+        <template id="anim-property-row-template">
+          <label class="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer select-none">
+            <input type="checkbox" data-role="prop-toggle"
+              class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500 shrink-0">
+            <span class="w-10 shrink-0" data-role="prop-name"></span>
+            <input type="number" step="0.01" data-role="prop-value" disabled
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40">
+          </label>
+        </template>
 
         <!-- Alignment Controls -->
         <div class="space-y-2">
@@ -1785,7 +1787,7 @@
           : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
           }`
 
-        const hasAnim = el.animation?.entrance?.type !== 'none' || el.animation?.loop?.type !== 'none'
+        const hasAnim = Array.isArray(el.animation?.sequence) && el.animation.sequence.length > 0
 
         item.innerHTML = `
           <div class="flex items-center space-x-2 truncate">
@@ -1868,19 +1870,9 @@
       document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
       document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
 
-      // Animations Inspector — placeholder lama, belum terhubung ke skema sequence baru.
-      // Dropdown ini sengaja dibiarkan menunjukkan default kosong sampai Sequence Editor
-      // UI (Fase 8/Fase 3) menggantikannya. Tidak mempengaruhi data el.animation.
-      document.getElementById('prop-anim-entrance-type').value = 'none'
-      document.getElementById('prop-anim-entrance-duration').value = 0.8
-      document.getElementById('prop-anim-entrance-delay').value = 0.0
-      document.getElementById('prop-anim-entrance-ease').value = 'power3.out'
-
-      document.getElementById('prop-anim-loop-type').value = 'none'
-      document.getElementById('prop-anim-loop-duration').value = 2.5
-      document.getElementById('prop-anim-exit-type').value = 'none'
-      document.getElementById('prop-anim-exit-duration').value = 0.5
-      document.getElementById('prop-anim-exit-delay').value = 0
+      // Animation Sequence Editor
+      document.getElementById('anim-loop-toggle').checked = Boolean(el.animation?.loop)
+      renderAnimationSequenceEditor(el)
 
       // Typography
       const textSection = document.getElementById('text-props-section')
@@ -1956,13 +1948,167 @@
       document.getElementById('prop-shadow-y').value = el.style?.shadowOffsetY || 0
     }
 
+    // ---------------------------------------------------------------------
+    // Animation Sequence Editor (Fase 8 / Fase 3)
+    // ---------------------------------------------------------------------
+
+    function ensureAnimation(el) {
+      if (!el.animation || typeof el.animation !== 'object' || !Array.isArray(el.animation.sequence)) {
+        el.animation = { loop: false, sequence: [] }
+      }
+      return el.animation
+    }
+
+    /** Preset quick-insert: label -> step generik siap pakai (murni helper UI). */
+    const ANIMATION_PRESETS = {
+      'Fade In': { type: 'from', properties: { opacity: 0 }, duration: 0.6, delay: 0, ease: 'power2.out', repeat: 0, yoyo: false },
+      'Fade Out': { type: 'to', properties: { opacity: 0 }, duration: 0.4, delay: 0, ease: 'power2.in', repeat: 0, yoyo: false },
+      'Slide Up In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 60 }, duration: 0.8, delay: 0, ease: 'power3.out', repeat: 0, yoyo: false },
+      'Bounce In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 100, scale: 0.8 }, duration: 0.9, delay: 0, ease: 'bounce.out', repeat: 0, yoyo: false },
+      'Zoom In': { type: 'from', properties: { opacity: 0, scale: 0.3 }, duration: 0.7, delay: 0, ease: 'back.out(1.7)', repeat: 0, yoyo: false },
+      'Pulse (loop)': { type: 'to', properties: { scale: 1.04 }, duration: 1.5, delay: 0, ease: 'power1.inOut', repeat: -1, yoyo: true },
+      'Float (loop)': { type: 'to', properties: { y: (el) => el.y - 10 }, duration: 1.3, delay: 0, ease: 'sine.inOut', repeat: -1, yoyo: true },
+    }
+
+    function renderAnimationPresetButtons() {
+      const container = document.getElementById('anim-preset-buttons')
+      container.innerHTML = ''
+      Object.keys(ANIMATION_PRESETS).forEach(label => {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.textContent = label
+        btn.className = 'px-2 py-1 rounded-lg bg-slate-800 hover:bg-indigo-600/60 border border-slate-700 text-[10px] text-slate-300 hover:text-white transition'
+        btn.addEventListener('click', () => {
+          const el = scene.elements.find(item => item.id === selectedElementId)
+          if (!el) return
+          const preset = ANIMATION_PRESETS[label]
+          const properties = {}
+          for (const key of Object.keys(preset.properties)) {
+            const value = preset.properties[key]
+            properties[key] = typeof value === 'function' ? value(el) : value
+          }
+          const anim = ensureAnimation(el)
+          anim.sequence.push({
+            id: `q${anim.sequence.length}`,
+            type: preset.type,
+            properties,
+            duration: preset.duration,
+            delay: preset.delay,
+            ease: preset.ease,
+            repeat: preset.repeat,
+            yoyo: preset.yoyo,
+          })
+          renderAnimationSequenceEditor(el)
+          renderLayers()
+        })
+        container.appendChild(btn)
+      })
+    }
+
+    function renderAnimationSequenceEditor(el) {
+      const anim = ensureAnimation(el)
+      const listEl = document.getElementById('anim-step-list')
+      const stepTemplate = document.getElementById('anim-step-template')
+      const propRowTemplate = document.getElementById('anim-property-row-template')
+      listEl.innerHTML = ''
+
+      if (anim.sequence.length === 0) {
+        const empty = document.createElement('p')
+        empty.className = 'text-[11px] text-slate-500 italic text-center py-2'
+        empty.textContent = 'Belum ada step. Tambah manual atau pakai Quick Insert Preset di bawah.'
+        listEl.appendChild(empty)
+        return
+      }
+
+      anim.sequence.forEach((step, index) => {
+        const card = stepTemplate.content.firstElementChild.cloneNode(true)
+        card.querySelector('.anim-step-label').textContent = `Q${index}`
+
+        const typeInput = card.querySelector('[data-field="type"]')
+        const easeInput = card.querySelector('[data-field="ease"]')
+        const durationInput = card.querySelector('[data-field="duration"]')
+        const delayInput = card.querySelector('[data-field="delay"]')
+        const repeatInput = card.querySelector('[data-field="repeat"]')
+        const yoyoInput = card.querySelector('[data-field="yoyo"]')
+
+        typeInput.value = step.type || 'to'
+        easeInput.value = step.ease || 'power2.out'
+        durationInput.value = step.duration ?? 0.6
+        delayInput.value = step.delay ?? 0
+        repeatInput.value = step.repeat ?? 0
+        yoyoInput.checked = !!step.yoyo
+
+        typeInput.addEventListener('change', (e) => { step.type = e.target.value })
+        easeInput.addEventListener('change', (e) => { step.ease = e.target.value })
+        durationInput.addEventListener('input', (e) => { step.duration = parseFloat(e.target.value) || 0 })
+        delayInput.addEventListener('input', (e) => { step.delay = parseFloat(e.target.value) || 0 })
+        repeatInput.addEventListener('input', (e) => { step.repeat = parseInt(e.target.value, 10) || 0 })
+        yoyoInput.addEventListener('change', (e) => { step.yoyo = e.target.checked })
+
+        // Target Properties: satu baris checkbox+angka per properti yang didukung engine.
+        const propsContainer = card.querySelector('[data-role="properties"]')
+        AnimationEngine.SUPPORTED_PROPERTIES.forEach(propName => {
+          const row = propRowTemplate.content.firstElementChild.cloneNode(true)
+          const toggle = row.querySelector('[data-role="prop-toggle"]')
+          const nameEl = row.querySelector('[data-role="prop-name"]')
+          const valueInput = row.querySelector('[data-role="prop-value"]')
+          const isActive = Object.prototype.hasOwnProperty.call(step.properties || {}, propName)
+
+          nameEl.textContent = propName
+          toggle.checked = isActive
+          valueInput.disabled = !isActive
+          valueInput.value = isActive ? step.properties[propName] : (el[propName] ?? 0)
+
+          toggle.addEventListener('change', (e) => {
+            if (!step.properties) step.properties = {}
+            if (e.target.checked) {
+              step.properties[propName] = parseFloat(valueInput.value) || (el[propName] ?? 0)
+              valueInput.disabled = false
+            } else {
+              delete step.properties[propName]
+              valueInput.disabled = true
+            }
+          })
+          valueInput.addEventListener('input', (e) => {
+            if (step.properties && Object.prototype.hasOwnProperty.call(step.properties, propName)) {
+              step.properties[propName] = parseFloat(e.target.value) || 0
+            }
+          })
+
+          propsContainer.appendChild(row)
+        })
+
+        // Aksi: naik / turun / duplikat / hapus
+        card.querySelector('[data-action="move-up"]').addEventListener('click', () => {
+          if (index === 0) return
+          ;[anim.sequence[index - 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index - 1]]
+          renderAnimationSequenceEditor(el)
+        })
+        card.querySelector('[data-action="move-down"]').addEventListener('click', () => {
+          if (index === anim.sequence.length - 1) return
+          ;[anim.sequence[index + 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index + 1]]
+          renderAnimationSequenceEditor(el)
+        })
+        card.querySelector('[data-action="duplicate"]').addEventListener('click', () => {
+          const clone = JSON.parse(JSON.stringify(step))
+          clone.id = `q${anim.sequence.length}`
+          anim.sequence.splice(index + 1, 0, clone)
+          renderAnimationSequenceEditor(el)
+        })
+        card.querySelector('[data-action="delete"]').addEventListener('click', () => {
+          anim.sequence.splice(index, 1)
+          renderAnimationSequenceEditor(el)
+          renderLayers()
+        })
+
+        listEl.appendChild(card)
+      })
+    }
+
     function attachPropertyListeners() {
       const getSelected = () => scene.elements.find(item => item.id === selectedElementId)
 
-      // Test Element Animation Button — preview sequence baru langsung di kanvas editor.
-      // Panel input di bawah (entrance/loop/exit) masih placeholder visual lama, BELUM
-      // terhubung ke data — Sequence Editor UI yang sesungguhnya menyusul di Fase 3.
-      // Lihat issue.md Fase 8.
+      // Test Element Animation Button — preview sequence langsung di kanvas editor.
       document.getElementById('test-element-animation-btn').addEventListener('click', () => {
         const el = getSelected()
         if (el) {
@@ -1973,9 +2119,30 @@
         }
       })
 
-      // NOTE: input entrance/loop/exit di bawah ini sudah tidak berpengaruh ke data
-      // (skema lama sudah dihapus di Fase 1). Dibiarkan tanpa listener aktif sampai
-      // Sequence Editor UI (Fase 8, Fase 3) menggantikan panel ini seluruhnya.
+      document.getElementById('anim-loop-toggle').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el) {
+          ensureAnimation(el).loop = e.target.checked
+        }
+      })
+
+      document.getElementById('anim-add-step-btn').addEventListener('click', () => {
+        const el = getSelected()
+        if (!el) return
+        const anim = ensureAnimation(el)
+        anim.sequence.push({
+          id: `q${anim.sequence.length}`,
+          type: 'to',
+          properties: { opacity: 1 },
+          duration: 0.6,
+          delay: 0,
+          ease: 'power2.out',
+          repeat: 0,
+          yoyo: false,
+        })
+        renderAnimationSequenceEditor(el)
+        renderLayers()
+      })
 
       document.getElementById('prop-image-fit').addEventListener('change', (e) => {
         const el = getSelected()
@@ -2515,6 +2682,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       attachPropertyListeners()
+      renderAnimationPresetButtons()
       loadF1Data()
       await loadAvailableScenes()
       await loadScene(currentSceneId)

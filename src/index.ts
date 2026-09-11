@@ -1464,6 +1464,9 @@ const app = new Elysia()
     staticPlugin({
       assets: 'public',
       prefix: '',
+      etag: true,
+      directive: 'no-cache',
+      maxAge: 0,
     })
   )
   .listen({

@@ -38,8 +38,24 @@ Setiap elemen adalah "layer" yang bisa di-reorder (z-index), di-duplicate, di-hi
 Saat elemen dipilih di kanvas, muncul panel untuk atur:
 - Transform: posisi (x/y), ukuran, rotasi, skala.
 - Style: warna, opacity, border, shadow, font (untuk text), border-radius, dsb.
-- Animasi: preset animasi masuk/keluar/idle (fade, slide, bounce, pulse, dll, via GSAP) + durasi & delay.
+- Animasi: **sequence property-transition** — lihat 3.3.1.
 - Data binding: elemen text bisa "terhubung" ke variabel dinamis (username, running text, live stats, external API) alih-alih teks statis.
+
+#### 3.3.1 Model Animasi: Property Transition Sequence
+
+Model lama (Entrance → Loop → Exit sebagai 3 slot tetap dengan preset bernama) sudah digantikan sepenuhnya oleh model sequence generik. Prinsip yang **sudah settled**:
+
+> **Animation = State Transition + Time**, bukan **Animation = Named Preset**.
+
+- Tiap elemen punya `animation.sequence`: array step berurutan (Q0 → Q1 → Q2 → ...), bukan 3 slot tetap. Jumlah step bebas.
+- Tiap step adalah transisi properti generik (`x`, `y`, `opacity`, `scale`, `rotation`, dst) dari state elemen saat ini menuju state target, dalam durasi tertentu — bukan nama preset (`fadeIn`/`slideUp`/dll) yang di-hardcode di engine.
+- Preset (fade, slide, pulse, dll) tetap ada di **level UI saja**, sebagai template quick-insert yang otomatis mengisi field step generik — bukan konsep yang dikenal oleh animation engine.
+- Posisi dianimasikan lewat `left`/`top` (mengikuti representasi kanonis `el.x`/`el.y` pixel-absolut yang sudah dipakai sistem drag/drop/resize/align), **bukan** `transform: translate()` — supaya tidak ada dua sistem koordinat paralel untuk posisi yang sama.
+- Jeda waktu (delay) adalah **step tersendiri** (`{type:'delay', duration}`), bukan field yang nempel di tiap step animasi — supaya bisa disisipkan/dipindah/diduplikat/dihapus bebas di posisi manapun dalam sequence, sama seperti step animasi lainnya.
+- Satu GSAP timeline per elemen, dikelola terpusat (registry timeline per elementId), supaya cleanup saat elemen dihapus/scene diganti selalu konsisten dan tidak ada timeline yatim (orphaned) yang terus jalan.
+- Logic normalisasi & eksekusi sequence ini **wajib satu sumber kebenaran**, dipakai bersama oleh editor (`index.html`, untuk preview) dan overlay (`overlay.html`, untuk playback live) — bukan diimplementasikan dua kali secara terpisah seperti model lama.
+
+Detail penuh arsitektur & skema JSON ada di dokumen spesifikasi terkait (`Animation Sequence & Property Transition System`); bagian ini hanya mencatat *keputusan prinsip* yang sudah settled agar tidak diulang tiap sesi.
 
 ### 3.4 Asset Management
 User bisa upload SVG/PNG hasil desain dari Illustrator, tersimpan di server, lalu dipakai berulang sebagai elemen di kanvas manapun.

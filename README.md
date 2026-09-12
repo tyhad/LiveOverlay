@@ -13,7 +13,7 @@ Prinsip utama: **WYSIWYG — What You See Is What You Stream**. Apa yang disusun
 - 🎨 **Canvas Editor Visual**: Drag & drop elemen langsung di kanvas — bukan lagi form statis. Mirip artboard di Illustrator/Figma, lengkap dengan panel Layers.
 - 🧱 **Sistem Elemen & Layers**: Tambah elemen Text, Shape, dan Image/SVG. Setiap elemen bisa di-reorder (z-index), diduplikasi, disembunyikan, atau dihapus.
 - 🎛️ **Panel Properti Lengkap**: Atur transform (posisi, ukuran, rotasi), style (warna, opacity, border, font), dan animasi per elemen langsung dari sidebar.
-- 🌀 **Animasi GSAP per Elemen**: Pilih preset animasi masuk/keluar/idle (fade, slide, bounce, pulse, dll) dengan kontrol durasi & delay.
+- 🌀 **Animation Sequence per Elemen**: Susun urutan step animasi (Q0, Q1, Q2, ...) bebas — transisi posisi/opacity/scale/rotation ke state manapun, disisipi step Delay tersendiri kapan perlu, opsional diulang otomatis dari awal. Lengkap dengan quick-insert preset (fade, slide, bounce, pulse, dll) sebagai starting point.
 - 📤 **Asset Management**: Upload SVG/PNG hasil desain sendiri (misal dari Illustrator), tersimpan di server, dan bisa dipakai berulang di elemen manapun.
 - 🖥️ **Multi-Scene & Multi-Output**: Simpan banyak scene dengan ukuran kanvas (width/height) dan background masing-masing. Beberapa scene bisa dijalankan **bersamaan** di browser source berbeda — misalnya layout portrait untuk TikTok dan landscape untuk YouTube, sekaligus, tanpa saling mengganggu.
 - 🔌 **External Data Source (Generic API Binding)**: Hubungkan elemen text ke field dari API eksternal apa pun (misal data F1/FastF1), dengan polling + caching di sisi backend agar tidak membebani overlay.
@@ -105,6 +105,7 @@ Perubahan tersimpan otomatis / lewat tombol Save, dan langsung ter-refresh di ov
 | `bun run build` | Mengompilasi Tailwind CSS (`src/styles/input.css` ke `public/styles.css`) |
 | `bun run build:css` | Mengompilasi `src/styles/input.css` ke `public/styles.css` secara langsung |
 | `bun start` | Menjalankan server dalam mode produksi |
+| `bun run test` | Menjalankan regression test untuk Animation Sequence Engine (`tests/animation-engine.test.mjs`) |
 
 ---
 

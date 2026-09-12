@@ -17,6 +17,7 @@
 | 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
 | — | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
 | — | F1GStats Integration — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
+| 8 | Animation Sequence & Property Transition System (overhaul Fase 3) | ✅ Selesai — branch `feature/animation-sequence-system` |
 | 7 | Polish UX Editor | Belum dimulai |
 
 ---
@@ -100,16 +101,44 @@ Fitur ini **dibatalkan dan kodenya dihapus sepenuhnya** dari `main`. Alasan: use
 
 Item technical debt "concurrent rendering 2+ browser source beda `?scene=`" sudah ditest dan dikonfirmasi **aman**. Dipindahkan dari Technical Debt ke sini sebagai selesai/lulus verifikasi.
 
+## Fase 8 — Animation Sequence & Property Transition System (Sedang Berjalan)
+
+Overhaul total sistem animasi (dulu Fase 3), mengganti model `entrance/loop/exit` (3 slot preset tetap) menjadi model sequence generik berbasis property-transition (`animation.sequence: []`, step Q0→Q1→Q2→...). Keputusan arsitektur & prinsip yang sudah settled dicatat di `Vision.md` bagian 3.3.1. **Tidak ada backward-compat** untuk skema lama — migrasi langsung, karena project belum dipakai live dan data scene saat ini murni untuk testing.
+
+**System yang wajib dipertahankan fungsinya selama overhaul ini** (tidak boleh regresi):
+- Panel Add Elements, Assets, Platform Live Stats, Layers (catatan: tombol Bring to Top/Move Up/Move Down/Send to Bottom **memang sudah rusak dari sebelumnya**, bukan tanggung jawab overhaul ini — dicatat terpisah di Technical Debt/Todo), Canvas Settings, Running Text (Marquee), Data Binding, panel Multi-Scene & Multi-Output (catatan: teks header "LiveOverlay Studio"/"GSAP Animation" kepotong vertikal — bug CSS terpisah, tidak terkait overhaul ini).
+
+Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Panel, Canvas Alignment Panel, Transform & Position Panel, Typography Panel (Running Text & Data Binding boleh dipisah jadi panel sendiri), Fill & Background, Border & Corners, Drop Shadow & Glow.
+
+**Breakdown fase kerja** (checklist, dikerjakan bertahap — beberapa boleh paralel, dicatat di sub-poin):
+
+- [x] **Fase 0 — Modularisasi**: extract logic animasi dari `index.html`/`overlay.html` jadi modul bersama (`animation-engine.js` atau setara) yang di-load oleh keduanya, supaya tidak ada duplikasi logic (menjawab technical debt "Logic animasi GSAP ke-duplikat" di bawah).
+- [x] **Fase 1 — Migrasi skema data**: ganti `SceneElement.animation.{entrance,loop,exit}` → `animation.sequence: AnimationStep[]` di `src/index.ts` (tipe data) dan semua file contoh (`scene.example.json`, `scenes.example.json`).
+- [x] **Fase 2 — Sequence Engine**: `AnimationController` + `buildTimelineFromSequence`. Step type `to` & `from` didukung, properti: `x`, `y`, `opacity`, `scale`, `rotation`. Posisi dianimasikan via `left`/`top`. Timeline registry per elementId + cleanup saat elemen dihapus/scene diganti/timeline infinite dihentikan eksplisit.
+- [x] **Fase 3 — GSAP Animations Panel jadi Sequence Editor**: list step Q0..Qn (add/delete/reorder/duplicate), field per step, quick-insert preset (Fade In/Out, Slide Up In, Bounce In, Zoom In, Pulse loop, Float loop).
+- [x] **Fase 4 — Transform & Position Panel**: field x/y/scale/rotation/opacity current-state elemen ditambah (termasuk slider Scale yang sebelumnya belum ada UI-nya sama sekali) sebagai starting state eksplisit untuk step `to`/`from`.
+- [x] **Fase 5 — Reorganisasi panel non-animasi**: Canvas Alignment, Typography (Running Text & Data Binding dipisah jadi panel "Dynamic Content" sendiri), Fill & Background, Border & Corners, Drop Shadow & Glow — semua jadi accordion (`<details>`/`<summary>`) beserta 3 panel kiri (Add Elements, Assets, Platform Live Stats — Layers sengaja dikecualikan). Urutan final: Canvas Alignment → Typography → Dynamic Content → Transform & Position → Animation Sequence → Image/SVG → Fill & Background → Borders & Corners → Drop Shadow & Glow.
+- [x] **Fase 6 — Sync `overlay.html`**: otomatis terpenuhi sejak Fase 0/2 (satu modul `animation-engine.js` dipakai bersama editor & overlay).
+- [x] **Fase 7 — Testing**: 18/18 test otomatis lolos (sequential order, posisi akhir, multi-property simultan, delay, repeat finite & infinite+terminasi, scene replacement, error handling, loop flag). **Belum diverifikasi**: pause/resume (memang belum diimplementasikan — lihat catatan di bawah), performa jangka panjang & multi-output nyata (perlu testing manual di OBS sungguhan).
+
+**Catatan pause/resume**: `AnimationController.pause()`/`resume()` yang disebut di dokumen spek awal (§16) **belum diimplementasikan** — dari awal ditandai sebagai kapabilitas "future-facing, tidak wajib diimplementasikan sekarang". Kalau dibutuhkan, ini kerjaan tambahan terpisah dari Fase 8.
+
+**Revisi pasca-Fase 7**: field `delay` yang tadinya nempel di tiap step (`{type:'to', ..., delay: 0.3}`) diganti jadi **step khusus tersendiri** (`{type:'delay', duration:0.3}`) — bisa disisipkan/dipindah/diduplikat/dihapus bebas di posisi manapun dalam sequence, lewat tombol "⏱ Add Delay" di Sequence Editor. Field `delay` lama ditandai `@deprecated` di `src/index.ts` tapi tetap didukung baca: `AnimationEngine.splitLegacyPerStepDelay()` otomatis memecah data lama (termasuk yang ada di `scene.example.json`/`scenes.example.json`, sengaja **tidak diubah** supaya jadi bukti migrasi otomatis beneran jalan) jadi step delay tersendiri, baik saat playback maupun saat pertama dibuka di Sequence Editor (migrasi sticky lewat `ensureAnimation()`).
+
 ---
 
 ## Technical Debt (kandidat Fase 7)
 
 - Race condition di `persistSceneStore()`: dua `Bun.write()` berurutan tanpa lock — kalau dua save scene terjadi nyaris bersamaan, berpotensi `scenes.json` sempat inkonsisten.
-- Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`. Marquee juga menambah sedikit duplikasi kecil (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis).
+- ~~Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`.~~ ✅ **Selesai** — tuntas lewat `public/animation-engine.js` yang dipakai bersama editor & overlay sejak Fase 8. Marquee tetap punya sedikit duplikasi kecil terpisah (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis) — bukan bagian dari scope ini, tidak perlu dikerjakan.
 - Google Fonts di-load all-upfront (10 keluarga font: Bebas Neue, Inter, Limelight, Manrope, Montserrat, Outfit, Plus Jakarta Sans, Poppins, Quicksand, Roboto) padahal biasanya cuma 1-2 dipakai per scene. **Manrope, Quicksand, Limelight sudah ditambahkan** ke Google Fonts `<link>` dan dropdown Font Family di editor — pastikan tetap tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
-- `gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).
+- ~~`gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).~~ Dicek ulang saat kerja Fase 8: catatan ini sudah **stale**, `gsap` sudah tidak ada sama sekali di `package.json`/`bun.lock` sebelum revisi ini (mungkin sempat dihapus tanpa update catatan). `gsap` sekarang ditambahkan kembali, tapi sebagai **devDependency** khusus untuk `tests/animation-engine.test.mjs` (lihat di bawah) — runtime produksi (`index.html`/`overlay.html`) tetap pakai versi CDN seperti sebelumnya, tidak berubah.
 - Browser Source dimension tidak auto-sync ke Canvas Settings scene — lihat detail di bawah.
 - File `f1gstats.sqlite` bisa ter-lock oleh proses lain (misal server LiveOverlay yang masih jalan) saat fetcher F1GStats coba overwrite — di Windows ini gagal keras (`The process cannot access the file`), bukan cuma warning. Perlu SOP jelas: stop server LiveOverlay dulu sebelum re-run fetcher, atau ke depannya pertimbangkan skema "write ke file sementara lalu atomic rename" supaya tidak perlu stop service.
+
+### Automated Testing
+
+`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan pakai `bun run test`. Simulasi browser via `jsdom` + GSAP asli (bukan mock, devDependency `gsap`+`jsdom`), tanpa perlu server/OBS. Cakupan: 25 assertion mencakup checklist dokumen spek awal §25 (sequential execution, posisi, multi-property, repeat finite/infinite+terminasi, scene replacement, error handling, loop flag) + fitur Delay-sebagai-step-tersendiri (termasuk migrasi otomatis data lama). **Belum tercakup**: pause/resume (belum diimplementasikan — lihat catatan di atas), testing lewat UI/DOM penuh (baru unit-level ke engine-nya langsung; testing UI Sequence Editor masih manual).
 
 ---
 

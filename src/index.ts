@@ -88,31 +88,51 @@ interface ElementStyle {
   shadowOffsetY?: number
 }
 
-interface EntranceAnimation {
-  type?: 'none' | 'fadeIn' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'zoomIn' | 'bounceIn' | 'flipX' | 'flipY' | 'elasticIn'
-  duration?: number
-  delay?: number
-  ease?: string
+/**
+ * Properti elemen yang bisa jadi target animasi. Sengaja dibatasi (bukan semua
+ * CSS property) — lihat Vision.md §3.3.1 dan public/animation-engine.js.
+ */
+interface AnimatableProperties {
+  x?: number
+  y?: number
+  opacity?: number
+  scale?: number
+  rotation?: number
 }
 
-interface ExitAnimation {
-  type?: 'none' | 'fadeOut' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'zoomOut' | 'bounceOut' | 'flipX'
-  duration?: number
+/**
+ * Satu step animasi dalam sequence (Q0, Q1, Q2, ...). Dieksekusi berurutan.
+ *   - 'to': animasi dari state elemen saat ini menuju `properties`.
+ *   - 'from': animasi dari `properties` menuju state elemen saat ini (state akhir
+ *     tidak berubah secara kanonis — dipakai untuk efek entrance seperti fadeIn/slideUp
+ *     tanpa mengubah x/y/opacity tersimpan elemen, supaya WYSIWYG di editor tetap akurat).
+ *   - 'fromTo': kedua state (`from` & `to`) dispesifikasikan eksplisit.
+ */
+interface AnimationStep {
+  id?: string
+  /** 'delay' adalah step khusus: cuma menunggu, tanpa animasi properti apapun
+   *  (lihat `duration`). Dibuat sebagai step tersendiri (bukan field nempel di
+   *  tiap step) supaya bisa disisipkan/dipindah/diduplikat bebas di posisi
+   *  manapun dalam sequence. */
+  type: 'to' | 'from' | 'fromTo' | 'delay'
+  properties?: AnimatableProperties
+  from?: AnimatableProperties
+  to?: AnimatableProperties
+  duration: number
+  /** @deprecated Field lama, digantikan step 'delay' tersendiri. Masih dibaca oleh
+   *  animation-engine.js untuk migrasi otomatis data lama, tapi jangan dipakai lagi
+   *  untuk data baru. */
   delay?: number
   ease?: string
-}
-
-interface LoopAnimation {
-  type?: 'none' | 'pulse' | 'float' | 'shake' | 'glow' | 'bounce' | 'spin' | 'swing' | 'heartbeat'
-  duration?: number
-  intensity?: number
-  ease?: string
+  repeat?: number
+  yoyo?: boolean
 }
 
 interface AnimationConfig {
-  entrance?: EntranceAnimation
-  exit?: ExitAnimation
-  loop?: LoopAnimation
+  /** Kalau true, sequence otomatis restart dari step pertama setelah step terakhir selesai.
+   *  Kalau false/tidak diisi, sequence main sekali lalu bertahan di state step terakhir. */
+  loop?: boolean
+  sequence: AnimationStep[]
 }
 
 type PlatformTextBindingField =
@@ -166,6 +186,7 @@ interface SceneElement {
   height: number
   rotation?: number
   opacity?: number
+  scale?: number
   zIndex?: number
   hidden?: boolean
   locked?: boolean
@@ -1450,6 +1471,9 @@ const app = new Elysia()
     staticPlugin({
       assets: 'public',
       prefix: '',
+      etag: true,
+      directive: 'no-cache',
+      maxAge: 0,
     })
   )
   .listen({

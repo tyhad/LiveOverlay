@@ -39,16 +39,26 @@
           }
         },
         "animation": {
-          "entrance": {
-            "type": "slideUp",
-            "duration": 0.8,
-            "delay": 0.3,
-            "ease": "power3.out"
-          },
-          "loop": {
-            "type": "pulse",
-            "duration": 3.2
-          }
+          "loop": false,
+          "sequence": [
+            {
+              "id": "q0",
+              "type": "from",
+              "properties": { "opacity": 0, "y": 1000 },
+              "duration": 0.8,
+              "delay": 0.3,
+              "ease": "power3.out"
+            },
+            {
+              "id": "q1",
+              "type": "to",
+              "properties": { "scale": 1.04 },
+              "duration": 1.6,
+              "repeat": -1,
+              "yoyo": true,
+              "ease": "power1.inOut"
+            }
+          ]
         }
       },
       {

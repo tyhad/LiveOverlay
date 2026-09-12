@@ -14,7 +14,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "gsap": "^3.12.5",
-    "jsdom": "^25.0.1"
+    "jsdom": "^30.0.1"
   },
   "peerDependencies": {
     "typescript": "^7"

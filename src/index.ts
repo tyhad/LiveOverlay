@@ -71,6 +71,7 @@ interface ElementStyle {
   fontWeight?: string
   color?: string
   textAlign?: 'left' | 'center' | 'right'
+  verticalAlign?: 'top' | 'center' | 'bottom'
   textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'
   letterSpacing?: number
   lineHeight?: number
@@ -156,7 +157,8 @@ interface PlatformTextBinding {
   fallback?: string
 }
 
-/** fieldPath examples: "sessions.0.raceName", "driverStandings.0.driverName", "constructorStandings.1.points" */
+/** fieldPath examples: "driverStandingsText.abbrMarquee", "constructorStandingsText.fullMultiline",
+ *  "startingGridText.marquee", "scheduleText.nowMultiline". */
 interface F1TextBinding {
   enabled?: boolean
   source: 'f1data'
@@ -298,6 +300,36 @@ interface F1ConstructorStanding {
   dnfDns: number
 }
 
+interface F1StartingGridEntry {
+  round: number
+  roundRelation: 'previous' | 'now' | 'next' | null
+  position: number
+  driverName: string
+  driverAbbr: string
+  teamName: string
+}
+
+interface F1GroupedText {
+  abbrMultiline: string
+  abbrMarquee: string
+  fullMultiline: string
+  fullMarquee: string
+}
+
+interface F1StartingGridText {
+  multiline: string
+  marquee: string
+}
+
+interface F1ScheduleText {
+  previousMultiline: string
+  previousMarquee: string
+  nowMultiline: string
+  nowMarquee: string
+  nextMultiline: string
+  nextMarquee: string
+}
+
 interface F1DataSnapshot {
   season: string | null
   lastFetchedAt: string | null
@@ -306,8 +338,96 @@ interface F1DataSnapshot {
   nextRound: F1RoundInfo | null
   driverStandings: F1DriverStanding[]
   constructorStandings: F1ConstructorStanding[]
+  driverStandingsText: F1GroupedText
+  constructorStandingsText: F1GroupedText
+  startingGrid: F1StartingGridEntry[]
+  startingGridText: F1StartingGridText
+  scheduleText: F1ScheduleText
   available: boolean
   error: string | null
+}
+
+// Mapping nama tim -> singkatan 3(-ish) huruf. Tidak ada sumber resmi dari
+// Ergast/FastF1 untuk ini, jadi dibuat manual. Tambahkan barisnya kalau ada
+// tim baru yang belum masuk daftar.
+const TEAM_NAME_TO_ABBR: Record<string, string> = {
+  'mercedes': 'MER',
+  'ferrari': 'FER',
+  'mclaren': 'MCL',
+  'red bull': 'RBR',
+  'red bull racing': 'RBR',
+  'alpine f1 team': 'ALP',
+  'alpine': 'ALP',
+  'rb f1 team': 'RB',
+  'racing bulls': 'RB',
+  'haas f1 team': 'HAA',
+  'haas': 'HAA',
+  'audi': 'AUD',
+  'williams': 'WIL',
+  'aston martin': 'AST',
+  'cadillac f1 team': 'CAD',
+  'cadillac': 'CAD',
+  'sauber': 'SAU',
+  'kick sauber': 'SAU',
+  'alphatauri': 'AT',
+  'alfa romeo': 'ALF',
+}
+
+function teamAbbr(teamName: string): string {
+  if (!teamName) return ''
+  return TEAM_NAME_TO_ABBR[teamName.trim().toLowerCase()] || teamName.slice(0, 3).toUpperCase()
+}
+
+const MARQUEE_SEPARATOR = ' • '
+
+function buildDriverStandingsText(rows: F1DriverStanding[]): F1GroupedText {
+  const abbrLines = rows.map(
+    (d) => `#${d.position} ${d.driverAbbr} ${teamAbbr(d.teamName)} ${d.points}pts`
+  )
+  const fullLines = rows.map(
+    (d) =>
+      `#${d.position} ${d.driverName} (${d.teamName}) ${d.points}pts | ${d.wins} Wins, ${d.podiums} Podiums, ${d.dnfDns} DNF`
+  )
+  return {
+    abbrMultiline: abbrLines.join('\n'),
+    abbrMarquee: abbrLines.join(MARQUEE_SEPARATOR),
+    fullMultiline: fullLines.join('\n'),
+    fullMarquee: fullLines.join(MARQUEE_SEPARATOR),
+  }
+}
+
+function buildConstructorStandingsText(rows: F1ConstructorStanding[]): F1GroupedText {
+  const abbrLines = rows.map(
+    (c) => `#${c.position} ${teamAbbr(c.teamName)} ${c.points}pts`
+  )
+  const fullLines = rows.map(
+    (c) =>
+      `#${c.position} ${c.teamName} ${c.points}pts | ${c.wins} Wins, ${c.podiums} Podiums, ${c.dnfDns} DNF`
+  )
+  return {
+    abbrMultiline: abbrLines.join('\n'),
+    abbrMarquee: abbrLines.join(MARQUEE_SEPARATOR),
+    fullMultiline: fullLines.join('\n'),
+    fullMarquee: fullLines.join(MARQUEE_SEPARATOR),
+  }
+}
+
+function buildStartingGridText(rows: F1StartingGridEntry[]): F1StartingGridText {
+  const lines = rows.map((g) => `P${g.position} ${g.driverAbbr} ${teamAbbr(g.teamName)}`)
+  return {
+    multiline: lines.join('\n'),
+    marquee: lines.join(MARQUEE_SEPARATOR),
+  }
+}
+
+function pickStartingGridForDisplay(rows: F1StartingGridEntry[]): F1StartingGridEntry[] {
+  // Prioritaskan grid utk round 'now', lalu 'next', lalu 'previous' (kalau
+  // now/next belum ada qualifying-nya). Kalau semua kosong, kembalikan [].
+  for (const relation of ['now', 'next', 'previous'] as const) {
+    const match = rows.filter((r) => r.roundRelation === relation)
+    if (match.length > 0) return match.sort((a, b) => a.position - b.position)
+  }
+  return []
 }
 
 function buildRoundGroup(rows: F1Session[], relation: 'previous' | 'now' | 'next'): F1RoundInfo | null {
@@ -321,6 +441,68 @@ function buildRoundGroup(rows: F1Session[], relation: 'previous' | 'now' | 'next
     countryFlag: first.countryFlag,
     sessions: relevant.map((row) => ({ sessionType: row.sessionType, startTimeUtc: row.startTimeUtc })),
   }
+}
+
+function formatSessionTimeWib(iso: string): string {
+  try {
+    const d = new Date(iso)
+    const day = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' })
+    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' })
+    return `${day} ${time} WIB`
+  } catch {
+    return iso
+  }
+}
+
+function buildRoundText(round: F1RoundInfo | null): { multiline: string; marquee: string } {
+  if (!round) return { multiline: '', marquee: '' }
+  const header = `${round.raceName} ${round.countryFlag} — ${round.circuitName}`.trim()
+  const sessionLines = round.sessions.map(
+    (s) => `${s.sessionType}: ${formatSessionTimeWib(s.startTimeUtc)}`
+  )
+  return {
+    multiline: [header, ...sessionLines].join('\n'),
+    marquee: [header, ...sessionLines].join(MARQUEE_SEPARATOR),
+  }
+}
+
+function buildScheduleText(
+  previousRound: F1RoundInfo | null,
+  nowRound: F1RoundInfo | null,
+  nextRound: F1RoundInfo | null
+): F1ScheduleText {
+  const previous = buildRoundText(previousRound)
+  const now = buildRoundText(nowRound)
+  const next = buildRoundText(nextRound)
+  return {
+    previousMultiline: previous.multiline,
+    previousMarquee: previous.marquee,
+    nowMultiline: now.multiline,
+    nowMarquee: now.marquee,
+    nextMultiline: next.multiline,
+    nextMarquee: next.marquee,
+  }
+}
+
+const EMPTY_SCHEDULE_TEXT: F1ScheduleText = {
+  previousMultiline: '',
+  previousMarquee: '',
+  nowMultiline: '',
+  nowMarquee: '',
+  nextMultiline: '',
+  nextMarquee: '',
+}
+
+const EMPTY_GROUPED_TEXT: F1GroupedText = {
+  abbrMultiline: '',
+  abbrMarquee: '',
+  fullMultiline: '',
+  fullMarquee: '',
+}
+
+const EMPTY_GRID_TEXT: F1StartingGridText = {
+  multiline: '',
+  marquee: '',
 }
 
 let f1Db: Database | null = null
@@ -350,6 +532,11 @@ function getF1DataSnapshot(): F1DataSnapshot {
       nextRound: null,
       driverStandings: [],
       constructorStandings: [],
+      driverStandingsText: EMPTY_GROUPED_TEXT,
+      constructorStandingsText: EMPTY_GROUPED_TEXT,
+      startingGrid: [],
+      startingGridText: EMPTY_GRID_TEXT,
+      scheduleText: EMPTY_SCHEDULE_TEXT,
       available: false,
       error: f1DbInitError || 'F1GStats database not found',
     }
@@ -377,14 +564,36 @@ function getF1DataSnapshot(): F1DataSnapshot {
       FROM constructor_standings ORDER BY position ASC
     `).all() as F1ConstructorStanding[]
 
+    let startingGridRows: F1StartingGridEntry[] = []
+    try {
+      startingGridRows = db.query(`
+        SELECT round, round_relation as roundRelation, position,
+               driver_name as driverName, driver_abbr as driverAbbr, team_name as teamName
+        FROM starting_grid ORDER BY position ASC
+      `).all() as F1StartingGridEntry[]
+    } catch {
+      // Tabel starting_grid belum ada (database lama sebelum update) -> anggap kosong.
+      startingGridRows = []
+    }
+    const startingGrid = pickStartingGridForDisplay(startingGridRows)
+
+    const previousRound = buildRoundGroup(sessionRows, 'previous')
+    const nowRound = buildRoundGroup(sessionRows, 'now')
+    const nextRound = buildRoundGroup(sessionRows, 'next')
+
     return {
       season: meta.season || null,
       lastFetchedAt: meta.last_fetched_at || null,
-      previousRound: buildRoundGroup(sessionRows, 'previous'),
-      nowRound: buildRoundGroup(sessionRows, 'now'),
-      nextRound: buildRoundGroup(sessionRows, 'next'),
+      previousRound,
+      nowRound,
+      nextRound,
       driverStandings,
       constructorStandings,
+      driverStandingsText: buildDriverStandingsText(driverStandings),
+      constructorStandingsText: buildConstructorStandingsText(constructorStandings),
+      startingGrid,
+      startingGridText: buildStartingGridText(startingGrid),
+      scheduleText: buildScheduleText(previousRound, nowRound, nextRound),
       available: true,
       error: null,
     }
@@ -398,6 +607,11 @@ function getF1DataSnapshot(): F1DataSnapshot {
       nextRound: null,
       driverStandings: [],
       constructorStandings: [],
+      driverStandingsText: EMPTY_GROUPED_TEXT,
+      constructorStandingsText: EMPTY_GROUPED_TEXT,
+      startingGrid: [],
+      startingGridText: EMPTY_GRID_TEXT,
+      scheduleText: EMPTY_SCHEDULE_TEXT,
       available: false,
       error: message,
     }

@@ -161,7 +161,7 @@
       textEl.style.width = '100%'
       textEl.style.height = '100%'
       textEl.style.display = 'flex'
-      textEl.style.alignItems = 'center'
+      textEl.style.alignItems = el.style?.verticalAlign === 'top' ? 'flex-start' : (el.style?.verticalAlign === 'bottom' ? 'flex-end' : 'center')
       textEl.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
       textEl.style.fontSize = `${el.style?.fontSize || 18}px`
       textEl.style.fontWeight = el.style?.fontWeight || 'normal'
@@ -171,6 +171,7 @@
       textEl.style.textTransform = el.style?.textTransform || 'none'
       textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
       textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
+      textEl.style.whiteSpace = 'pre-line'
       textEl.textContent = text
     }
 
@@ -299,7 +300,7 @@
           textEl.style.width = '100%'
           textEl.style.height = '100%'
           textEl.style.display = 'flex'
-          textEl.style.alignItems = 'center'
+          textEl.style.alignItems = el.style?.verticalAlign === 'top' ? 'flex-start' : (el.style?.verticalAlign === 'bottom' ? 'flex-end' : 'center')
           textEl.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
           textEl.style.fontSize = `${el.style?.fontSize || 18}px`
           textEl.style.fontWeight = el.style?.fontWeight || 'normal'
@@ -309,6 +310,7 @@
           textEl.style.textTransform = el.style?.textTransform || 'none'
           textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
           textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
+          textEl.style.whiteSpace = 'pre-line'
           textEl.textContent = text
         }
       } else {

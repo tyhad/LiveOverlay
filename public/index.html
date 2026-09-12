@@ -584,6 +584,19 @@
             </div>
           </div>
 
+          <!-- Vertical Align -->
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Vertical Align (posisi teks kalau box lebih kecil dari isi/multiline)</label>
+            <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+              <button type="button" id="align-v-top"
+                class="py-1 text-xs rounded text-slate-300 hover:text-white">⬆ Top</button>
+              <button type="button" id="align-v-center"
+                class="py-1 text-xs rounded text-slate-300 hover:text-white">■ Center</button>
+              <button type="button" id="align-v-bottom"
+                class="py-1 text-xs rounded text-slate-300 hover:text-white">⬇ Bottom</button>
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
@@ -694,10 +707,10 @@
                 <label class="block text-[11px] text-slate-400 mb-1">F1 Field Path</label>
                 <input type="text" id="prop-text-binding-f1-field-path" list="f1-field-paths"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  placeholder="driverStandings.0.driverName">
+                  placeholder="driverStandingsText.abbrMarquee">
                 <datalist id="f1-field-paths"></datalist>
               </div>
-              <p class="text-[10px] text-slate-500">Contoh: <code>driverStandings.0.driverName</code> (P1 driver), <code>constructorStandings.1.points</code> (poin tim P2), <code>sessions.2.startTimeUtc</code> (waktu sesi ke-3). Index mulai dari 0.</p>
+              <p class="text-[10px] text-slate-500">Contoh: <code>driverStandingsText.abbrMarquee</code> (WDC ringkas 1 baris), <code>constructorStandingsText.fullMultiline</code> (WCC lengkap per baris), <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code> (jadwal race berjalan).</p>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -1509,9 +1522,10 @@
       if (!datalist) return
       datalist.replaceChildren()
       const paths = collectF1FieldPaths({
-        sessions: f1Data.sessions,
-        driverStandings: f1Data.driverStandings,
-        constructorStandings: f1Data.constructorStandings,
+        driverStandingsText: f1Data.driverStandingsText,
+        constructorStandingsText: f1Data.constructorStandingsText,
+        startingGridText: f1Data.startingGridText,
+        scheduleText: f1Data.scheduleText,
       })
       paths.forEach(path => {
         const option = document.createElement('option')
@@ -1744,7 +1758,7 @@
           textP.style.width = '100%'
           textP.style.height = '100%'
           textP.style.display = 'flex'
-          textP.style.alignItems = 'center'
+          textP.style.alignItems = el.style?.verticalAlign === 'top' ? 'flex-start' : (el.style?.verticalAlign === 'bottom' ? 'flex-end' : 'center')
           textP.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
           textP.style.fontSize = `${el.style?.fontSize || 18}px`
           textP.style.fontWeight = el.style?.fontWeight || 'normal'
@@ -1754,6 +1768,7 @@
           textP.style.textTransform = el.style?.textTransform || 'none'
           textP.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
           textP.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
+          textP.style.whiteSpace = 'pre-line'
           textP.textContent = resolveElementText(el)
           div.appendChild(textP)
 
@@ -2446,6 +2461,9 @@
       document.getElementById('align-t-left').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'left'; renderCanvas(); } })
       document.getElementById('align-t-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'center'; renderCanvas(); } })
       document.getElementById('align-t-right').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'right'; renderCanvas(); } })
+      document.getElementById('align-v-top').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'top'; renderCanvas(); } })
+      document.getElementById('align-v-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'center'; renderCanvas(); } })
+      document.getElementById('align-v-bottom').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'bottom'; renderCanvas(); } })
 
       document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderCanvas(); } })
       document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderCanvas(); } })

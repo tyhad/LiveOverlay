@@ -822,10 +822,16 @@
           <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
           <div id="anim-step-list" class="space-y-2"></div>
 
-          <button id="anim-add-step-btn"
-            class="w-full py-1.5 rounded-lg border border-dashed border-indigo-500/40 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/70 transition">
-            + Add Step
-          </button>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="anim-add-step-btn"
+              class="py-1.5 rounded-lg border border-dashed border-indigo-500/40 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/70 transition">
+              + Add Step
+            </button>
+            <button id="anim-add-delay-btn"
+              class="py-1.5 rounded-lg border border-dashed border-slate-500/40 text-slate-300 text-xs font-semibold hover:bg-slate-500/10 hover:border-slate-500/70 transition">
+              ⏱ Add Delay
+            </button>
+          </div>
 
           <!-- Quick-insert preset: isi otomatis satu step generik, murni helper UI (lihat animation-engine.js) -->
           <div class="pt-2 border-t border-indigo-500/20 space-y-1.5">
@@ -879,16 +885,11 @@
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Delay (s)</label>
-                <input type="number" data-field="delay" step="0.1" min="0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              </div>
-              <div>
                 <label class="block text-[10px] text-slate-400 mb-0.5">Repeat (-1=infinite)</label>
                 <input type="number" data-field="repeat" step="1" min="-1"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none mt-3.5">
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none">
                 <input type="checkbox" data-field="yoyo"
                   class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
                 <span>Yoyo (bolak-balik)</span>
@@ -910,6 +911,31 @@
             <input type="number" step="0.01" data-role="prop-value" disabled
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40">
           </label>
+        </template>
+
+        <!-- Kartu step 'delay' — visual beda sengaja (dashed, abu-abu) supaya kelihatan
+             beda dari step animasi biasa, cuma nunggu tanpa properti apapun. -->
+        <template id="anim-delay-step-template">
+          <div class="anim-step-card flex items-center gap-2 bg-slate-900/40 border border-dashed border-slate-600/60 rounded-xl p-2.5">
+            <span class="anim-step-label text-[11px] font-bold text-slate-400 font-mono shrink-0"></span>
+            <span class="text-slate-500 text-sm shrink-0">⏱</span>
+            <div class="flex-1 flex items-center gap-1.5">
+              <label class="text-[10px] text-slate-400 shrink-0">Wait</label>
+              <input type="number" data-field="duration" step="0.1" min="0"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+              <span class="text-[10px] text-slate-500 shrink-0">detik</span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button data-action="move-up" title="Pindah naik"
+                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↑</button>
+              <button data-action="move-down" title="Pindah turun"
+                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↓</button>
+              <button data-action="duplicate" title="Duplikat step"
+                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">⧉</button>
+              <button data-action="delete" title="Hapus step"
+                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px]">✕</button>
+            </div>
+          </div>
         </template>
 
 
@@ -1533,7 +1559,7 @@
         animation: {
           loop: false,
           sequence: [
-            { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.6, delay: 0, ease: 'power2.out' },
+            { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out' },
           ],
         },
       }
@@ -2023,18 +2049,25 @@
       if (!el.animation || typeof el.animation !== 'object' || !Array.isArray(el.animation.sequence)) {
         el.animation = { loop: false, sequence: [] }
       }
+      // Migrasi sekali & sticky: kalau masih ada step lama yang bawa field `delay`,
+      // pecah jadi step 'delay' tersendiri langsung di data (bukan cuma saat playback),
+      // supaya kelihatan & bisa diedit di Sequence Editor.
+      const migrated = AnimationEngine.splitLegacyPerStepDelay(el.animation.sequence)
+      if (migrated.length !== el.animation.sequence.length) {
+        el.animation.sequence = migrated
+      }
       return el.animation
     }
 
     /** Preset quick-insert: label -> step generik siap pakai (murni helper UI). */
     const ANIMATION_PRESETS = {
-      'Fade In': { type: 'from', properties: { opacity: 0 }, duration: 0.6, delay: 0, ease: 'power2.out', repeat: 0, yoyo: false },
-      'Fade Out': { type: 'to', properties: { opacity: 0 }, duration: 0.4, delay: 0, ease: 'power2.in', repeat: 0, yoyo: false },
-      'Slide Up In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 60 }, duration: 0.8, delay: 0, ease: 'power3.out', repeat: 0, yoyo: false },
-      'Bounce In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 100, scale: 0.8 }, duration: 0.9, delay: 0, ease: 'bounce.out', repeat: 0, yoyo: false },
-      'Zoom In': { type: 'from', properties: { opacity: 0, scale: 0.3 }, duration: 0.7, delay: 0, ease: 'back.out(1.7)', repeat: 0, yoyo: false },
-      'Pulse (loop)': { type: 'to', properties: { scale: 1.04 }, duration: 1.5, delay: 0, ease: 'power1.inOut', repeat: -1, yoyo: true },
-      'Float (loop)': { type: 'to', properties: { y: (el) => el.y - 10 }, duration: 1.3, delay: 0, ease: 'sine.inOut', repeat: -1, yoyo: true },
+      'Fade In': { type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out', repeat: 0, yoyo: false },
+      'Fade Out': { type: 'to', properties: { opacity: 0 }, duration: 0.4, ease: 'power2.in', repeat: 0, yoyo: false },
+      'Slide Up In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 60 }, duration: 0.8, ease: 'power3.out', repeat: 0, yoyo: false },
+      'Bounce In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out', repeat: 0, yoyo: false },
+      'Zoom In': { type: 'from', properties: { opacity: 0, scale: 0.3 }, duration: 0.7, ease: 'back.out(1.7)', repeat: 0, yoyo: false },
+      'Pulse (loop)': { type: 'to', properties: { scale: 1.04 }, duration: 1.5, ease: 'power1.inOut', repeat: -1, yoyo: true },
+      'Float (loop)': { type: 'to', properties: { y: (el) => el.y - 10 }, duration: 1.3, ease: 'sine.inOut', repeat: -1, yoyo: true },
     }
 
     function renderAnimationPresetButtons() {
@@ -2060,7 +2093,6 @@
             type: preset.type,
             properties,
             duration: preset.duration,
-            delay: preset.delay,
             ease: preset.ease,
             repeat: preset.repeat,
             yoyo: preset.yoyo,
@@ -2076,6 +2108,7 @@
       const anim = ensureAnimation(el)
       const listEl = document.getElementById('anim-step-list')
       const stepTemplate = document.getElementById('anim-step-template')
+      const delayTemplate = document.getElementById('anim-delay-step-template')
       const propRowTemplate = document.getElementById('anim-property-row-template')
       listEl.innerHTML = ''
 
@@ -2088,27 +2121,57 @@
       }
 
       anim.sequence.forEach((step, index) => {
-        const card = stepTemplate.content.firstElementChild.cloneNode(true)
+        const isDelay = step.type === 'delay'
+        const card = (isDelay ? delayTemplate : stepTemplate).content.firstElementChild.cloneNode(true)
         card.querySelector('.anim-step-label').textContent = `Q${index}`
+
+        // Aksi reorder/duplikat/hapus — sama persis buat step delay maupun step animasi.
+        card.querySelector('[data-action="move-up"]').addEventListener('click', () => {
+          if (index === 0) return
+          ;[anim.sequence[index - 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index - 1]]
+          renderAnimationSequenceEditor(el)
+        })
+        card.querySelector('[data-action="move-down"]').addEventListener('click', () => {
+          if (index === anim.sequence.length - 1) return
+          ;[anim.sequence[index + 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index + 1]]
+          renderAnimationSequenceEditor(el)
+        })
+        card.querySelector('[data-action="duplicate"]').addEventListener('click', () => {
+          const clone = JSON.parse(JSON.stringify(step))
+          clone.id = `q${anim.sequence.length}`
+          anim.sequence.splice(index + 1, 0, clone)
+          renderAnimationSequenceEditor(el)
+        })
+        card.querySelector('[data-action="delete"]').addEventListener('click', () => {
+          anim.sequence.splice(index, 1)
+          renderAnimationSequenceEditor(el)
+          renderLayers()
+        })
+
+        if (isDelay) {
+          // Kartu Delay: cuma field duration, tanpa Type/Ease/Repeat/Yoyo/Properties.
+          const durationInput = card.querySelector('[data-field="duration"]')
+          durationInput.value = step.duration ?? 0.5
+          durationInput.addEventListener('input', (e) => { step.duration = parseFloat(e.target.value) || 0 })
+          listEl.appendChild(card)
+          return
+        }
 
         const typeInput = card.querySelector('[data-field="type"]')
         const easeInput = card.querySelector('[data-field="ease"]')
         const durationInput = card.querySelector('[data-field="duration"]')
-        const delayInput = card.querySelector('[data-field="delay"]')
         const repeatInput = card.querySelector('[data-field="repeat"]')
         const yoyoInput = card.querySelector('[data-field="yoyo"]')
 
         typeInput.value = step.type || 'to'
         easeInput.value = step.ease || 'power2.out'
         durationInput.value = step.duration ?? 0.6
-        delayInput.value = step.delay ?? 0
         repeatInput.value = step.repeat ?? 0
         yoyoInput.checked = !!step.yoyo
 
         typeInput.addEventListener('change', (e) => { step.type = e.target.value })
         easeInput.addEventListener('change', (e) => { step.ease = e.target.value })
         durationInput.addEventListener('input', (e) => { step.duration = parseFloat(e.target.value) || 0 })
-        delayInput.addEventListener('input', (e) => { step.delay = parseFloat(e.target.value) || 0 })
         repeatInput.addEventListener('input', (e) => { step.repeat = parseInt(e.target.value, 10) || 0 })
         yoyoInput.addEventListener('change', (e) => { step.yoyo = e.target.checked })
 
@@ -2147,29 +2210,6 @@
           propsContainer.appendChild(row)
         })
 
-        // Aksi: naik / turun / duplikat / hapus
-        card.querySelector('[data-action="move-up"]').addEventListener('click', () => {
-          if (index === 0) return
-          ;[anim.sequence[index - 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index - 1]]
-          renderAnimationSequenceEditor(el)
-        })
-        card.querySelector('[data-action="move-down"]').addEventListener('click', () => {
-          if (index === anim.sequence.length - 1) return
-          ;[anim.sequence[index + 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index + 1]]
-          renderAnimationSequenceEditor(el)
-        })
-        card.querySelector('[data-action="duplicate"]').addEventListener('click', () => {
-          const clone = JSON.parse(JSON.stringify(step))
-          clone.id = `q${anim.sequence.length}`
-          anim.sequence.splice(index + 1, 0, clone)
-          renderAnimationSequenceEditor(el)
-        })
-        card.querySelector('[data-action="delete"]').addEventListener('click', () => {
-          anim.sequence.splice(index, 1)
-          renderAnimationSequenceEditor(el)
-          renderLayers()
-        })
-
         listEl.appendChild(card)
       })
     }
@@ -2206,10 +2246,22 @@
           type: 'to',
           properties: { opacity: 1 },
           duration: 0.6,
-          delay: 0,
           ease: 'power2.out',
           repeat: 0,
           yoyo: false,
+        })
+        renderAnimationSequenceEditor(el)
+        renderLayers()
+      })
+
+      document.getElementById('anim-add-delay-btn').addEventListener('click', () => {
+        const el = getSelected()
+        if (!el) return
+        const anim = ensureAnimation(el)
+        anim.sequence.push({
+          id: `delay${anim.sequence.length}`,
+          type: 'delay',
+          duration: 0.5,
         })
         renderAnimationSequenceEditor(el)
         renderLayers()
@@ -2552,7 +2604,8 @@
         animation: {
           loop: false,
           sequence: [
-            { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.7, delay: 0.2, ease: 'power2.out' },
+            { id: 'delay0', type: 'delay', duration: 0.2 },
+            { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.7, ease: 'power2.out' },
           ]
         }
       }
@@ -2585,7 +2638,8 @@
         animation: {
           loop: false,
           sequence: [
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 180 }, duration: 0.8, delay: 0.1, ease: 'power3.out' },
+            { id: 'delay0', type: 'delay', duration: 0.1 },
+            { id: 'q0', type: 'from', properties: { opacity: 0, y: 180 }, duration: 0.8, ease: 'power3.out' },
             { id: 'q1', type: 'to', properties: { scale: 1.04 }, duration: 1.5, repeat: -1, yoyo: true, ease: 'power1.inOut' },
           ]
         }
@@ -2625,7 +2679,8 @@
         animation: {
           loop: false,
           sequence: [
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 960, scale: 0.8 }, duration: 0.9, delay: 0.2, ease: 'bounce.out' },
+            { id: 'delay0', type: 'delay', duration: 0.2 },
+            { id: 'q0', type: 'from', properties: { opacity: 0, y: 960, scale: 0.8 }, duration: 0.9, ease: 'bounce.out' },
             { id: 'q1', type: 'to', properties: { y: 850 }, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' },
           ]
         }
@@ -2665,7 +2720,8 @@
         animation: {
           loop: false,
           sequence: [
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 995 }, duration: 0.8, delay: 0.3, ease: 'power3.out' },
+            { id: 'delay0', type: 'delay', duration: 0.3 },
+            { id: 'q0', type: 'from', properties: { opacity: 0, y: 995 }, duration: 0.8, ease: 'power3.out' },
             { id: 'q1', type: 'to', properties: { scale: 1.04 }, duration: 1.6, repeat: -1, yoyo: true, ease: 'power1.inOut' },
           ]
         }

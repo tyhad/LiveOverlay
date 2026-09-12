@@ -8,10 +8,13 @@
     "dev:css": "tailwindcss -i src/styles/input.css -o public/styles.css --watch",
     "build:css": "tailwindcss -i src/styles/input.css -o public/styles.css --minify",
     "build": "bun run build:css",
-    "start": "bun src/index.ts"
+    "start": "bun src/index.ts",
+    "test": "bun tests/animation-engine.test.mjs"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "gsap": "^3.12.5",
+    "jsdom": "^25.0.1"
   },
   "peerDependencies": {
     "typescript": "^7"

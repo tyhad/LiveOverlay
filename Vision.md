@@ -51,6 +51,7 @@ Model lama (Entrance → Loop → Exit sebagai 3 slot tetap dengan preset bernam
 - Tiap step adalah transisi properti generik (`x`, `y`, `opacity`, `scale`, `rotation`, dst) dari state elemen saat ini menuju state target, dalam durasi tertentu — bukan nama preset (`fadeIn`/`slideUp`/dll) yang di-hardcode di engine.
 - Preset (fade, slide, pulse, dll) tetap ada di **level UI saja**, sebagai template quick-insert yang otomatis mengisi field step generik — bukan konsep yang dikenal oleh animation engine.
 - Posisi dianimasikan lewat `left`/`top` (mengikuti representasi kanonis `el.x`/`el.y` pixel-absolut yang sudah dipakai sistem drag/drop/resize/align), **bukan** `transform: translate()` — supaya tidak ada dua sistem koordinat paralel untuk posisi yang sama.
+- Jeda waktu (delay) adalah **step tersendiri** (`{type:'delay', duration}`), bukan field yang nempel di tiap step animasi — supaya bisa disisipkan/dipindah/diduplikat/dihapus bebas di posisi manapun dalam sequence, sama seperti step animasi lainnya.
 - Satu GSAP timeline per elemen, dikelola terpusat (registry timeline per elementId), supaya cleanup saat elemen dihapus/scene diganti selalu konsisten dan tidak ada timeline yatim (orphaned) yang terus jalan.
 - Logic normalisasi & eksekusi sequence ini **wajib satu sumber kebenaran**, dipakai bersama oleh editor (`index.html`, untuk preview) dan overlay (`overlay.html`, untuk playback live) — bukan diimplementasikan dua kali secara terpisah seperti model lama.
 

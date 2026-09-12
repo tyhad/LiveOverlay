@@ -12,10 +12,17 @@
  *   {
  *     loop: false,   // true = restart dari Q0 setelah step terakhir; false = main sekali, diam di state akhir
  *     sequence: [
- *       { id, type: 'to'|'from'|'fromTo', properties, duration, delay, ease, repeat, yoyo },
+ *       { id, type: 'to'|'from'|'fromTo', properties, duration, ease, repeat, yoyo },
+ *       { id, type: 'delay', duration },   // step khusus: cuma nunggu, tanpa properti
  *       ...
  *     ]
  *   }
+ *
+ * Catatan: `delay` per-step (field lama) TIDAK dipakai lagi sebagai gap antar step —
+ * digantikan step 'delay' tersendiri yang bisa disisipkan/dipindah/diduplikat bebas
+ * di posisi manapun dalam sequence. normalizeAnimationConfig() otomatis memecah
+ * step lama yang masih punya field `delay` > 0 jadi step 'delay' terpisah + step
+ * aslinya tanpa delay, supaya data lama tetap jalan tanpa perlu migrasi manual.
  *
  * Fase 0 ini HANYA skeleton: struktur modul, kontrak fungsi, dan registry timeline.
  * Belum ada logic GSAP nyata — supaya bisa di-load dari kedua file dulu tanpa
@@ -32,8 +39,10 @@
   /** Properti yang didukung di rilis awal. Jangan expose properti CSS lain dulu. */
   const SUPPORTED_PROPERTIES = ['x', 'y', 'opacity', 'scale', 'rotation'];
 
-  /** Tipe step yang didukung. 'fromTo' menyusul setelah 'to'/'from' stabil. */
-  const SUPPORTED_STEP_TYPES = ['to', 'from'];
+  /** Tipe step yang didukung. 'delay' adalah step khusus (cuma nunggu, tanpa animasi
+   *  properti apapun) — bukan field nempel di tiap step, biar bisa di-reorder/duplikat/
+   *  hapus bebas seperti step lain. 'fromTo' menyusul setelah 'to'/'from' stabil. */
+  const SUPPORTED_STEP_TYPES = ['to', 'from', 'delay'];
 
   // ---------------------------------------------------------------------
   // Normalizer
@@ -56,7 +65,7 @@
     }
 
     if (Array.isArray(rawAnimationConfig.sequence)) {
-      const cleaned = rawAnimationConfig.sequence
+      const cleaned = splitLegacyPerStepDelay(rawAnimationConfig.sequence)
         .map(normalizeStep)
         .filter(Boolean);
       return { sequence: cleaned, loop: Boolean(rawAnimationConfig.loop) };
@@ -91,6 +100,17 @@
       return null;
     }
 
+    const duration = Number(rawStep.duration);
+    if (!Number.isFinite(duration) || duration < 0) {
+      console.warn('[animation-engine] Step dengan duration tidak valid, dilewati.');
+      return null;
+    }
+
+    // Step 'delay': cuma nunggu, tidak ada properti yang dianimasikan.
+    if (type === 'delay') {
+      return { id: rawStep.id || null, type: 'delay', duration };
+    }
+
     const properties = {};
     if (rawStep.properties && typeof rawStep.properties === 'object') {
       for (const key of Object.keys(rawStep.properties)) {
@@ -107,22 +127,39 @@
       return null;
     }
 
-    const duration = Number(rawStep.duration);
-    if (!Number.isFinite(duration) || duration < 0) {
-      console.warn('[animation-engine] Step dengan duration tidak valid, dilewati.');
-      return null;
-    }
-
     return {
       id: rawStep.id || null,
       type,
       properties,
       duration,
-      delay: Number.isFinite(Number(rawStep.delay)) ? Number(rawStep.delay) : 0,
       ease: typeof rawStep.ease === 'string' ? rawStep.ease : 'power2.out',
       repeat: Number.isFinite(Number(rawStep.repeat)) ? Number(rawStep.repeat) : 0,
       yoyo: Boolean(rawStep.yoyo),
     };
+  }
+
+  /**
+   * Pecah step lama yang masih punya field `delay` > 0 jadi 2 entri: step 'delay'
+   * tersendiri (ditaruh sebelum step aslinya) + step asli tanpa field delay.
+   * Ini migrasi otomatis, transparan, tidak mengubah data tersimpan sampai
+   * di-save ulang dari editor.
+   *
+   * @param {object[]} rawSequence
+   * @returns {object[]}
+   */
+  function splitLegacyPerStepDelay(rawSequence) {
+    const result = [];
+    for (const rawStep of rawSequence) {
+      const legacyDelay = Number(rawStep?.delay);
+      if (rawStep && rawStep.type !== 'delay' && Number.isFinite(legacyDelay) && legacyDelay > 0) {
+        result.push({ id: `${rawStep.id || 'step'}-delay`, type: 'delay', duration: legacyDelay });
+        const { delay, ...rest } = rawStep;
+        result.push(rest);
+      } else {
+        result.push(rawStep);
+      }
+    }
+    return result;
   }
 
   // ---------------------------------------------------------------------
@@ -184,11 +221,18 @@
     const timeline = gsap.timeline({ repeat: shouldLoop ? -1 : 0 });
 
     sequence.forEach((step) => {
+      // Step 'delay': cuma menambah jeda waktu murni di timeline, tidak menyentuh
+      // properti apapun. Diberi target node kosong ({}) supaya tidak perlu
+      // properti CSS palsu.
+      if (step.type === 'delay') {
+        timeline.to({}, { duration: step.duration });
+        return;
+      }
+
       const tweenVars = {
         duration: step.duration,
         ease: step.ease,
       };
-      if (step.delay) tweenVars.delay = step.delay;
       if (step.repeat) tweenVars.repeat = step.repeat;
       if (step.yoyo) tweenVars.yoyo = step.yoyo;
 
@@ -242,6 +286,7 @@
     SUPPORTED_STEP_TYPES,
     normalizeAnimationConfig,
     normalizeStep,
+    splitLegacyPerStepDelay,
     setBaselineState,
     buildTimelineFromSequence,
     killTimeline,

@@ -110,11 +110,18 @@ interface AnimatableProperties {
  */
 interface AnimationStep {
   id?: string
-  type: 'to' | 'from' | 'fromTo'
+  /** 'delay' adalah step khusus: cuma menunggu, tanpa animasi properti apapun
+   *  (lihat `duration`). Dibuat sebagai step tersendiri (bukan field nempel di
+   *  tiap step) supaya bisa disisipkan/dipindah/diduplikat bebas di posisi
+   *  manapun dalam sequence. */
+  type: 'to' | 'from' | 'fromTo' | 'delay'
   properties?: AnimatableProperties
   from?: AnimatableProperties
   to?: AnimatableProperties
   duration: number
+  /** @deprecated Field lama, digantikan step 'delay' tersendiri. Masih dibaca oleh
+   *  animation-engine.js untuk migrasi otomatis data lama, tapi jangan dipakai lagi
+   *  untuk data baru. */
   delay?: number
   ease?: string
   repeat?: number

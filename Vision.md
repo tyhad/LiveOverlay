@@ -32,7 +32,7 @@ Elemen-elemen yang bisa ditambahkan ke kanvas:
 - **Image/SVG** (import aset desain user dari Illustrator).
 - **Widget/Badge** (kombinasi shape+text siap pakai).
 
-Setiap elemen adalah "layer" yang bisa di-reorder (z-index), di-duplicate, di-hide, dan dihapus.
+Setiap elemen adalah "layer" yang bisa di-reorder (z-index), di-duplicate, di-hide, dan dihapus. Elemen juga bisa dijadikan **child** dari elemen lain (grouping 1 level) — lihat 3.3.2.
 
 ### 3.3 Panel Properti
 Saat elemen dipilih di kanvas, muncul panel untuk atur:
@@ -56,6 +56,16 @@ Model lama (Entrance → Loop → Exit sebagai 3 slot tetap dengan preset bernam
 - Logic normalisasi & eksekusi sequence ini **wajib satu sumber kebenaran**, dipakai bersama oleh editor (`index.html`, untuk preview) dan overlay (`overlay.html`, untuk playback live) — bukan diimplementasikan dua kali secara terpisah seperti model lama.
 
 Detail penuh arsitektur & skema JSON ada di dokumen spesifikasi terkait (`Animation Sequence & Property Transition System`); bagian ini hanya mencatat *keputusan prinsip* yang sudah settled agar tidak diulang tiap sesi.
+
+#### 3.3.2 Element Binding/Grouping: Parent-Child Transform
+
+Elemen bisa dijadikan child dari elemen lain (1 level, belum multi-level nesting) supaya ikut posisi **dan** animasi parent otomatis, tanpa perlu setup animasi terpisah di child. Prinsip yang sudah settled:
+
+- Ini **pengecualian yang disengaja** terhadap aturan "posisi selalu pixel-absolut terhadap kanvas" di 3.3.1: begitu elemen jadi child, `x`/`y`-nya jadi **relatif terhadap parent**, bukan lagi absolut terhadap kanvas.
+- Cara "child ikut animasi parent" diselesaikan lewat **DOM/container nesting** (bukan duplikasi tween manual ke tiap child) — transform parent diterapkan ke container yang membungkus parent+children, child tetap bisa punya `animation.sequence` sendiri yang jalan independen di atas posisi relatifnya.
+- Scope sengaja dibatasi 1 level (parent → child langsung) dulu, sejalan prinsip "tetap ringan, jangan over-engineer" di §6/§7 — grandchildren/nested group berlapis baru dipertimbangkan kalau kebutuhannya nyata.
+
+Detail rencana implementasi ada di [`issue.md`](./issue.md) bagian "Element Binding/Grouping untuk Animasi (Fase 9)".
 
 ### 3.4 Asset Management
 User bisa upload SVG/PNG hasil desain dari Illustrator, tersimpan di server, lalu dipakai berulang sebagai elemen di kanvas manapun.

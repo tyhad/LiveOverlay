@@ -17,8 +17,10 @@
 | 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
 | — | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
 | — | F1GStats Integration — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
+| — | Scroll Text (Up/Down) — fitur sisipan | ✅ Selesai (commit `1a2e280`) |
 | 8 | Animation Sequence & Property Transition System (overhaul Fase 3) | ✅ Selesai — branch `feature/animation-sequence-system` |
-| 7 | Polish UX Editor | Belum dimulai |
+| 7 | Polish UX Editor — dipersempit ke Browser Source Auto-Sync (lihat Technical Debt) | Belum dimulai |
+| 9 | Element Binding/Grouping (Parent-Child) — desain settled, lihat "Ide & Todo Berikutnya" | Belum dimulai |
 
 ---
 
@@ -80,13 +82,26 @@ Kolom `round_relation` (`'previous'|'now'|'next'`) di tabel `sessions` ditulis o
 
 **Overlay & Editor**: `resolveElementText`/`collectF1FieldPaths` generic (rekursif via `getValueAtPath`), jadi source binding `f1data` kompatibel tanpa perlu logic tambahan — cukup daftar field path lewat auto-complete datalist di editor. Poll interval 30 detik (bukan 2 detik seperti live-stats) karena data ini tidak perlu update selama live.
 
-**Country flag**: disimpan di database sudah dalam bentuk emoji siap pakai (bukan kode ISO mentah) — konversi dilakukan di sisi fetcher Python (`country_code_to_flag_emoji()` + mapping nama negara FastF1/Ergast → ISO alpha-2 di `COUNTRY_NAME_TO_ISO2`), bukan di LiveOverlay.
+**Country flag**: disimpan di database sudah dalam bentuk emoji siap pakai (bukan kode ISO mentah) — konversi dilakukan di sisi fetcher Python (`country_code_to_flag_emoji()` + mapping nama negara FastF1/Ergast → ISO alpha-2 di `COUNTRY_NAME_TO_ISO2`), bukan di LiveOverlay. **Fix**: emoji bendera sempat tidak ter-render (font default gak punya glyph emoji) — sudah diperbaiki (commit `6bf3c5d`) lewat `getFontStack()` yang otomatis menambahkan fallback `Noto Color Emoji`/`Segoe UI Emoji`/`Apple Color Emoji` di belakang font family manapun yang dipilih user, plus load `Noto Color Emoji` dari Google Fonts.
 
 **Catatan pengembangan**:
 - Sempat ada error `table sessions has no column named round_relation` saat nambah kolom baru ke skema — karena `CREATE TABLE IF NOT EXISTS` tidak migrate skema tabel yang sudah ada. Fixed dengan `_migrate_schema()` di fetcher yang cek `PRAGMA table_info` lalu `ALTER TABLE ADD COLUMN` kalau kolom belum ada — idempotent, aman dijalankan berkali-kali.
 - Index array `sessions.N` dalam satu round **bisa geser** tergantung format weekend (race biasa 5 sesi: FP1/FP2/FP3/Quali/Race; sprint weekend format beda: FP1/Sprint Quali/Sprint/Quali/Race). Kalau butuh binding stabil ke sesi tertentu, cek urutan aktual lewat datalist auto-complete di editor, jangan asumsi index secara manual.
 
-## External Data Source (Fase 5b) — Dihapus
+## Scroll Text (Up/Down) — Selesai
+
+Fitur sisipan lain (commit `1a2e280`), varian vertikal dari Running Text (Marquee) — teks scroll ke atas/bawah, bukan menyamping. Dua fitur ini **mutually exclusive per elemen**: kalau `scroll.enabled` aktif, engine mengabaikan `marquee` (dan sebaliknya) — prioritas ada di scroll saat render (`applyElementContent` cek `el.scroll?.enabled` duluan sebelum `el.marquee?.enabled`).
+
+**Data model**: `ScrollConfig` (`enabled`, `speed`, `gap`, `direction: 'up'|'down'`, `yoyo`, `yoyoDelay`) ditambahkan ke `SceneElement` di `src/index.ts`, sejajar `marquee`/`animation`/`textBinding`.
+
+**Engine** (`public/overlay.html`, fungsi `ensureScrollTrack`/`applyScrollText`) — dua mode:
+- **Loop mode** (`yoyo: false`, default): teks digandakan berulang secara vertikal (jumlah salinan dihitung dinamis dari tinggi elemen, mirip prinsip Marquee) lalu di-scroll infinite ke arah `up`/`down` dengan kecepatan konstan (px/detik) via `gsap.fromTo`.
+- **Yoyo mode** (`yoyo: true`): cuma 1 salinan teks, discroll dari posisi awal ke posisi akhir lalu **bolak-balik** (`repeat:-1, yoyo:true`) dengan jeda `repeatDelay: yoyoDelay` di tiap ujung. Kalau tinggi teks melebihi tinggi elemen, jarak scroll dihitung supaya seluruh teks ter-reveal (dengan buffer tambahan di bawah supaya baris terakhir/descender font gak terpotong); kalau teks lebih pendek dari elemen, cuma geser dalam ruang kosong yang tersedia.
+- Elemen pembungkus (`node`) sekarang diberi `overflow: hidden` secara umum di `applyElementBox` (berlaku untuk semua elemen, bukan cuma yang scroll) supaya track/isi yang melebihi bounding box gak bocor visual keluar — **catatan efek samping**: ini juga mempengaruhi elemen non-scroll (misal drop shadow/glow yang melebihi box bisa ikut terpotong), belum diverifikasi ada regresi visual atau tidak di elemen lain.
+
+**Editor** (`public/index.html`): panel baru "Scroll Text (Up / Down)" di area Typography/Dynamic Content, sejajar panel Marquee — kontrol Enable, Speed, Gap, Direction (`Bottom → Up` / `Top → Down`), Yoyo Mode toggle, Yoyo Delay. Sama seperti Marquee, kanvas editor **tidak** menjalankan animasi live (cuma badge statis "▶ Scroll ↑/↓ · Yoyo · Npx/s", posisinya digeser ke bawah kalau badge Marquee juga tampil).
+
+
 
 Fitur ini **dibatalkan dan kodenya dihapus sepenuhnya** dari `main`. Alasan: use case awal (data balapan F1 real-time) tidak feasible dengan API gratis (butuh tier berbayar untuk akses live), dan sudah tergantikan sepenuhnya oleh F1GStats Integration (baca lokal SQLite, bukan hit API eksternal saat live).
 
@@ -106,7 +121,7 @@ Item technical debt "concurrent rendering 2+ browser source beda `?scene=`" suda
 Overhaul total sistem animasi (dulu Fase 3), mengganti model `entrance/loop/exit` (3 slot preset tetap) menjadi model sequence generik berbasis property-transition (`animation.sequence: []`, step Q0→Q1→Q2→...). Keputusan arsitektur & prinsip yang sudah settled dicatat di `Vision.md` bagian 3.3.1. **Tidak ada backward-compat** untuk skema lama — migrasi langsung, karena project belum dipakai live dan data scene saat ini murni untuk testing.
 
 **System yang wajib dipertahankan fungsinya selama overhaul ini** (tidak boleh regresi):
-- Panel Add Elements, Assets, Platform Live Stats, Layers (catatan: tombol Bring to Top/Move Up/Move Down/Send to Bottom **memang sudah rusak dari sebelumnya**, bukan tanggung jawab overhaul ini — dicatat terpisah di Technical Debt/Todo), Canvas Settings, Running Text (Marquee), Data Binding, panel Multi-Scene & Multi-Output (catatan: teks header "LiveOverlay Studio"/"GSAP Animation" kepotong vertikal — bug CSS terpisah, tidak terkait overhaul ini).
+- Panel Add Elements, Assets, Platform Live Stats, Layers (~~catatan: tombol Bring to Top/Move Up/Move Down/Send to Bottom memang sudah rusak dari sebelumnya~~ ✅ **Fixed**), Canvas Settings, Running Text (Marquee), Data Binding, panel Multi-Scene & Multi-Output (~~catatan: teks header "LiveOverlay Studio"/"GSAP Animation" kepotong vertikal — bug CSS terpisah~~ ✅ **Fixed**).
 
 Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Panel, Canvas Alignment Panel, Transform & Position Panel, Typography Panel (Running Text & Data Binding boleh dipisah jadi panel sendiri), Fill & Background, Border & Corners, Drop Shadow & Glow.
 
@@ -119,9 +134,9 @@ Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Pane
 - [x] **Fase 4 — Transform & Position Panel**: field x/y/scale/rotation/opacity current-state elemen ditambah (termasuk slider Scale yang sebelumnya belum ada UI-nya sama sekali) sebagai starting state eksplisit untuk step `to`/`from`.
 - [x] **Fase 5 — Reorganisasi panel non-animasi**: Canvas Alignment, Typography (Running Text & Data Binding dipisah jadi panel "Dynamic Content" sendiri), Fill & Background, Border & Corners, Drop Shadow & Glow — semua jadi accordion (`<details>`/`<summary>`) beserta 3 panel kiri (Add Elements, Assets, Platform Live Stats — Layers sengaja dikecualikan). Urutan final: Canvas Alignment → Typography → Dynamic Content → Transform & Position → Animation Sequence → Image/SVG → Fill & Background → Borders & Corners → Drop Shadow & Glow.
 - [x] **Fase 6 — Sync `overlay.html`**: otomatis terpenuhi sejak Fase 0/2 (satu modul `animation-engine.js` dipakai bersama editor & overlay).
-- [x] **Fase 7 — Testing**: 18/18 test otomatis lolos (sequential order, posisi akhir, multi-property simultan, delay, repeat finite & infinite+terminasi, scene replacement, error handling, loop flag). **Belum diverifikasi**: pause/resume (memang belum diimplementasikan — lihat catatan di bawah), performa jangka panjang & multi-output nyata (perlu testing manual di OBS sungguhan).
+- [x] **Fase 7 — Testing**: 18/18 test otomatis lolos (sequential order, posisi akhir, multi-property simultan, delay, repeat finite & infinite+terminasi, scene replacement, error handling, loop flag). **Belum diverifikasi**: performa jangka panjang & multi-output nyata (perlu testing manual di OBS sungguhan). Pause/resume sengaja tidak masuk cakupan — lihat catatan di bawah.
 
-**Catatan pause/resume**: `AnimationController.pause()`/`resume()` yang disebut di dokumen spek awal (§16) **belum diimplementasikan** — dari awal ditandai sebagai kapabilitas "future-facing, tidak wajib diimplementasikan sekarang". Kalau dibutuhkan, ini kerjaan tambahan terpisah dari Fase 8.
+**Keputusan pause/resume**: `AnimationController.pause()`/`resume()` yang disebut di dokumen spek awal (§16) tidak diimplementasikan, dan setelah dipertimbangkan **diputuskan tidak dibutuhkan** untuk use case saat ini — bukan lagi item terbuka/future-facing, ditutup sebagai won't-do.
 
 **Revisi pasca-Fase 7**: field `delay` yang tadinya nempel di tiap step (`{type:'to', ..., delay: 0.3}`) diganti jadi **step khusus tersendiri** (`{type:'delay', duration:0.3}`) — bisa disisipkan/dipindah/diduplikat/dihapus bebas di posisi manapun dalam sequence, lewat tombol "⏱ Add Delay" di Sequence Editor. Field `delay` lama ditandai `@deprecated` di `src/index.ts` tapi tetap didukung baca: `AnimationEngine.splitLegacyPerStepDelay()` otomatis memecah data lama (termasuk yang ada di `scene.example.json`/`scenes.example.json`, sengaja **tidak diubah** supaya jadi bukti migrasi otomatis beneran jalan) jadi step delay tersendiri, baik saat playback maupun saat pertama dibuka di Sequence Editor (migrasi sticky lewat `ensureAnimation()`).
 
@@ -138,14 +153,26 @@ Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Pane
 
 ### Automated Testing
 
-`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan pakai `bun run test`. Simulasi browser via `jsdom` + GSAP asli (bukan mock, devDependency `gsap`+`jsdom`), tanpa perlu server/OBS. Cakupan: 25 assertion mencakup checklist dokumen spek awal §25 (sequential execution, posisi, multi-property, repeat finite/infinite+terminasi, scene replacement, error handling, loop flag) + fitur Delay-sebagai-step-tersendiri (termasuk migrasi otomatis data lama). **Belum tercakup**: pause/resume (belum diimplementasikan — lihat catatan di atas), testing lewat UI/DOM penuh (baru unit-level ke engine-nya langsung; testing UI Sequence Editor masih manual).
+`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan pakai `bun run test`. Simulasi browser via `jsdom` + GSAP asli (bukan mock, devDependency `gsap`+`jsdom`), tanpa perlu server/OBS. Cakupan: 25 assertion mencakup checklist dokumen spek awal §25 (sequential execution, posisi, multi-property, repeat finite/infinite+terminasi, scene replacement, error handling, loop flag) + fitur Delay-sebagai-step-tersendiri (termasuk migrasi otomatis data lama). **Belum tercakup**: testing lewat UI/DOM penuh (baru unit-level ke engine-nya langsung; testing UI Sequence Editor masih manual). Pause/resume sengaja tidak diuji karena diputuskan tidak diimplementasikan (lihat catatan di atas).
 
 ---
 
 ## Ide & Todo Berikutnya (belum masuk fase manapun)
 
-### Element Binding/Grouping untuk Animasi
-Kemampuan bind text/shape/element lain ke satu object "master" sehingga saat object master dianimasikan, element yang di-bind ikut bergerak/ter-animasi bersamaan (semacam grouping animasi, bukan cuma grouping visual statis). Perlu dipikirkan matang: model data-nya (parent-child transform vs shared animation trigger vs GSAP timeline linked), dan gimana ini berinteraksi dengan sistem `SceneElement` yang sudah ada (khususnya `animation` config per elemen). Kandidat masuk Fase 7 atau fase tambahan tersendiri.
+### Element Binding/Grouping untuk Animasi (Fase 9) — Desain Settled
+
+**Keputusan model** (final, hasil diskusi): **Parent-Child Transform**. Child mengikuti posisi **dan** animasi parent secara otomatis — kalau parent object dipindah manual atau dianimasikan, semua child ikut bergerak/ter-animasi bersamaan tanpa perlu setup animasi sendiri di child. Child tetap boleh punya `animation.sequence` sendiri di atasnya (independen, contoh: parent geser posisi, child sekaligus punya bounce loop sendiri).
+
+**Pendekatan teknis (arah implementasi)**:
+- Tambah field baru `parentId: string | null` di `SceneElement` (`src/index.ts`).
+- Saat elemen di-set jadi child (`parentId` terisi), `x`/`y` elemen tersebut berubah makna jadi **posisi relatif terhadap parent** (bukan lagi absolut terhadap kanvas) — supaya "ikut pindah" gak perlu recompute manual tiap parent gerak.
+- Render (editor `index.html` & overlay `overlay.html`/`animation-engine.js`): bungkus parent + children dalam satu **DOM container** per grup. Transform (`left`/`top`/`scale`/`rotation`/`opacity`) dari animasi/posisi parent diterapkan ke container itu; child tetap punya elemen DOM sendiri di dalam container dengan offset relatifnya sendiri. Dengan begini, "child ikut animasi parent" otomatis kebawa dari CSS/DOM nesting, gak perlu duplikasi/sinkronisasi manual tween parent ke tiap child.
+- Kalau child punya `animation.sequence` sendiri, tween itu jalan di elemen child di dalam container (independen dari tween container/parent) — jadi dua animasi (parent via container, child via elemen sendiri) jalan bersamaan tanpa konflik.
+- Scope awal: **1 level nesting** (parent → child langsung), belum perlu grandchildren/nested group berlapis — biar gak over-engineer, sejalan prinsip di `Vision.md` §6 & §7. Bisa diperluas ke multi-level nanti kalau kebutuhannya muncul beneran.
+- UI: cara assign child ke parent bisa lewat drag element ke atas elemen lain di Layers panel (indent = child), atau dropdown "Parent" di Transform & Position Panel — detail UX-nya masih perlu dipikirkan pas mulai Fase 9.
+- Perlu dipikirkan juga: efek ke sistem align/snap yang sudah ada (apakah align tetap kerja relatif terhadap kanvas atau terhadap parent), dan efek ke drag manual di editor (drag child harus tetap terasa natural, bukan malah "loncat" karena representasi koordinat berubah jadi relatif).
+
+Ini kandidat kerja berikutnya setelah Fase 7 (Browser Source Auto-Sync), atau bisa dikerjakan duluan kalau lebih prioritas — dua-duanya independen satu sama lain.
 
 ### Browser Source dimension tidak auto-sync ke Canvas Settings scene
 `scene.canvas.width/height` cuma ngatur ukuran artboard di dalam overlay — tidak otomatis mengubah ukuran window Browser Source di OBS/TikTok Studio. User harus set manual dimensi Browser Source (Properties) supaya sesuai scene (misal 1080×1920 untuk portrait), termasuk pastikan `?scene=` yang dipakai sudah benar. Untuk sekarang diakali manual (desain disesuaikan ke browser source). Kemungkinan penyebab teknis kalau mau digali: `scaleViewport()`/CSS transform overlay belum proper handle aspect ratio non-landscape — belum diverifikasi.

@@ -12,9 +12,8 @@
   <!-- Google Fonts for Stream Overlays & Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Limelight&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;600;700;800;900&family=Noto+Color+Emoji&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@400;500;600;700&family=Roboto:wght@400;500;700;900&display=swap"
-    rel="stylesheet">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 
   <style>
     .canvas-workspace {
@@ -535,16 +534,10 @@
             <label class="block text-[11px] text-slate-400 mb-1">Font Family</label>
             <select id="prop-font-family"
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="Inter, sans-serif">Inter (Clean UI)</option>
-              <option value="Poppins, sans-serif">Poppins (Modern Rounded)</option>
-              <option value="Outfit, sans-serif">Outfit (Geometric Stream)</option>
-              <option value="Montserrat, sans-serif">Montserrat (Bold Header)</option>
-              <option value="Bebas Neue, sans-serif">Bebas Neue (Impact Display)</option>
-              <option value="Plus Jakarta Sans, sans-serif">Plus Jakarta Sans</option>
-              <option value="Roboto, sans-serif">Roboto</option>
+              <option value="Anton, sans-serif">Anton (Bold Display)</option>
+              <option value="Racing Sans One, sans-serif">Racing Sans One (Sporty)</option>
               <option value="Manrope, sans-serif">Manrope (Modern Friendly)</option>
-              <option value="Quicksand, sans-serif">Quicksand (Soft Rounded)</option>
-              <option value="Limelight, cursive">Limelight (Vintage Display)</option>
+              <option value="JetBrains Mono, monospace">JetBrains Mono (Code)</option>
             </select>
           </div>
 
@@ -671,7 +664,8 @@
 
           <div class="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-600/10 p-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-cyan-300">Scroll Text (Up / Down)</label>
+              <label class="text-[11px] font-bold uppercase tracking-wider text-cyan-300">Scroll Text (Up /
+                Down)</label>
               <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
                 <input id="prop-scroll-enabled" type="checkbox" class="accent-cyan-500">
                 <span>Enable</span>
@@ -1347,7 +1341,7 @@
     }
 
     function getFontStack(family) {
-      const base = family || 'Inter, sans-serif'
+      const base = family || 'Manrope, sans-serif'
       if (base.includes('Noto Color Emoji') || base.includes('Segoe UI Emoji')) return base
       return `${base}, 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif`
     }
@@ -2783,7 +2777,7 @@
         zIndex: scene.elements.length + 1,
         style: {
           text: 'STREAM HEADLINE',
-          fontFamily: 'Montserrat',
+          fontFamily: 'Anton',
           fontSize: 32,
           fontWeight: '800',
           color: '#ffffff',
@@ -2853,7 +2847,7 @@
         zIndex: scene.elements.length + 1,
         style: {
           text: '🎵 @your_channel',
-          fontFamily: 'Outfit',
+          fontFamily: 'Manrope',
           fontSize: 20,
           fontWeight: '800',
           color: '#f43f5e',
@@ -2894,7 +2888,7 @@
         zIndex: scene.elements.length + 1,
         style: {
           text: '✨ Follow & Subscribe for daily live stream content!',
-          fontFamily: 'Poppins',
+          fontFamily: 'Manrope',
           fontSize: 17,
           fontWeight: '600',
           color: '#f8fafc',

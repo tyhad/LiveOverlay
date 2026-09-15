@@ -75,7 +75,7 @@
       "locked": false,
       "style": {
         "text": "Welcome to the stream! Jangan lupa Tap-tap layar & Follow!",
-        "fontFamily": "Poppins, sans-serif",
+        "fontFamily": "Manrope, sans-serif",
         "fontSize": 17,
         "fontWeight": "600",
         "color": "#f8fafc",
@@ -178,7 +178,7 @@
       "locked": false,
       "style": {
         "text": "@creator_stream",
-        "fontFamily": "Outfit, sans-serif",
+        "fontFamily": "Manrope, sans-serif",
         "fontSize": 20,
         "fontWeight": "800",
         "color": "#f43f5e",

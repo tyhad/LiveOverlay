@@ -76,7 +76,7 @@
         "locked": false,
         "style": {
           "text": "✨ Welcome to the stream! Jangan lupa Tap-tap layar & Follow!",
-          "fontFamily": "Poppins",
+          "fontFamily": "Manrope",
           "fontSize": 17,
           "fontWeight": "600",
           "color": "#f8fafc",
@@ -147,7 +147,7 @@
         "locked": false,
         "style": {
           "text": "JUST CHATTING",
-          "fontFamily": "Outfit",
+          "fontFamily": "Manrope",
           "fontSize": 42,
           "fontWeight": "800",
           "color": "#e2e8f0",

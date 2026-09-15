@@ -815,6 +815,16 @@
               start state animasi</span>
           </summary>
 
+          <div class="mt-3">
+            <label class="block text-[11px] text-slate-400 mb-1">Parent (Grouping)</label>
+            <select id="prop-parent"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="">— Tidak ada (top-level) —</option>
+            </select>
+            <p class="text-[10px] text-slate-500 mt-1">Kalau diisi, X/Y elemen ini jadi relatif terhadap parent —
+              otomatis ikut posisi &amp; animasi parent (1 level, lihat Vision.md §3.3.2).</p>
+          </div>
+
           <div class="grid grid-cols-2 gap-2 mt-3">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">X (px)</label>
@@ -1796,6 +1806,30 @@
     // AnimationEngine (public/animation-engine.js). Lihat tombol "Test" di
     // attachPropertyListeners() untuk titik pemanggilannya di editor.
 
+    // Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
+    // Scope sengaja 1 level: kalau `parent` itu sendiri sudah jadi child elemen lain,
+    // referensi diabaikan (fallback ke top-level) supaya tidak ada nested group berlapis.
+    function getEffectiveParentId(el, byId) {
+      if (!el || !el.parentId) return null
+      const parent = byId.get(el.parentId)
+      if (!parent || parent.id === el.id) return null
+      if (parent.parentId && byId.has(parent.parentId)) return null
+      return parent.id
+    }
+
+    // Konversi x/y elemen supaya posisi visualnya tidak "loncat" saat parentId
+    // berubah (Vision.md §3.3.2 mencatat ini sebagai concern UX yang perlu dijaga).
+    function reparentElement(el, newParentId) {
+      const byId = new Map(scene.elements.map(item => [item.id, item]))
+      const oldParentId = getEffectiveParentId(el, byId)
+      const oldParent = oldParentId ? byId.get(oldParentId) : null
+      if (oldParent) { el.x += oldParent.x; el.y += oldParent.y }
+
+      el.parentId = newParentId || null
+      const newParent = newParentId ? byId.get(newParentId) : null
+      if (newParent) { el.x -= newParent.x; el.y -= newParent.y }
+    }
+
     // Render Canvas
     function renderCanvas() {
       const canvasWidth = Number(scene?.canvas?.width) || 1920
@@ -1804,9 +1838,24 @@
       artboard.style.height = `${canvasHeight}px`
       artboard.style.backgroundColor = scene?.canvas?.backgroundColor || 'transparent'
       artboard.innerHTML = ''
-      const sortedElements = [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
 
-      sortedElements.forEach(el => {
+      const byId = new Map(scene.elements.map(el => [el.id, el]))
+      const parentIdsInUse = new Set()
+      const childrenByParent = new Map()
+      const topLevel = []
+      scene.elements.forEach(el => {
+        const parentId = getEffectiveParentId(el, byId)
+        if (parentId) {
+          parentIdsInUse.add(parentId)
+          if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, [])
+          childrenByParent.get(parentId).push(el)
+        } else {
+          topLevel.push(el)
+        }
+      })
+      const sortByZ = (a, b) => (a.zIndex || 0) - (b.zIndex || 0)
+
+      function buildAndMount(el, container) {
         if (el.hidden && el.id !== selectedElementId) return
 
         const div = document.createElement('div')
@@ -1824,7 +1873,9 @@
         div.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
         div.style.borderColor = el.style?.borderColor || 'transparent'
         div.style.boxSizing = 'border-box'
-        div.style.overflow = 'hidden'
+        // Elemen yang jadi parent (punya child) tidak di-clip, supaya child yang posisinya
+        // melebihi bounding box parent tetap terlihat penuh di preview editor.
+        div.style.overflow = parentIdsInUse.has(el.id) ? 'visible' : 'hidden'
 
         if (el.style?.gradient?.enabled) {
           const from = el.style.gradient.from || '#0f172a'
@@ -1943,8 +1994,13 @@
           })
         }
 
-        artboard.appendChild(div)
-      })
+        container.appendChild(div)
+
+        const kids = childrenByParent.get(el.id)
+        if (kids) kids.sort(sortByZ).forEach(child => buildAndMount(child, div))
+      }
+
+      topLevel.sort(sortByZ).forEach(el => buildAndMount(el, artboard))
     }
 
     // Global Mouse Handlers
@@ -2000,6 +2056,8 @@
       // Show top-most layer (highest zIndex) first in the panel
       const orderedElements = [...scene.elements].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
 
+      const byId = new Map(scene.elements.map(item => [item.id, item]))
+
       orderedElements.forEach(el => {
         const item = document.createElement('div')
         item.className = `px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer border transition ${el.id === selectedElementId
@@ -2008,10 +2066,17 @@
           }`
 
         const hasAnim = Array.isArray(el.animation?.sequence) && el.animation.sequence.length > 0
+        // Fase 9 — tandai child (parentId valid & bukan multi-level) dengan indent + ikon.
+        const parentId = getEffectiveParentId(el, byId)
+        const parentEl = parentId ? byId.get(parentId) : null
+        const indentStyle = parentEl ? 'style="margin-left:14px"' : ''
+        const childBadge = parentEl
+          ? `<span title="Child dari: ${parentEl.name || parentEl.id}" class="text-cyan-400">⤷</span>`
+          : ''
 
         item.innerHTML = `
-          <div class="flex items-center space-x-2 truncate">
-            <span>${el.type === 'text' ? '🔤' : '⬛'}</span>
+          <div class="flex items-center space-x-2 truncate" ${indentStyle}>
+            <span>${childBadge || (el.type === 'text' ? '🔤' : '⬛')}</span>
             <span class="truncate font-semibold ${el.hidden ? 'line-through opacity-50' : ''}">${el.name || el.id}</span>
           </div>
           <div class="flex items-center space-x-1.5">
@@ -2072,6 +2137,15 @@
 
       document.getElementById('prop-type-badge').textContent = el.type.toUpperCase()
       document.getElementById('prop-name').value = el.name || el.id
+
+      // Parent (Grouping) dropdown — cuma tawarkan elemen lain yang BUKAN diri sendiri
+      // dan BUKAN sudah jadi child elemen lain (scope 1 level, lihat Vision.md §3.3.2).
+      const parentSelect = document.getElementById('prop-parent')
+      const eligibleParents = scene.elements.filter(item => item.id !== el.id && !item.parentId)
+      parentSelect.innerHTML = '<option value="">— Tidak ada (top-level) —</option>' +
+        eligibleParents.map(item => `<option value="${item.id}">${item.name || item.id}</option>`).join('')
+      parentSelect.value = el.parentId && eligibleParents.some(item => item.id === el.parentId) ? el.parentId : ''
+
       document.getElementById('prop-x').value = el.x
       document.getElementById('prop-y').value = el.y
       document.getElementById('prop-width').value = el.width
@@ -2359,6 +2433,16 @@
 
     function attachPropertyListeners() {
       const getSelected = () => scene.elements.find(item => item.id === selectedElementId)
+
+      // Parent (Grouping) dropdown — Fase 9, lihat Vision.md §3.3.2.
+      document.getElementById('prop-parent').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        reparentElement(el, e.target.value || null)
+        renderCanvas()
+        renderLayers()
+        updateInspectorValues()
+      })
 
       // Test Element Animation Button — preview sequence langsung di kanvas editor.
       document.getElementById('test-element-animation-btn').addEventListener('click', (e) => {

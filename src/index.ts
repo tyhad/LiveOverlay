@@ -208,6 +208,16 @@ interface SceneElement {
   textBinding?: TextBinding
   marquee?: MarqueeConfig
   scroll?: ScrollConfig
+  /**
+   * Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
+   * Kalau terisi & merujuk ke elemen lain yang valid (bukan diri sendiri, dan parent itu
+   * sendiri BUKAN child dari elemen lain — scope sengaja dibatasi 1 level nesting),
+   * elemen ini jadi "child": x/y jadi relatif terhadap parent (bukan lagi absolut
+   * terhadap kanvas), dan otomatis ikut posisi+animasi parent lewat DOM/container
+   * nesting di renderer (index.html/overlay.html). Kalau referensi tidak valid,
+   * elemen diperlakukan sebagai top-level (fallback graceful, tidak crash).
+   */
+  parentId?: string | null
 }
 
 interface SceneData {

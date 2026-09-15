@@ -411,14 +411,30 @@
       return `${binding.prefix || ''}${value}${binding.suffix || ''}`
     }
 
-    function applyElementBox(node, el) {
+    // Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
+    // Scope sengaja 1 level: kalau `parent` itu sendiri sudah jadi child elemen lain,
+    // referensi diabaikan (elemen diperlakukan top-level) supaya tidak ada nested group
+    // berlapis yang belum didukung. Self-reference & parent yang tidak ditemukan juga
+    // diabaikan secara graceful (fallback ke top-level, tidak pernah crash).
+    function getEffectiveParentId(el, byId) {
+      if (!el || !el.parentId) return null
+      const parent = byId.get(el.parentId)
+      if (!parent || parent.id === el.id) return null
+      if (parent.parentId && byId.has(parent.parentId)) return null
+      return parent.id
+    }
+
+    function applyElementBox(node, el, hasChildren) {
       node.style.left = `${el.x}px`
       node.style.top = `${el.y}px`
       node.style.width = `${el.width}px`
       node.style.height = `${el.height}px`
       node.style.zIndex = el.zIndex || 1
       node.style.opacity = el.opacity !== undefined ? el.opacity : 1
-      node.style.overflow = 'hidden'
+      // Elemen yang jadi parent (punya child) tidak di-clip supaya child yang posisinya
+      // melebihi bounding box parent tetap terlihat penuh (container murni pembungkus
+      // transform, bukan viewport visual yang membatasi konten anaknya).
+      node.style.overflow = hasChildren ? 'visible' : 'hidden'
       node.style.borderRadius = `${el.style?.borderRadius || 0}px`
       node.style.borderWidth = `${el.style?.borderWidth || 0}px`
       node.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
@@ -492,6 +508,7 @@
       scaleViewport()
       const visibleElements = scene.elements.filter(el => !el.hidden)
       const visibleIds = new Set(visibleElements.map(el => el.id))
+      const byId = new Map(scene.elements.map(el => [el.id, el]))
 
       renderedElements.forEach(({ node, marqueeTween, scrollTween }, id) => {
         if (visibleIds.has(id)) return
@@ -502,31 +519,56 @@
         node.remove()
       })
 
-      visibleElements.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)).forEach(el => {
+      // Pisahkan elemen top-level vs child (Fase 9 — Parent-Child Transform) supaya
+      // child bisa dipasang sebagai DOM descendant dari node parent-nya: transform
+      // (posisi/animasi) parent otomatis "membawa" child tanpa sinkronisasi manual.
+      const topLevel = []
+      const childrenByParent = new Map()
+      const parentIdsInUse = new Set()
+      visibleElements.forEach(el => {
+        const parentId = getEffectiveParentId(el, byId)
+        if (parentId) {
+          parentIdsInUse.add(parentId)
+          if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, [])
+          childrenByParent.get(parentId).push(el)
+        } else {
+          topLevel.push(el)
+        }
+      })
+
+      function mountOrUpdate(el, container) {
         const existing = renderedElements.get(el.id)
         const nextAnimConfig = AnimationEngine.normalizeAnimationConfig(el.animation)
         const nextAnimSignature = JSON.stringify(nextAnimConfig)
         const hasActiveSequence = nextAnimConfig.sequence.length > 0
+        const hasChildren = parentIdsInUse.has(el.id)
 
         if (existing) {
+          // Pastikan node berada di container yang benar (mis. parentId baru diubah,
+          // atau parent sebelumnya sempat dihapus lalu node ter-detach dari dokumen).
+          if (existing.node.parentElement !== container) container.appendChild(existing.node)
+
           // Data binding/teks harus tetap live-update meski elemen sedang dianimasikan.
           applyElementContent(existing.node, el)
 
           if (existing.animationSignature !== nextAnimSignature) {
             // Definisi animasi berubah (mis. disunting ulang) -> reset ke baseline kanonis dulu,
             // baru bangun ulang timeline dari awal.
-            applyElementBox(existing.node, el)
+            applyElementBox(existing.node, el, hasChildren)
             AnimationEngine.setBaselineState(existing.node, el)
             AnimationEngine.buildTimelineFromSequence(el.id, existing.node, nextAnimConfig)
             existing.animationSignature = nextAnimSignature
           } else if (!hasActiveSequence) {
             // Tidak ada animasi sama sekali -> tetap sinkronkan posisi/opacity/style setiap poll
             // (supaya perubahan dari editor, drag, dll tetap tercermin).
-            applyElementBox(existing.node, el)
+            applyElementBox(existing.node, el, hasChildren)
             AnimationEngine.setBaselineState(existing.node, el)
+          } else {
+            // Signature sama & sequence aktif: sengaja tidak menyentuh posisi/opacity/box-style
+            // (supaya timeline yang berjalan, termasuk loop infinite, tidak "distop" tiap poll),
+            // tapi overflow tetap perlu disinkronkan kalau status "punya child" berubah.
+            existing.node.style.overflow = hasChildren ? 'visible' : 'hidden'
           }
-          // Kalau signature sama & sequence aktif: sengaja TIDAK menyentuh posisi/opacity/box-style,
-          // supaya timeline yang sedang berjalan (termasuk loop infinite) tidak "distop" tiap poll.
           return
         }
 
@@ -534,12 +576,20 @@
         div.className = 'overlay-element'
         div.id = `render-el-${el.id}`
         div.dataset.elementId = el.id
-        applyElementBox(div, el)
-        viewport.appendChild(div)
+        applyElementBox(div, el, hasChildren)
+        container.appendChild(div)
         renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature })
         applyElementContent(div, el)
         AnimationEngine.setBaselineState(div, el)
         AnimationEngine.buildTimelineFromSequence(el.id, div, nextAnimConfig)
+      }
+
+      topLevel.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)).forEach(el => mountOrUpdate(el, viewport))
+
+      childrenByParent.forEach((kids, parentId) => {
+        const parentNode = renderedElements.get(parentId)?.node
+        if (!parentNode) return // parent belum ter-mount (mis. hidden) -> child ikut tidak dirender
+        kids.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)).forEach(el => mountOrUpdate(el, parentNode))
       })
     }
 

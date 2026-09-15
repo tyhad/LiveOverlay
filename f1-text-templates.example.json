@@ -1,0 +1,34 @@
+{
+  "_comment": "Copy file ini jadi f1-text-templates.json lalu edit bebas. Server auto-reload tiap ada perubahan (cek mtime file), TIDAK perlu restart — cukup save & refresh browser source. Placeholder {field} disubstitusi dari data baris terkait; field yang tidak dikenal dibiarkan apa adanya (tanda ada typo). Kalau file ini dihapus/rusak, otomatis fallback ke default bawaan kode.",
+
+  "driverStandings": {
+    "_fields": "position, driverName, driverAbbr, teamName, teamAbbr, points, wins, podiums, dnfDns",
+    "abbrLine": "#{position} {driverAbbr} {teamAbbr} {points}pts",
+    "fullLine": "#{position} {driverName} ({teamName}) {points}pts | {wins} Wins, {podiums} Podiums, {dnfDns} DNF"
+  },
+
+  "constructorStandings": {
+    "_fields": "position, teamName, teamAbbr, points, wins, podiums, dnfDns",
+    "abbrLine": "#{position} {teamAbbr} {points}pts",
+    "fullLine": "#{position} {teamName} {points}pts | {wins} Wins, {podiums} Podiums, {dnfDns} DNF"
+  },
+
+  "startingGrid": {
+    "_fields": "round, position, driverName, driverAbbr, teamName, teamAbbr",
+    "_example": "Contoh dari percakapan: ganti driverAbbr jadi driverName kalau mau nama lengkap",
+    "line": "P{position} {driverAbbr} {teamAbbr}"
+  },
+
+  "schedule": {
+    "_fields_header": "round, raceName, circuitName, countryFlag",
+    "_fields_sessionLine": "sessionType, startTimeUtc, startTimeWib (sudah diformat ke WIB)",
+    "header": "{raceName} {countryFlag} — {circuitName}",
+    "sessionLine": "{sessionType}: {startTimeWib}"
+  },
+
+  "separators": {
+    "_comment": "Pemisah antar baris. multiline dipakai buat field '*Multiline', marquee buat field '*Marquee'.",
+    "multiline": "\n",
+    "marquee": " • "
+  }
+}

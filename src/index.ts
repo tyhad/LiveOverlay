@@ -1,12 +1,14 @@
 import { Elysia, t } from 'elysia'
 import { staticPlugin } from '@elysiajs/static'
 import { mkdir, readdir, unlink } from 'node:fs/promises'
+import { readFileSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector'
 import { Database } from 'bun:sqlite'
 
 const SETTINGS_FILE = 'settings.json'
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
+const F1_TEMPLATES_FILE = 'f1-text-templates.json'
 const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENES_FILE = 'scenes.json'
 const LIVE_STATS_FILE = 'live-stats.json'
@@ -398,45 +400,124 @@ function teamAbbr(teamName: string): string {
   return TEAM_NAME_TO_ABBR[teamName.trim().toLowerCase()] || teamName.slice(0, 3).toUpperCase()
 }
 
-const MARQUEE_SEPARATOR = ' • '
+// ─── F1 Text Templates (editable format tanpa perlu edit kode) ──────────────
+//
+// Latar belakang: format teks F1 (starting grid, standings, schedule) tadinya
+// hardcoded di sini, jadi tiap mau ganti kombinasi field (mis. driverAbbr ->
+// driverName) harus edit TS + rebuild. Sekarang formatnya dibaca dari file
+// `f1-text-templates.json` (opsional, di-gitignore, mirip pola scenes.json) —
+// placeholder `{field}` di-substitusi dari data baris terkait. File di-reload
+// otomatis kalau berubah (cek mtime), TIDAK butuh restart server. Kalau file
+// tidak ada/rusak/field kosong, fallback graceful ke default di bawah —
+// fitur ini sengaja opsional, tidak wajib setup.
+interface F1TextTemplates {
+  driverStandings: { abbrLine: string; fullLine: string }
+  constructorStandings: { abbrLine: string; fullLine: string }
+  startingGrid: { line: string }
+  schedule: { header: string; sessionLine: string }
+  separators: { multiline: string; marquee: string }
+}
 
-function buildDriverStandingsText(rows: F1DriverStanding[]): F1GroupedText {
-  const abbrLines = rows.map(
-    (d) => `#${d.position} ${d.driverAbbr} ${teamAbbr(d.teamName)} ${d.points}pts`
-  )
-  const fullLines = rows.map(
-    (d) =>
-      `#${d.position} ${d.driverName} (${d.teamName}) ${d.points}pts | ${d.wins} Wins, ${d.podiums} Podiums, ${d.dnfDns} DNF`
-  )
+const DEFAULT_F1_TEMPLATES: F1TextTemplates = {
+  driverStandings: {
+    abbrLine: '#{position} {driverAbbr} {teamAbbr} {points}pts',
+    fullLine: '#{position} {driverName} ({teamName}) {points}pts | {wins} Wins, {podiums} Podiums, {dnfDns} DNF',
+  },
+  constructorStandings: {
+    abbrLine: '#{position} {teamAbbr} {points}pts',
+    fullLine: '#{position} {teamName} {points}pts | {wins} Wins, {podiums} Podiums, {dnfDns} DNF',
+  },
+  startingGrid: {
+    line: 'P{position} {driverAbbr} {teamAbbr}',
+  },
+  schedule: {
+    header: '{raceName} {countryFlag} — {circuitName}',
+    sessionLine: '{sessionType}: {startTimeWib}',
+  },
+  separators: {
+    multiline: '\n',
+    marquee: ' • ',
+  },
+}
+
+let cachedF1Templates: F1TextTemplates = DEFAULT_F1_TEMPLATES
+let cachedF1TemplatesMtimeMs: number | null = null
+
+function mergeF1Templates(override: any): F1TextTemplates {
+  const o = override && typeof override === 'object' ? override : {}
   return {
-    abbrMultiline: abbrLines.join('\n'),
-    abbrMarquee: abbrLines.join(MARQUEE_SEPARATOR),
-    fullMultiline: fullLines.join('\n'),
-    fullMarquee: fullLines.join(MARQUEE_SEPARATOR),
+    driverStandings: { ...DEFAULT_F1_TEMPLATES.driverStandings, ...(o.driverStandings || {}) },
+    constructorStandings: { ...DEFAULT_F1_TEMPLATES.constructorStandings, ...(o.constructorStandings || {}) },
+    startingGrid: { ...DEFAULT_F1_TEMPLATES.startingGrid, ...(o.startingGrid || {}) },
+    schedule: { ...DEFAULT_F1_TEMPLATES.schedule, ...(o.schedule || {}) },
+    separators: { ...DEFAULT_F1_TEMPLATES.separators, ...(o.separators || {}) },
   }
 }
 
-function buildConstructorStandingsText(rows: F1ConstructorStanding[]): F1GroupedText {
-  const abbrLines = rows.map(
-    (c) => `#${c.position} ${teamAbbr(c.teamName)} ${c.points}pts`
-  )
-  const fullLines = rows.map(
-    (c) =>
-      `#${c.position} ${c.teamName} ${c.points}pts | ${c.wins} Wins, ${c.podiums} Podiums, ${c.dnfDns} DNF`
-  )
-  return {
-    abbrMultiline: abbrLines.join('\n'),
-    abbrMarquee: abbrLines.join(MARQUEE_SEPARATOR),
-    fullMultiline: fullLines.join('\n'),
-    fullMarquee: fullLines.join(MARQUEE_SEPARATOR),
+function getF1TextTemplates(): F1TextTemplates {
+  try {
+    const stat = statSync(F1_TEMPLATES_FILE)
+    if (cachedF1TemplatesMtimeMs === stat.mtimeMs) return cachedF1Templates
+    const raw = JSON.parse(readFileSync(F1_TEMPLATES_FILE, 'utf-8'))
+    cachedF1Templates = mergeF1Templates(raw)
+    cachedF1TemplatesMtimeMs = stat.mtimeMs
+    return cachedF1Templates
+  } catch {
+    // File tidak ada, tidak bisa dibaca, atau JSON rusak -> fallback ke default
+    // (atau ke cache terakhir yang valid kalau sempat sukses di-load sebelumnya).
+    return cachedF1Templates
   }
 }
 
-function buildStartingGridText(rows: F1StartingGridEntry[]): F1StartingGridText {
-  const lines = rows.map((g) => `P${g.position} ${g.driverAbbr} ${teamAbbr(g.teamName)}`)
+/** Substitusi placeholder `{key}` di template dengan `data[key]`. Placeholder
+ *  yang tidak dikenal (typo field) dibiarkan apa adanya (tidak dihapus diam-diam)
+ *  supaya user gampang sadar ada typo saat lihat hasil overlay-nya. */
+function renderF1Template(template: string, data: Record<string, unknown>): string {
+  if (typeof template !== 'string') return ''
+  return template.replace(/\{(\w+)\}/g, (match, key) => {
+    if (!(key in data)) return match
+    const value = data[key]
+    return value === undefined || value === null ? '' : String(value)
+  })
+}
+
+function buildDriverStandingsText(rows: F1DriverStanding[], templates: F1TextTemplates): F1GroupedText {
+  const abbrLines = rows.map((d) =>
+    renderF1Template(templates.driverStandings.abbrLine, { ...d, teamAbbr: teamAbbr(d.teamName) })
+  )
+  const fullLines = rows.map((d) =>
+    renderF1Template(templates.driverStandings.fullLine, { ...d, teamAbbr: teamAbbr(d.teamName) })
+  )
   return {
-    multiline: lines.join('\n'),
-    marquee: lines.join(MARQUEE_SEPARATOR),
+    abbrMultiline: abbrLines.join(templates.separators.multiline),
+    abbrMarquee: abbrLines.join(templates.separators.marquee),
+    fullMultiline: fullLines.join(templates.separators.multiline),
+    fullMarquee: fullLines.join(templates.separators.marquee),
+  }
+}
+
+function buildConstructorStandingsText(rows: F1ConstructorStanding[], templates: F1TextTemplates): F1GroupedText {
+  const abbrLines = rows.map((c) =>
+    renderF1Template(templates.constructorStandings.abbrLine, { ...c, teamAbbr: teamAbbr(c.teamName) })
+  )
+  const fullLines = rows.map((c) =>
+    renderF1Template(templates.constructorStandings.fullLine, { ...c, teamAbbr: teamAbbr(c.teamName) })
+  )
+  return {
+    abbrMultiline: abbrLines.join(templates.separators.multiline),
+    abbrMarquee: abbrLines.join(templates.separators.marquee),
+    fullMultiline: fullLines.join(templates.separators.multiline),
+    fullMarquee: fullLines.join(templates.separators.marquee),
+  }
+}
+
+function buildStartingGridText(rows: F1StartingGridEntry[], templates: F1TextTemplates): F1StartingGridText {
+  const lines = rows.map((g) =>
+    renderF1Template(templates.startingGrid.line, { ...g, teamAbbr: teamAbbr(g.teamName) })
+  )
+  return {
+    multiline: lines.join(templates.separators.multiline),
+    marquee: lines.join(templates.separators.marquee),
   }
 }
 
@@ -474,26 +555,27 @@ function formatSessionTimeWib(iso: string): string {
   }
 }
 
-function buildRoundText(round: F1RoundInfo | null): { multiline: string; marquee: string } {
+function buildRoundText(round: F1RoundInfo | null, templates: F1TextTemplates): { multiline: string; marquee: string } {
   if (!round) return { multiline: '', marquee: '' }
-  const header = `${round.raceName} ${round.countryFlag} — ${round.circuitName}`.trim()
-  const sessionLines = round.sessions.map(
-    (s) => `${s.sessionType}: ${formatSessionTimeWib(s.startTimeUtc)}`
+  const header = renderF1Template(templates.schedule.header, { ...round }).trim()
+  const sessionLines = round.sessions.map((s) =>
+    renderF1Template(templates.schedule.sessionLine, { ...s, startTimeWib: formatSessionTimeWib(s.startTimeUtc) })
   )
   return {
-    multiline: [header, ...sessionLines].join('\n'),
-    marquee: [header, ...sessionLines].join(MARQUEE_SEPARATOR),
+    multiline: [header, ...sessionLines].join(templates.separators.multiline),
+    marquee: [header, ...sessionLines].join(templates.separators.marquee),
   }
 }
 
 function buildScheduleText(
   previousRound: F1RoundInfo | null,
   nowRound: F1RoundInfo | null,
-  nextRound: F1RoundInfo | null
+  nextRound: F1RoundInfo | null,
+  templates: F1TextTemplates
 ): F1ScheduleText {
-  const previous = buildRoundText(previousRound)
-  const now = buildRoundText(nowRound)
-  const next = buildRoundText(nextRound)
+  const previous = buildRoundText(previousRound, templates)
+  const now = buildRoundText(nowRound, templates)
+  const next = buildRoundText(nextRound, templates)
   return {
     previousMultiline: previous.multiline,
     previousMarquee: previous.marquee,
@@ -600,6 +682,7 @@ function getF1DataSnapshot(): F1DataSnapshot {
     const previousRound = buildRoundGroup(sessionRows, 'previous')
     const nowRound = buildRoundGroup(sessionRows, 'now')
     const nextRound = buildRoundGroup(sessionRows, 'next')
+    const templates = getF1TextTemplates()
 
     return {
       season: meta.season || null,
@@ -609,11 +692,11 @@ function getF1DataSnapshot(): F1DataSnapshot {
       nextRound,
       driverStandings,
       constructorStandings,
-      driverStandingsText: buildDriverStandingsText(driverStandings),
-      constructorStandingsText: buildConstructorStandingsText(constructorStandings),
+      driverStandingsText: buildDriverStandingsText(driverStandings, templates),
+      constructorStandingsText: buildConstructorStandingsText(constructorStandings, templates),
       startingGrid,
-      startingGridText: buildStartingGridText(startingGrid),
-      scheduleText: buildScheduleText(previousRound, nowRound, nextRound),
+      startingGridText: buildStartingGridText(startingGrid, templates),
+      scheduleText: buildScheduleText(previousRound, nowRound, nextRound, templates),
       available: true,
       error: null,
     }

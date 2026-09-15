@@ -118,7 +118,7 @@
 
   <!-- TOP HEADER -->
   <header
-    class="h-20 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30 shadow-md">
+    class="min-h-[56px] bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between shrink-0 z-30 shadow-md flex-wrap gap-y-2">
     <div class="flex items-center space-x-3">
       <div
         class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/20">
@@ -1915,9 +1915,10 @@
     // Render Layers
     function renderLayers() {
       layersListEl.innerHTML = ''
-      const reversedElements = [...scene.elements].reverse()
+      // Show top-most layer (highest zIndex) first in the panel
+      const orderedElements = [...scene.elements].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
 
-      reversedElements.forEach(el => {
+      orderedElements.forEach(el => {
         const item = document.createElement('div')
         item.className = `px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer border transition ${el.id === selectedElementId
           ? 'bg-indigo-600/25 border-indigo-500/70 text-white shadow-md'
@@ -2786,42 +2787,61 @@
     })
 
     // Layer Reorder Buttons
+    // Helper: renumber every element's zIndex to 1..N following a given
+    // bottom-to-top order, so values are always unique and gap-free.
+    function normalizeZIndex(orderedElements) {
+      orderedElements.forEach((item, idx) => {
+        item.zIndex = idx + 1
+      })
+    }
+
+    function getOrderedElements() {
+      // ascending zIndex = bottom-to-top render order
+      return [...scene.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+    }
+
     document.getElementById('layer-top-btn').addEventListener('click', () => {
       if (!selectedElementId) return
-      const el = scene.elements.find(item => item.id === selectedElementId)
-      if (el) {
-        const maxZ = Math.max(...scene.elements.map(item => item.zIndex || 0), 0)
-        el.zIndex = maxZ + 1
-        renderCanvas(); renderLayers(); updateInspectorValues();
-      }
+      const ordered = getOrderedElements()
+      const idx = ordered.findIndex(item => item.id === selectedElementId)
+      if (idx === -1) return
+      const [el] = ordered.splice(idx, 1)
+      ordered.push(el) // move to very top (end of bottom-to-top order)
+      normalizeZIndex(ordered)
+      renderCanvas(); renderLayers(); updateInspectorValues();
     })
 
     document.getElementById('layer-bottom-btn').addEventListener('click', () => {
       if (!selectedElementId) return
-      const el = scene.elements.find(item => item.id === selectedElementId)
-      if (el) {
-        const minZ = Math.min(...scene.elements.map(item => item.zIndex || 0), 0)
-        el.zIndex = Math.max(0, minZ - 1)
-        renderCanvas(); renderLayers(); updateInspectorValues();
-      }
+      const ordered = getOrderedElements()
+      const idx = ordered.findIndex(item => item.id === selectedElementId)
+      if (idx === -1) return
+      const [el] = ordered.splice(idx, 1)
+      ordered.unshift(el) // move to very bottom (start of order)
+      normalizeZIndex(ordered)
+      renderCanvas(); renderLayers(); updateInspectorValues();
     })
 
     document.getElementById('layer-up-btn').addEventListener('click', () => {
       if (!selectedElementId) return
-      const el = scene.elements.find(item => item.id === selectedElementId)
-      if (el) {
-        el.zIndex = (el.zIndex || 1) + 1
-        renderCanvas(); renderLayers(); updateInspectorValues();
-      }
+      const ordered = getOrderedElements()
+      const idx = ordered.findIndex(item => item.id === selectedElementId)
+      if (idx === -1 || idx === ordered.length - 1) return // already on top
+        // swap with the element directly above it
+        ;[ordered[idx], ordered[idx + 1]] = [ordered[idx + 1], ordered[idx]]
+      normalizeZIndex(ordered)
+      renderCanvas(); renderLayers(); updateInspectorValues();
     })
 
     document.getElementById('layer-down-btn').addEventListener('click', () => {
       if (!selectedElementId) return
-      const el = scene.elements.find(item => item.id === selectedElementId)
-      if (el) {
-        el.zIndex = Math.max(0, (el.zIndex || 1) - 1)
-        renderCanvas(); renderLayers(); updateInspectorValues();
-      }
+      const ordered = getOrderedElements()
+      const idx = ordered.findIndex(item => item.id === selectedElementId)
+      if (idx <= 0) return // already at bottom
+        // swap with the element directly below it
+        ;[ordered[idx], ordered[idx - 1]] = [ordered[idx - 1], ordered[idx]]
+      normalizeZIndex(ordered)
+      renderCanvas(); renderLayers(); updateInspectorValues();
     })
 
     document.getElementById('zoom-in-btn').addEventListener('click', () => setZoom(zoom + 0.1))

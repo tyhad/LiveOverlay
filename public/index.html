@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Limelight&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@400;500;600;700&family=Roboto:wght@400;500;700;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&family=Limelight&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;600;700;800;900&family=Noto+Color+Emoji&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@400;500;600;700&family=Roboto:wght@400;500;700;900&display=swap"
     rel="stylesheet">
 
   <style>
@@ -1346,6 +1346,12 @@
       return el.scroll
     }
 
+    function getFontStack(family) {
+      const base = family || 'Inter, sans-serif'
+      if (base.includes('Noto Color Emoji') || base.includes('Segoe UI Emoji')) return base
+      return `${base}, 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif`
+    }
+
     function getPathSegments(path) {
       return String(path || '').match(/[^.[\]]+/g) || []
     }
@@ -1859,7 +1865,7 @@
           textP.style.height = '100%'
           textP.style.display = 'flex'
           textP.style.alignItems = el.style?.verticalAlign === 'top' ? 'flex-start' : (el.style?.verticalAlign === 'bottom' ? 'flex-end' : 'center')
-          textP.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
+          textP.style.fontFamily = getFontStack(el.style?.fontFamily)
           textP.style.fontSize = `${el.style?.fontSize || 18}px`
           textP.style.fontWeight = el.style?.fontWeight || 'normal'
           textP.style.color = el.style?.color || '#ffffff'

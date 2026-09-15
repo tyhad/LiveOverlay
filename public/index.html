@@ -118,11 +118,12 @@
 
   <!-- TOP HEADER -->
   <header
-    class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30 shadow-md">
+    class="h-20 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-30 shadow-md">
     <div class="flex items-center space-x-3">
       <div
         class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/20">
-        ⚡
+        <img src="\KerasnG.png" alt="LiveOverlay Studio"
+          class="w-8 h-8 rounded-xl object-cover shadow-lg shadow-indigo-500/20" />
       </div>
       <div>
         <div class="flex items-center space-x-2">
@@ -203,8 +204,10 @@
 
       <!-- Section 1: Quick Add Elements -->
       <details class="p-3.5 border-b border-slate-800 group" open>
-        <summary class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden flex items-center gap-1.5">
-          <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+        <summary
+          class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden flex items-center gap-1.5">
+          <span
+            class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
           <span>Add Elements</span>
         </summary>
         <div class="grid grid-cols-2 gap-2 mt-2.5">
@@ -243,9 +246,11 @@
 
       <!-- Section 2: Uploaded Assets -->
       <details class="p-3 border-b border-slate-800 group" open>
-        <summary class="flex items-center justify-between mb-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+        <summary
+          class="flex items-center justify-between mb-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
           <span class="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-slate-400">
-            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Assets</span>
           </span>
           <span class="text-[10px] text-slate-500">Click to add</span>
@@ -257,118 +262,119 @@
 
       <!-- Section 4: Platform Live Stats Connector -->
       <details class="p-3 border-b border-slate-800 space-y-2 group" open>
-        <summary class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-              <div class="flex items-center gap-1.5">
-                <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px] shrink-0 mt-0.5">▶</span>
-                <div>
-                <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Live Stats</h2>
-                <p class="text-[10px] text-slate-500 mt-0.5">Auto-fetch dari TikTok / YouTube Live.</p>
-              </div>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span id="platform-connector-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
-                <span id="platform-connector-state-label" class="text-[10px] text-slate-500">OFF</span>
-              </div>
+        <summary
+          class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+          <div class="flex items-center gap-1.5">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px] shrink-0 mt-0.5">▶</span>
+            <div>
+              <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Live Stats</h2>
+              <p class="text-[10px] text-slate-500 mt-0.5">Auto-fetch dari TikTok / YouTube Live.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span id="platform-connector-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+            <span id="platform-connector-state-label" class="text-[10px] text-slate-500">OFF</span>
+          </div>
         </summary>
         <div class="space-y-2 mt-2">
 
-            <!-- Platform selector -->
-            <div class="grid grid-cols-2 gap-1.5">
-              <button id="platform-tiktok-btn"
-                class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
-                data-platform="tiktok">🎵 TikTok</button>
-              <button id="platform-youtube-btn"
-                class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
-                data-platform="youtube">▶️ YouTube</button>
-            </div>
+          <!-- Platform selector -->
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="platform-tiktok-btn"
+              class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
+              data-platform="tiktok">🎵 TikTok</button>
+            <button id="platform-youtube-btn"
+              class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
+              data-platform="youtube">▶️ YouTube</button>
+          </div>
 
-            <!-- TikTok fields -->
-            <div id="connector-tiktok-fields" class="space-y-1.5">
-              <label class="block text-[10px] text-slate-400">TikTok Username</label>
-              <input type="text" id="connector-tiktok-username" placeholder="@username"
-                class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            </div>
+          <!-- TikTok fields -->
+          <div id="connector-tiktok-fields" class="space-y-1.5">
+            <label class="block text-[10px] text-slate-400">TikTok Username</label>
+            <input type="text" id="connector-tiktok-username" placeholder="@username"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+          </div>
 
-            <!-- YouTube fields -->
-            <div id="connector-youtube-fields" class="hidden space-y-1.5">
-              <label class="block text-[10px] text-slate-400">YouTube API Key <span class="text-slate-600">(Data API
-                  v3)</span></label>
-              <input type="password" id="connector-yt-api-key" placeholder="AIza..."
-                class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-              <label class="block text-[10px] text-slate-400 mt-1">Video ID <span class="text-slate-600">(atau kosongi,
-                  pakai Channel ID)</span></label>
-              <input type="text" id="connector-yt-video-id" placeholder="dQw4w9WgXcQ"
-                class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-              <label class="block text-[10px] text-slate-400 mt-1">Channel ID <span class="text-slate-600">(fallback
-                  jika Video ID kosong)</span></label>
-              <input type="text" id="connector-yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
-                class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            </div>
+          <!-- YouTube fields -->
+          <div id="connector-youtube-fields" class="hidden space-y-1.5">
+            <label class="block text-[10px] text-slate-400">YouTube API Key <span class="text-slate-600">(Data API
+                v3)</span></label>
+            <input type="password" id="connector-yt-api-key" placeholder="AIza..."
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+            <label class="block text-[10px] text-slate-400 mt-1">Video ID <span class="text-slate-600">(atau kosongi,
+                pakai Channel ID)</span></label>
+            <input type="text" id="connector-yt-video-id" placeholder="dQw4w9WgXcQ"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+            <label class="block text-[10px] text-slate-400 mt-1">Channel ID <span class="text-slate-600">(fallback
+                jika Video ID kosong)</span></label>
+            <input type="text" id="connector-yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
+              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+          </div>
 
-            <!-- Poll interval -->
+          <!-- Poll interval -->
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] text-slate-400 shrink-0">Poll tiap</label>
+            <input type="number" id="connector-poll-interval" min="10" max="300" value="30"
+              class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+            <span class="text-[10px] text-slate-500">detik</span>
+          </div>
+
+          <!-- Chat display duration -->
+          <div class="space-y-1">
             <div class="flex items-center gap-2">
-              <label class="text-[10px] text-slate-400 shrink-0">Poll tiap</label>
-              <input type="number" id="connector-poll-interval" min="10" max="300" value="30"
+              <label class="text-[10px] text-slate-400 shrink-0">Durasi tampil chat</label>
+              <input type="number" id="connector-chat-display-duration" min="1500" max="15000" step="500" value="4000"
                 class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-              <span class="text-[10px] text-slate-500">detik</span>
+              <span class="text-[10px] text-slate-500">ms</span>
             </div>
+            <p class="text-[10px] text-slate-500">Durasi tiap chat tampil sebelum ganti ke chat berikutnya. Independen
+              dari interval polling di atas.</p>
+          </div>
 
-            <!-- Chat display duration -->
-            <div class="space-y-1">
-              <div class="flex items-center gap-2">
-                <label class="text-[10px] text-slate-400 shrink-0">Durasi tampil chat</label>
-                <input type="number" id="connector-chat-display-duration" min="1500" max="15000" step="500" value="4000"
-                  class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-                <span class="text-[10px] text-slate-500">ms</span>
-              </div>
-              <p class="text-[10px] text-slate-500">Durasi tiap chat tampil sebelum ganti ke chat berikutnya. Independen
-                dari interval polling di atas.</p>
-            </div>
+          <!-- Action buttons -->
+          <div class="flex gap-1.5">
+            <button id="connector-save-btn"
+              class="flex-1 px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-[11px] font-semibold text-slate-200 transition">Simpan</button>
+            <button id="connector-start-btn"
+              class="flex-1 px-2 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-semibold transition">▶
+              Start</button>
+            <button id="connector-stop-btn"
+              class="flex-1 px-2 py-1.5 rounded-lg bg-rose-600/60 hover:bg-rose-600/80 text-white text-[11px] font-semibold transition hidden">■
+              Stop</button>
+          </div>
 
-            <!-- Action buttons -->
-            <div class="flex gap-1.5">
-              <button id="connector-save-btn"
-                class="flex-1 px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-[11px] font-semibold text-slate-200 transition">Simpan</button>
-              <button id="connector-start-btn"
-                class="flex-1 px-2 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-semibold transition">▶
-                Start</button>
-              <button id="connector-stop-btn"
-                class="flex-1 px-2 py-1.5 rounded-lg bg-rose-600/60 hover:bg-rose-600/80 text-white text-[11px] font-semibold transition hidden">■
-                Stop</button>
-            </div>
-
-            <!-- Status display -->
-            <div id="platform-connector-status-box"
-              class="bg-slate-950 border border-slate-800 rounded-lg p-2 space-y-0.5">
-              <p class="text-[10px] text-slate-500">Viewer: <span id="connector-status-viewers"
-                  class="text-slate-300">—</span></p>
-              <p class="text-[10px] text-slate-500">Updated: <span id="connector-status-updated"
-                  class="text-slate-300">—</span></p>
-              <p id="connector-status-error" class="text-[10px] text-rose-400 hidden"></p>
-            </div>
+          <!-- Status display -->
+          <div id="platform-connector-status-box"
+            class="bg-slate-950 border border-slate-800 rounded-lg p-2 space-y-0.5">
+            <p class="text-[10px] text-slate-500">Viewer: <span id="connector-status-viewers"
+                class="text-slate-300">—</span></p>
+            <p class="text-[10px] text-slate-500">Updated: <span id="connector-status-updated"
+                class="text-slate-300">—</span></p>
+            <p id="connector-status-error" class="text-[10px] text-rose-400 hidden"></p>
+          </div>
         </div>
       </details>
 
       <!-- Section 5: Layers List -->
       <div class="flex flex-col min-h-0">
-            <div
-              class="p-3 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 z-10">
-              <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
-              <div class="flex items-center space-x-1">
-                <button id="layer-top-btn"
-                  class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-                  title="Bring to Top">⏫</button>
-                <button id="layer-up-btn"
-                  class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-                  title="Move Up">▲</button>
-                <button id="layer-down-btn"
-                  class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-                  title="Move Down">▼</button>
-                <button id="layer-bottom-btn"
-                  class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-                  title="Send to Bottom">⏬</button>
-              </div>
-            </div>
+        <div class="p-3 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 z-10">
+          <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
+          <div class="flex items-center space-x-1">
+            <button id="layer-top-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Bring to Top">⏫</button>
+            <button id="layer-up-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Move Up">▲</button>
+            <button id="layer-down-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Move Down">▼</button>
+            <button id="layer-bottom-btn"
+              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+              title="Send to Bottom">⏬</button>
+          </div>
+        </div>
 
         <div id="layers-list" class="min-h-[160px] p-2 space-y-1.5">
           <!-- Layer items injected dynamically -->
@@ -480,8 +486,10 @@
 
         <!-- Alignment Controls -->
         <details class="space-y-2 group" open>
-          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Canvas Alignment</span>
           </summary>
           <div class="grid grid-cols-6 gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800 mt-2">
@@ -509,8 +517,10 @@
 
         <!-- Typography Section (Text Elements) -->
         <details id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
-          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Typography</span>
           </summary>
 
@@ -586,14 +596,15 @@
 
           <!-- Vertical Align -->
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Vertical Align (posisi teks kalau box lebih kecil dari isi/multiline)</label>
+            <label class="block text-[11px] text-slate-400 mb-1">Vertical Align (posisi teks kalau box lebih kecil dari
+              isi/multiline)</label>
             <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-              <button type="button" id="align-v-top"
-                class="py-1 text-xs rounded text-slate-300 hover:text-white">⬆ Top</button>
-              <button type="button" id="align-v-center"
-                class="py-1 text-xs rounded text-slate-300 hover:text-white">■ Center</button>
-              <button type="button" id="align-v-bottom"
-                class="py-1 text-xs rounded text-slate-300 hover:text-white">⬇ Bottom</button>
+              <button type="button" id="align-v-top" class="py-1 text-xs rounded text-slate-300 hover:text-white">⬆
+                Top</button>
+              <button type="button" id="align-v-center" class="py-1 text-xs rounded text-slate-300 hover:text-white">■
+                Center</button>
+              <button type="button" id="align-v-bottom" class="py-1 text-xs rounded text-slate-300 hover:text-white">⬇
+                Bottom</button>
             </div>
           </div>
 
@@ -617,8 +628,10 @@
 
         <!-- Dynamic Content: Running Text (Marquee) & Data Binding -->
         <details id="dynamic-content-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
-          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Dynamic Content</span>
           </summary>
 
@@ -652,7 +665,8 @@
                 <option value="ltr">Left → Right</option>
               </select>
             </div>
-            <p class="text-[10px] text-slate-500">Preview animasi hanya tampil di overlay (Preview OBS), bukan di kanvas editor ini.</p>
+            <p class="text-[10px] text-slate-500">Preview animasi hanya tampil di overlay (Preview OBS), bukan di kanvas
+              editor ini.</p>
           </div>
 
           <div class="space-y-2 rounded-xl border border-indigo-500/20 bg-indigo-600/15 p-3">
@@ -710,7 +724,10 @@
                   placeholder="driverStandingsText.abbrMarquee">
                 <datalist id="f1-field-paths"></datalist>
               </div>
-              <p class="text-[10px] text-slate-500">Contoh: <code>driverStandingsText.abbrMarquee</code> (WDC ringkas 1 baris), <code>constructorStandingsText.fullMultiline</code> (WCC lengkap per baris), <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code> (jadwal race berjalan).</p>
+              <p class="text-[10px] text-slate-500">Contoh: <code>driverStandingsText.abbrMarquee</code> (WDC ringkas 1
+                baris), <code>constructorStandingsText.fullMultiline</code> (WCC lengkap per baris),
+                <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code> (jadwal race berjalan).
+              </p>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -743,12 +760,16 @@
 
         <!-- Transform: Dimensions, Position & Rotation -->
         <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
-          <summary class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+          <summary
+            class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5">
-              <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              <span
+                class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
               <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 inline">Transform & Position</h3>
             </span>
-            <span class="text-[9px] text-indigo-400/80 italic" title="Nilai di sini jadi state awal (atau state akhir untuk step 'from') bagi Animation Sequence di bawah">= start state animasi</span>
+            <span class="text-[9px] text-indigo-400/80 italic"
+              title="Nilai di sini jadi state awal (atau state akhir untuk step 'from') bagi Animation Sequence di bawah">=
+              start state animasi</span>
           </summary>
 
           <div class="grid grid-cols-2 gap-2 mt-3">
@@ -793,7 +814,8 @@
               <span id="prop-scale-val" class="font-mono text-white">1.00x</span>
             </div>
             <div class="flex items-center gap-2">
-              <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1" class="flex-1 accent-indigo-500">
+              <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1"
+                class="flex-1 accent-indigo-500">
               <input type="number" id="prop-scale-num" min="0.1" max="3" step="0.01"
                 class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
@@ -814,10 +836,13 @@
 
         <!-- Animation Sequence Editor (Fase 8 / Fase 3) — lihat issue.md -->
         <details
-          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30 group" open>
-          <summary class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30 group"
+          open>
+          <summary
+            class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center space-x-1.5">
-              <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              <span
+                class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
               <span class="text-base">✨</span>
               <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300 inline">Animation Sequence</h3>
             </span>
@@ -828,7 +853,8 @@
           </summary>
 
           <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none mt-3">
-            <input type="checkbox" id="anim-loop-toggle" class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
+            <input type="checkbox" id="anim-loop-toggle"
+              class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
             <span>🔁 Ulangi dari Q0 setelah step terakhir selesai</span>
           </label>
 
@@ -848,7 +874,8 @@
 
           <!-- Quick-insert preset: isi otomatis satu step generik, murni helper UI (lihat animation-engine.js) -->
           <div class="pt-2 border-t border-indigo-500/20 space-y-1.5">
-            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</label>
+            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert
+              Preset</label>
             <div class="grid grid-cols-2 gap-1.5" id="anim-preset-buttons"></div>
           </div>
         </details>
@@ -929,7 +956,8 @@
         <!-- Kartu step 'delay' — visual beda sengaja (dashed, abu-abu) supaya kelihatan
              beda dari step animasi biasa, cuma nunggu tanpa properti apapun. -->
         <template id="anim-delay-step-template">
-          <div class="anim-step-card flex items-center gap-2 bg-slate-900/40 border border-dashed border-slate-600/60 rounded-xl p-2.5">
+          <div
+            class="anim-step-card flex items-center gap-2 bg-slate-900/40 border border-dashed border-slate-600/60 rounded-xl p-2.5">
             <span class="anim-step-label text-[11px] font-bold text-slate-400 font-mono shrink-0"></span>
             <span class="text-slate-500 text-sm shrink-0">⏱</span>
             <div class="flex-1 flex items-center gap-1.5">
@@ -954,8 +982,10 @@
 
         <!-- Image / SVG Section -->
         <details id="image-props-section" class="hidden space-y-3 pt-2 border-t border-slate-800 group" open>
-          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Image / SVG</span>
           </summary>
           <div>
@@ -978,12 +1008,15 @@
 
         <!-- Fill & Gradient Section -->
         <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
-          <summary class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+          <summary
+            class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5">
-              <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              <span
+                class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
               <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 inline">Fill & Background</h3>
             </span>
-            <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300" onclick="event.stopPropagation()">
+            <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300"
+              onclick="event.stopPropagation()">
               <input type="checkbox" id="prop-gradient-toggle" class="rounded accent-indigo-500">
               <span class="text-[10px]">Gradient</span>
             </label>
@@ -1041,8 +1074,10 @@
 
         <!-- Borders & Corners Section -->
         <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
-          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Borders & Corners</span>
           </summary>
 
@@ -1084,8 +1119,10 @@
 
         <!-- Shadow & Glow Section -->
         <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
-          <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Drop Shadow & Glow</span>
           </summary>
 
@@ -2143,12 +2180,12 @@
         // Aksi reorder/duplikat/hapus — sama persis buat step delay maupun step animasi.
         card.querySelector('[data-action="move-up"]').addEventListener('click', () => {
           if (index === 0) return
-          ;[anim.sequence[index - 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index - 1]]
+            ;[anim.sequence[index - 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index - 1]]
           renderAnimationSequenceEditor(el)
         })
         card.querySelector('[data-action="move-down"]').addEventListener('click', () => {
           if (index === anim.sequence.length - 1) return
-          ;[anim.sequence[index + 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index + 1]]
+            ;[anim.sequence[index + 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index + 1]]
           renderAnimationSequenceEditor(el)
         })
         card.querySelector('[data-action="duplicate"]').addEventListener('click', () => {

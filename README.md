@@ -178,6 +178,7 @@ Proyek ini dikembangkan secara iteratif dengan bantuan AI coding assistant, term
 
 - **[Claude](https://claude.com)** (Anthropic)
 - **Antigravity CLI**
+- **Codex CLI**
 
 ---
 

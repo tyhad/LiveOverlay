@@ -129,12 +129,12 @@ Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Pane
 
 ## Technical Debt (kandidat Fase 7)
 
-- Race condition di `persistSceneStore()`: dua `Bun.write()` berurutan tanpa lock — kalau dua save scene terjadi nyaris bersamaan, berpotensi `scenes.json` sempat inkonsisten.
+> ⚠️ **Catatan (caution)**: Race condition di `persistSceneStore()` — dua `Bun.write()` berurutan tanpa lock, kalau dua save scene terjadi nyaris bersamaan berpotensi `scenes.json` sempat inkonsisten. Belum jadi masalah nyata di penggunaan saat ini, tapi diwaspadai kalau nanti pola pemakaian berubah.
 - ~~Logic animasi GSAP ke-duplikat persis antara `overlay.html` dan `index.html`.~~ ✅ **Selesai** — tuntas lewat `public/animation-engine.js` yang dipakai bersama editor & overlay sejak Fase 8. Marquee tetap punya sedikit duplikasi kecil terpisah (helper measure/text di overlay tidak dipakai di editor, tapi ini disengaja karena editor cuma butuh badge statis) — bukan bagian dari scope ini, tidak perlu dikerjakan.
-- Google Fonts di-load all-upfront (10 keluarga font: Bebas Neue, Inter, Limelight, Manrope, Montserrat, Outfit, Plus Jakarta Sans, Poppins, Quicksand, Roboto) padahal biasanya cuma 1-2 dipakai per scene. **Manrope, Quicksand, Limelight sudah ditambahkan** ke Google Fonts `<link>` dan dropdown Font Family di editor — pastikan tetap tersedia/prioritas saat nanti diimplementasi lazy-load atau font picker yang lebih efisien.
 - ~~`gsap` di `package.json` sebagai dependency tapi gak kepake (yang dipakai versi CDN 3.12.5, padahal `package.json` declare `^3.15.0`).~~ Dicek ulang saat kerja Fase 8: catatan ini sudah **stale**, `gsap` sudah tidak ada sama sekali di `package.json`/`bun.lock` sebelum revisi ini (mungkin sempat dihapus tanpa update catatan). `gsap` sekarang ditambahkan kembali, tapi sebagai **devDependency** khusus untuk `tests/animation-engine.test.mjs` (lihat di bawah) — runtime produksi (`index.html`/`overlay.html`) tetap pakai versi CDN seperti sebelumnya, tidak berubah.
 - Browser Source dimension tidak auto-sync ke Canvas Settings scene — lihat detail di bawah.
-- File `f1gstats.sqlite` bisa ter-lock oleh proses lain (misal server LiveOverlay yang masih jalan) saat fetcher F1GStats coba overwrite — di Windows ini gagal keras (`The process cannot access the file`), bukan cuma warning. Perlu SOP jelas: stop server LiveOverlay dulu sebelum re-run fetcher, atau ke depannya pertimbangkan skema "write ke file sementara lalu atomic rename" supaya tidak perlu stop service.
+
+> ⚠️ **Catatan (caution)**: File `f1gstats.sqlite` bisa ter-lock oleh proses lain (misal server LiveOverlay yang masih jalan) saat fetcher F1GStats — project Python terpisah — coba overwrite file itu; di Windows ini gagal keras (`The process cannot access the file`), bukan cuma warning. Karena ini titik temu dua project terpisah, cukup diwaspadai lewat SOP manual: stop server LiveOverlay dulu sebelum re-run fetcher. Belum perlu jadi item kerja aktif di LiveOverlay Studio sendiri.
 
 ### Automated Testing
 

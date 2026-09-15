@@ -14,14 +14,14 @@ Prinsip utama: **WYSIWYG — What You See Is What You Stream**. Apa yang disusun
 - 🧱 **Sistem Elemen & Layers**: Tambah elemen Text, Shape, dan Image/SVG. Setiap elemen bisa di-reorder (z-index), diduplikasi, disembunyikan, atau dihapus.
 - 🎛️ **Panel Properti Lengkap**: Atur transform (posisi, ukuran, rotasi), style (warna, opacity, border, font), dan animasi per elemen langsung dari sidebar.
 - 🌀 **Animation Sequence per Elemen**: Susun urutan step animasi (Q0, Q1, Q2, ...) bebas — transisi posisi/opacity/scale/rotation ke state manapun, disisipi step Delay tersendiri kapan perlu, opsional diulang otomatis dari awal. Lengkap dengan quick-insert preset (fade, slide, bounce, pulse, dll) sebagai starting point.
+- 🔤 **Running Text (Adaptive Marquee)**: Elemen text bisa dibuat berjalan (ticker/marquee) dengan kecepatan konstan, arah, dan gap yang bisa diatur — cocok untuk teks berapapun panjangnya.
 - 📤 **Asset Management**: Upload SVG/PNG hasil desain sendiri (misal dari Illustrator), tersimpan di server, dan bisa dipakai berulang di elemen manapun.
 - 🖥️ **Multi-Scene & Multi-Output**: Simpan banyak scene dengan ukuran kanvas (width/height) dan background masing-masing. Beberapa scene bisa dijalankan **bersamaan** di browser source berbeda — misalnya layout portrait untuk TikTok dan landscape untuk YouTube, sekaligus, tanpa saling mengganggu.
-- 🔌 **External Data Source (Generic API Binding)**: Hubungkan elemen text ke field dari API eksternal apa pun (misal data F1/FastF1), dengan polling + caching di sisi backend agar tidak membebani overlay.
+- 📊 **Platform Live Stats (TikTok/YouTube)**: Bind elemen text ke data live real-time — username, display name, viewer count, follower count, like count, hingga chat terbaru — via WebSocket (TikTok) dan Data API v3 (YouTube).
+- 🏎️ **F1GStats Integration**: Bind elemen text ke data F1 (jadwal sesi & klasemen WDC/WCC) yang dibaca dari database SQLite lokal, hasil prefetch dari project Python terpisah — lihat [bagian F1GStats Integration](#f1gstats-integration) di bawah.
 - 🔄 **Real-Time Auto Sync**: Overlay otomatis mendeteksi perubahan dari editor tanpa perlu refresh OBS Browser Source.
 - 🔒 **Local Binding & Secure**: Server secara default hanya terikat ke `127.0.0.1` (localhost).
 - 📦 **Zero CDN Dependency untuk CSS**: Tailwind CSS dikompilasi lokal untuk performa maksimal dan stabilitas offline/LAN.
-
-> ⏳ **Dalam pengembangan**: Live stats otomatis dari platform (viewer count, follower count, chat TikTok/YouTube) — infrastrukturnya sudah siap, konektor platform-nya masih dikerjakan.
 
 ---
 
@@ -121,9 +121,15 @@ Contoh URL overlay untuk scene tertentu:
 http://localhost:3000/overlay.html?scene=portrait-chat
 ```
 
-### External Data Source
+### F1GStats Integration
 
-Konfigurasi koneksi ke API eksternal disimpan di `data-sources.json`. Setiap source punya polling interval dan timeout sendiri, di-cache di backend agar tidak membebani overlay maupun API pihak ketiga.
+Binding data F1 (jadwal sesi & klasemen WDC/WCC) dibaca **read-only** dari file `f1gstats.sqlite`, hasil prefetch project **F1GStats** — project Python terpisah dengan repo git sendiri, tidak termasuk di repo ini. Path file diasumsikan sejajar folder ini (`../F1GStats/f1gstats.sqlite`), bisa di-override lewat env var `F1_DB_PATH`. Jalankan fetcher-nya secara manual sebelum sesi live:
+
+```bash
+py fetch_f1_data.py --season 2026 --output ./f1gstats.sqlite
+```
+
+Detail arsitektur & skema database ada di [`issue.md`](./issue.md) bagian "F1GStats Integration".
 
 ### Opsi Token Rahasia (Shared Secret)
 
@@ -142,20 +148,27 @@ SETTINGS_SECRET=kunci_rahasia_anda_disini
 ```text
 LiveOverlay/
 ├── public/
-│   ├── index.html           # Canvas Editor (GUI utama)
-│   ├── overlay.html         # Transparent OBS Browser Source Overlay (player)
-│   └── styles.css           # Compiled Tailwind CSS
+│   ├── index.html            # Canvas Editor (GUI utama)
+│   ├── overlay.html          # Transparent OBS Browser Source Overlay (player)
+│   ├── animation-engine.js   # Modul Animation Sequence Engine (dipakai bersama editor & overlay)
+│   └── styles.css            # Compiled Tailwind CSS
 ├── src/
-│   ├── index.ts             # ElysiaJS Backend Server & API Routes
-│   └── styles/input.css     # Tailwind CSS entry directive
-├── scenes.example.json      # Template data scene
-├── issue.md                 # Planning & status implementasi per-fase
-├── package.json             # Project dependencies & scripts
-├── tsconfig.json            # TypeScript configuration
-└── README.md                # Dokumentasi proyek
+│   ├── index.ts              # ElysiaJS Backend Server & API Routes
+│   └── styles/input.css      # Tailwind CSS entry directive
+├── tests/
+│   └── animation-engine.test.mjs  # Regression test untuk Animation Sequence Engine
+├── scenes.example.json       # Template data scene
+├── scene.example.json        # Template satu scene tunggal
+├── settings.example.json     # Template konfigurasi platform live stats
+├── live-stats.example.json   # Template cache data live stats
+├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)
+├── issue.md                  # Status implementasi & technical debt (selalu up-to-date)
+├── package.json              # Project dependencies & scripts
+├── tsconfig.json             # TypeScript configuration
+└── README.md                 # Dokumentasi proyek
 ```
 
-Untuk detail roadmap dan status implementasi tiap fase, lihat [`issue.md`](./issue.md).
+Untuk detail visi produk & arsitektur, lihat [`Vision.md`](./Vision.md). Untuk roadmap dan status implementasi tiap fase, lihat [`issue.md`](./issue.md).
 
 ---
 
@@ -165,7 +178,6 @@ Proyek ini dikembangkan secara iteratif dengan bantuan AI coding assistant, term
 
 - **[Claude](https://claude.com)** (Anthropic)
 - **Antigravity CLI**
-- **Codex CLI**
 
 ---
 

@@ -39,7 +39,7 @@ Saat elemen dipilih di kanvas, muncul panel untuk atur:
 - Transform: posisi (x/y), ukuran, rotasi, skala.
 - Style: warna, opacity, border, shadow, font (untuk text), border-radius, dsb.
 - Animasi: **sequence property-transition** — lihat 3.3.1.
-- Data binding: elemen text bisa "terhubung" ke variabel dinamis (username, running text, live stats, external API) alih-alih teks statis.
+- Data binding: elemen text bisa "terhubung" ke variabel dinamis (username, running text, Platform Live Stats TikTok/YouTube, F1 data via F1GStats) alih-alih teks statis.
 
 #### 3.3.1 Model Animasi: Property Transition Sequence
 
@@ -79,7 +79,7 @@ Ini bukan lagi "form + settings.json", tapi:
 
 ## 5. Stack Teknis
 
-Bun + ElysiaJS (backend) · vanilla JS + Tailwind CSS (frontend, kompilasi lokal) · GSAP (animasi, via CDN) · data disimpan sebagai file JSON di root repo (`scenes.json`, `data-sources.json`, dll).
+Bun + ElysiaJS (backend) · vanilla JS + Tailwind CSS (frontend, kompilasi lokal) · GSAP (animasi, via CDN) · data disimpan sebagai file JSON di root repo (`scenes.json`, `settings.json`, dll), plus baca read-only ke SQLite eksternal (`f1gstats.sqlite`) untuk data F1.
 
 ## 6. Yang SENGAJA Di-luar Scope
 

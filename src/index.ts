@@ -178,6 +178,15 @@ interface MarqueeConfig {
   direction?: 'rtl' | 'ltr'
 }
 
+interface ScrollConfig {
+  enabled?: boolean
+  speed?: number
+  gap?: number
+  direction?: 'up' | 'down'
+  yoyo?: boolean
+  yoyoDelay?: number
+}
+
 interface SceneElement {
   id: string
   type: 'text' | 'shape' | 'badge' | 'image'
@@ -198,6 +207,7 @@ interface SceneElement {
   animation?: AnimationConfig
   textBinding?: TextBinding
   marquee?: MarqueeConfig
+  scroll?: ScrollConfig
 }
 
 interface SceneData {

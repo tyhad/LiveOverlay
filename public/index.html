@@ -669,6 +669,55 @@
               editor ini.</p>
           </div>
 
+          <div class="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-600/10 p-3">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-cyan-300">Scroll Text (Up / Down)</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                <input id="prop-scroll-enabled" type="checkbox" class="accent-cyan-500">
+                <span>Enable</span>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Speed (px/detik)</label>
+                <input type="number" id="prop-scroll-speed" min="10" max="500" step="5"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Gap (px)</label>
+                <input type="number" id="prop-scroll-gap" min="0" max="500" step="5"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Direction</label>
+                <select id="prop-scroll-direction"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                  <option value="up">Bottom → Up (Scroll Up)</option>
+                  <option value="down">Top → Down (Scroll Down)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Yoyo Delay (detik)</label>
+                <input type="number" id="prop-scroll-yoyo-delay" min="0" max="10" step="0.1"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  placeholder="1">
+              </div>
+            </div>
+
+            <div class="pt-1">
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                <input id="prop-scroll-yoyo" type="checkbox" class="accent-cyan-500">
+                <span>Yoyo Mode (Bolak-balik)</span>
+              </label>
+            </div>
+            <p class="text-[10px] text-slate-500">Preview animasi hanya tampil di overlay (Preview OBS), bukan di kanvas
+              editor ini.</p>
+          </div>
+
           <div class="space-y-2 rounded-xl border border-indigo-500/20 bg-indigo-600/15 p-3">
             <div class="flex items-center justify-between">
               <label class="text-[11px] font-bold uppercase tracking-wider text-indigo-300">Data Binding</label>
@@ -1283,6 +1332,20 @@
       return el.marquee
     }
 
+    function ensureScrollConfig(el) {
+      if (!el.scroll) {
+        el.scroll = {
+          enabled: false,
+          speed: 80,
+          gap: 60,
+          direction: 'up',
+          yoyo: false,
+          yoyoDelay: 1
+        }
+      }
+      return el.scroll
+    }
+
     function getPathSegments(path) {
       return String(path || '').match(/[^.[\]]+/g) || []
     }
@@ -1825,6 +1888,25 @@
             badge.style.zIndex = '20'
             div.appendChild(badge)
           }
+
+          if (el.scroll?.enabled) {
+            const badge = document.createElement('div')
+            const dirSymbol = el.scroll.direction === 'down' ? '↓' : '↑'
+            const yoyoText = el.scroll.yoyo ? ' · Yoyo' : ''
+            badge.textContent = `▶ Scroll ${dirSymbol}${yoyoText} · ${el.scroll.speed || 80}px/s`
+            badge.style.position = 'absolute'
+            badge.style.top = el.marquee?.enabled ? '22px' : '2px'
+            badge.style.left = '2px'
+            badge.style.padding = '1px 6px'
+            badge.style.borderRadius = '6px'
+            badge.style.fontSize = '10px'
+            badge.style.fontWeight = '700'
+            badge.style.background = 'rgba(6,182,212,0.85)'
+            badge.style.color = '#fff'
+            badge.style.pointerEvents = 'none'
+            badge.style.zIndex = '20'
+            div.appendChild(badge)
+          }
         }
 
         div.addEventListener('mousedown', (e) => {
@@ -2047,6 +2129,14 @@
         document.getElementById('prop-marquee-speed').value = marquee.speed ?? 80
         document.getElementById('prop-marquee-gap').value = marquee.gap ?? 60
         document.getElementById('prop-marquee-direction').value = marquee.direction || 'rtl'
+
+        const scroll = ensureScrollConfig(el)
+        document.getElementById('prop-scroll-enabled').checked = !!scroll.enabled
+        document.getElementById('prop-scroll-speed').value = scroll.speed ?? 80
+        document.getElementById('prop-scroll-gap').value = scroll.gap ?? 60
+        document.getElementById('prop-scroll-direction').value = scroll.direction || 'up'
+        document.getElementById('prop-scroll-yoyo').checked = !!scroll.yoyo
+        document.getElementById('prop-scroll-yoyo-delay').value = scroll.yoyoDelay ?? 1
       } else {
         textSection.classList.add('hidden')
         dynamicContentSection.classList.add('hidden')
@@ -2488,6 +2578,45 @@
         const el = getSelected()
         if (!el) return
         ensureMarqueeConfig(el).direction = e.target.value
+        renderCanvas()
+      })
+
+      // Scroll Text controls
+      document.getElementById('prop-scroll-enabled').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureScrollConfig(el).enabled = e.target.checked
+        renderCanvas()
+        renderLayers()
+      })
+      document.getElementById('prop-scroll-speed').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureScrollConfig(el).speed = Math.max(10, parseInt(e.target.value) || 80)
+        renderCanvas()
+      })
+      document.getElementById('prop-scroll-gap').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureScrollConfig(el).gap = Math.max(0, parseInt(e.target.value) || 60)
+        renderCanvas()
+      })
+      document.getElementById('prop-scroll-direction').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureScrollConfig(el).direction = e.target.value
+        renderCanvas()
+      })
+      document.getElementById('prop-scroll-yoyo').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureScrollConfig(el).yoyo = e.target.checked
+        renderCanvas()
+      })
+      document.getElementById('prop-scroll-yoyo-delay').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureScrollConfig(el).yoyoDelay = Math.max(0, parseFloat(e.target.value) || 0)
         renderCanvas()
       })
       document.getElementById('prop-font-family').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.fontFamily = e.target.value; renderCanvas(); } })

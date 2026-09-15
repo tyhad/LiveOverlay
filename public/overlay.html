@@ -185,6 +185,12 @@
       const record = renderedElements.get(el.id)
       const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing].join('|')
 
+      if (record && record.scrollTween) {
+        record.scrollTween.kill()
+        record.scrollTween = null
+        record.scrollSig = null
+      }
+
       if (record && record.marqueeSig === sig) return
 
       const track = ensureMarqueeTrack(node)
@@ -221,6 +227,162 @@
       }
     }
 
+    function ensureScrollTrack(node) {
+      let track = node.querySelector('.scroll-track')
+      if (!track) {
+        node.replaceChildren()
+        track = document.createElement('div')
+        track.className = 'scroll-track'
+        track.style.position = 'absolute'
+        track.style.left = '0'
+        track.style.top = '0'
+        track.style.width = '100%'
+        track.style.display = 'flex'
+        track.style.flexDirection = 'column'
+        track.style.willChange = 'transform'
+        node.appendChild(track)
+      }
+      return track
+    }
+
+    function applyScrollText(node, el, text) {
+      const cfg = el.scroll || {}
+      const speed = Math.max(10, cfg.speed || 80)
+      const gap = Math.max(0, cfg.gap ?? 60)
+      const direction = cfg.direction || 'up'
+      const yoyo = !!cfg.yoyo
+      const yoyoDelay = Math.max(0, cfg.yoyoDelay ?? 1)
+      const style = el.style || {}
+
+      const record = renderedElements.get(el.id)
+      const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform].join('|')
+
+      if (record && record.marqueeTween) {
+        record.marqueeTween.kill()
+        record.marqueeTween = null
+        record.marqueeSig = null
+      }
+
+      if (record && record.scrollSig === sig) return
+
+      const track = ensureScrollTrack(node)
+      track.replaceChildren()
+
+      const createBlock = (content) => {
+        const block = document.createElement('div')
+        block.style.width = `${el.width}px`
+        block.style.boxSizing = 'border-box'
+        block.style.fontFamily = style.fontFamily || 'Inter, sans-serif'
+        block.style.fontSize = `${style.fontSize || 18}px`
+        block.style.fontWeight = style.fontWeight || 'normal'
+        block.style.color = style.color || '#ffffff'
+        block.style.letterSpacing = `${style.letterSpacing || 0}px`
+        block.style.textTransform = style.textTransform || 'none'
+        block.style.textAlign = style.textAlign || 'left'
+        block.style.whiteSpace = 'pre-line'
+        block.style.wordBreak = 'break-word'
+        block.style.lineHeight = '1.4'
+        block.style.padding = `${style.padding || 0}px`
+        block.textContent = content
+        return block
+      }
+
+      gsap.killTweensOf(track)
+
+      if (yoyo) {
+        const block = createBlock(text)
+        track.appendChild(block)
+
+        void track.offsetHeight
+
+        const measuredHeight = Math.max(
+          block.scrollHeight || 0,
+          block.offsetHeight || 0,
+          block.getBoundingClientRect().height || 0
+        )
+        const blockHeight = measuredHeight > 0 ? measuredHeight : (style.fontSize || 18) * 1.4
+
+        // Buffer tambahan agar baris teks paling bawah + font descender tidak terpotong sama sekali (dinaikkan 4px ekstra)
+        const bottomBuffer = Math.max(12, Math.ceil((style.fontSize || 18) * 0.3) + 16)
+
+        let startY, endY
+        if (blockHeight > el.height) {
+          const overflow = (blockHeight - el.height) + bottomBuffer
+          startY = direction === 'up' ? 0 : -overflow
+          endY = direction === 'up' ? -overflow : 0
+        } else {
+          const space = el.height - blockHeight
+          startY = direction === 'up' ? space : 0
+          endY = direction === 'up' ? 0 : space
+        }
+
+        const distance = Math.abs(endY - startY)
+        const duration = distance > 0 ? distance / speed : 1
+
+        gsap.set(track, { y: startY })
+        const tween = gsap.to(track, {
+          y: endY,
+          duration,
+          ease: 'none',
+          repeat: -1,
+          yoyo: true,
+          repeatDelay: yoyoDelay
+        })
+
+        if (record) {
+          if (record.scrollTween) record.scrollTween.kill()
+          record.scrollTween = tween
+          if (measuredHeight > 0) {
+            record.scrollSig = sig
+          } else {
+            record.scrollSig = null
+          }
+        }
+      } else {
+        // Tentukan jumlah salinan yang cukup untuk memenuhi canvas & offset
+        const approxUnit = (style.fontSize || 18) * 1.4 + gap
+        const copiesNeeded = Math.max(3, Math.ceil(el.height / approxUnit) + 3)
+
+        for (let i = 0; i < copiesNeeded; i++) {
+          const span = createBlock(text)
+          span.style.marginBottom = `${gap}px`
+          if (i > 0) span.setAttribute('aria-hidden', 'true')
+          track.appendChild(span)
+        }
+
+        void track.offsetHeight
+
+        const firstBlock = track.firstElementChild
+        const measuredHeight = Math.max(
+          firstBlock ? firstBlock.scrollHeight : 0,
+          firstBlock ? firstBlock.offsetHeight : 0,
+          firstBlock ? firstBlock.getBoundingClientRect().height : 0
+        )
+        const blockHeight = measuredHeight > 0 ? measuredHeight : (style.fontSize || 18) * 1.4
+        const unit = blockHeight + gap
+        const duration = unit / speed
+
+        let tween
+        if (direction === 'up') {
+          gsap.set(track, { y: 0 })
+          tween = gsap.fromTo(track, { y: 0 }, { y: -unit, duration, ease: 'none', repeat: -1 })
+        } else {
+          gsap.set(track, { y: -unit })
+          tween = gsap.fromTo(track, { y: -unit }, { y: 0, duration, ease: 'none', repeat: -1 })
+        }
+
+        if (record) {
+          if (record.scrollTween) record.scrollTween.kill()
+          record.scrollTween = tween
+          if (measuredHeight > 0) {
+            record.scrollSig = sig
+          } else {
+            record.scrollSig = null
+          }
+        }
+      }
+    }
+
     function resolveElementText(el) {
       const binding = el?.textBinding
       const fallback = binding?.fallback || el?.style?.text || ''
@@ -249,6 +411,7 @@
       node.style.height = `${el.height}px`
       node.style.zIndex = el.zIndex || 1
       node.style.opacity = el.opacity !== undefined ? el.opacity : 1
+      node.style.overflow = 'hidden'
       node.style.borderRadius = `${el.style?.borderRadius || 0}px`
       node.style.borderWidth = `${el.style?.borderWidth || 0}px`
       node.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
@@ -288,30 +451,23 @@
         image.style.objectFit = el.objectFit || 'contain'
       } else if (el.type === 'text' || el.style?.text !== undefined) {
         const text = resolveElementText(el)
-        if (el.marquee?.enabled) {
+        const record = renderedElements.get(el.id)
+        if (el.scroll?.enabled) {
+          if (record?.marqueeTween) { record.marqueeTween.kill(); record.marqueeTween = null; record.marqueeSig = null; }
+          applyScrollText(node, el, text)
+        } else if (el.marquee?.enabled) {
+          if (record?.scrollTween) { record.scrollTween.kill(); record.scrollTween = null; record.scrollSig = null; }
           applyMarqueeText(node, el, text)
         } else {
-          let textEl = node.querySelector('.marquee-track') ? null : node.firstElementChild
+          if (record?.marqueeTween) { record.marqueeTween.kill(); record.marqueeTween = null; record.marqueeSig = null; }
+          if (record?.scrollTween) { record.scrollTween.kill(); record.scrollTween = null; record.scrollSig = null; }
+          let textEl = node.querySelector('.marquee-track, .scroll-track') ? null : node.firstElementChild
           if (!textEl) {
             node.replaceChildren()
             textEl = document.createElement('div')
             node.appendChild(textEl)
           }
-          textEl.style.width = '100%'
-          textEl.style.height = '100%'
-          textEl.style.display = 'flex'
-          textEl.style.alignItems = el.style?.verticalAlign === 'top' ? 'flex-start' : (el.style?.verticalAlign === 'bottom' ? 'flex-end' : 'center')
-          textEl.style.fontFamily = el.style?.fontFamily || 'Inter, sans-serif'
-          textEl.style.fontSize = `${el.style?.fontSize || 18}px`
-          textEl.style.fontWeight = el.style?.fontWeight || 'normal'
-          textEl.style.color = el.style?.color || '#ffffff'
-          textEl.style.padding = `${el.style?.padding || 0}px`
-          textEl.style.textAlign = el.style?.textAlign || 'left'
-          textEl.style.textTransform = el.style?.textTransform || 'none'
-          textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
-          textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
-          textEl.style.whiteSpace = 'pre-line'
-          textEl.textContent = text
+          styleStaticText(textEl, el, text)
         }
       } else {
         node.replaceChildren()
@@ -330,9 +486,10 @@
       const visibleElements = scene.elements.filter(el => !el.hidden)
       const visibleIds = new Set(visibleElements.map(el => el.id))
 
-      renderedElements.forEach(({ node, marqueeTween }, id) => {
+      renderedElements.forEach(({ node, marqueeTween, scrollTween }, id) => {
         if (visibleIds.has(id)) return
         if (marqueeTween) marqueeTween.kill()
+        if (scrollTween) scrollTween.kill()
         AnimationEngine.killTimeline(id)
         renderedElements.delete(id)
         node.remove()
@@ -371,10 +528,10 @@
         div.id = `render-el-${el.id}`
         div.dataset.elementId = el.id
         applyElementBox(div, el)
-        applyElementContent(div, el)
-        AnimationEngine.setBaselineState(div, el)
         viewport.appendChild(div)
         renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature })
+        applyElementContent(div, el)
+        AnimationEngine.setBaselineState(div, el)
         AnimationEngine.buildTimelineFromSequence(el.id, div, nextAnimConfig)
       })
     }

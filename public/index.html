@@ -1919,7 +1919,8 @@
           textP.style.textTransform = el.style?.textTransform || 'none'
           textP.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
           textP.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
-          textP.style.whiteSpace = 'pre-line'
+          textP.style.whiteSpace = 'pre-wrap'
+          textP.style.tabSize = '4'
           textP.textContent = resolveElementText(el)
           div.appendChild(textP)
 

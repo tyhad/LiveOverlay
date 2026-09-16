@@ -178,7 +178,8 @@
       textEl.style.textTransform = el.style?.textTransform || 'none'
       textEl.style.letterSpacing = `${el.style?.letterSpacing || 0}px`
       textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
-      textEl.style.whiteSpace = 'pre-line'
+      textEl.style.whiteSpace = 'pre-wrap'
+      textEl.style.tabSize = '4'
       textEl.textContent = text
     }
 
@@ -286,7 +287,8 @@
         block.style.letterSpacing = `${style.letterSpacing || 0}px`
         block.style.textTransform = style.textTransform || 'none'
         block.style.textAlign = style.textAlign || 'left'
-        block.style.whiteSpace = 'pre-line'
+        block.style.whiteSpace = 'pre-wrap'
+        block.style.tabSize = '4'
         block.style.wordBreak = 'break-word'
         block.style.lineHeight = '1.4'
         block.style.padding = `${style.padding || 0}px`

@@ -1,6 +1,8 @@
 {
   "_comment": "Copy file ini jadi f1-text-templates.json lalu edit bebas. Server auto-reload tiap ada perubahan (cek mtime file), TIDAK perlu restart — cukup save & refresh browser source. Placeholder {field} disubstitusi dari data baris terkait; field yang tidak dikenal dibiarkan apa adanya (tanda ada typo). Kalau file ini dihapus/rusak, otomatis fallback ke default bawaan kode.",
 
+  "_penghubung_antar_field": "Bisa pakai spasi biasa (ketik spasi langsung), spasi ganda/tab untuk jarak lebih lebar. PENTING: tab HARUS ditulis sebagai '\\t' (backslash + huruf t, 2 karakter) di dalam string JSON — kalau kamu tekan tombol Tab beneran di editor teks, itu jadi karakter tab mentah yang justru bikin file JSON invalid (gagal di-parse, fallback ke default). Contoh valid: \"{position}\\t{driverAbbr}\\t{teamAbbr}\".",
+
   "driverStandings": {
     "_fields": "position, driverName, driverAbbr, teamName, teamAbbr, points, wins, podiums, dnfDns",
     "abbrLine": "#{position} {driverAbbr} {teamAbbr} {points}pts",
@@ -15,7 +17,7 @@
 
   "startingGrid": {
     "_fields": "round, position, driverName, driverAbbr, teamName, teamAbbr",
-    "_example": "Contoh dari percakapan: ganti driverAbbr jadi driverName kalau mau nama lengkap",
+    "_example": "Ganti spasi jadi \\t (tab) kalau mau kolom lebih rapi berjajar, mis: \"{position}\\t{driverAbbr}\\t{teamAbbr}\"",
     "line": "P{position} {driverAbbr} {teamAbbr}"
   },
 

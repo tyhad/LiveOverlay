@@ -14,13 +14,13 @@
 | 4 | Asset & SVG Import | ✅ Selesai |
 | 5a | Platform Live Stats (TikTok/YouTube) | ✅ Selesai |
 | 5b | External Data Source (Generic API Binding) | ❌ Dihapus — lihat "External Data Source — Dihapus" di bawah |
-| 6 | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
-| — | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
-| — | F1GStats Integration — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
-| — | Scroll Text (Up/Down) — fitur sisipan | ✅ Selesai (commit `1a2e280`) |
-| 8 | Animation Sequence & Property Transition System (overhaul Fase 3) | ✅ Selesai — branch `feature/animation-sequence-system` |
+| 6a | Multi-Scene & Multi-Output | ✅ Selesai (PR #18, commit `e0bd7e9`) |
+| 6b | Running Text (Adaptive Marquee) — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
+| 6c | F1GStats Integration — fitur sisipan | ✅ Selesai (PR merged via GitHub web) |
+| 6d | Scroll Text (Up/Down) — fitur sisipan | ✅ Selesai (commit `1a2e280`) |
 | 7 | Polish UX Editor — dipersempit ke Browser Source Auto-Sync (lihat Technical Debt) | Belum dimulai |
-| 9 | Element Binding/Grouping (Parent-Child) — desain settled, lihat "Ide & Todo Berikutnya" | Belum dimulai |
+| 8 | Animation Sequence & Property Transition System (overhaul Fase 3) | ✅ Selesai — branch `feature/animation-sequence-system` |
+| 9 | Element Binding/Grouping (Parent-Child) | ✅ Selesai (commit `6395073`) |
 
 ---
 
@@ -65,6 +65,20 @@ Kedua project terhubung murni lewat 1 file `f1gstats.sqlite` yang path-nya diasu
 - **Next** = round terdekat yang weekend-nya belum mulai.
 
 Kolom `round_relation` (`'previous'|'now'|'next'`) di tabel `sessions` ditulis oleh fetcher berdasarkan hasil filter ini — dipakai backend LiveOverlay untuk grouping data jadi struktur stabil, **bukan** array index yang bisa geser posisi tergantung ada/tidaknya "Now".
+
+**Custom Text Templates (format teks editable tanpa edit kode)** — commit `0e16627`. Sebelumnya format tiap field text (`startingGridText.multiline`, `driverStandingsText.abbrMarquee`, dll) hardcoded di `buildDriverStandingsText()`/`buildConstructorStandingsText()`/`buildStartingGridText()`/`buildRoundText()` (`src/index.ts`) — ganti kombinasi field (mis. `driverAbbr` → `driverName`) butuh edit TS + rebuild. Sekarang:
+- Template `{field}` dibaca dari `f1-text-templates.json` (opsional, di-gitignore, copy dari `f1-text-templates.example.json`), di-reload otomatis kalau file berubah (cek `mtime`, `getF1TextTemplates()`) — **tidak perlu restart server**. Kalau file tidak ada/rusak, fallback graceful ke default hardcoded (`DEFAULT_F1_TEMPLATES`).
+- Placeholder tak dikenal (typo field) sengaja dibiarkan apa adanya di output (bukan dihapus diam-diam) supaya user gampang sadar ada typo.
+- **Shape data snapshot tidak berubah** (`startingGridText.multiline`, dst tetap sama) — field path binding yang sudah dipasang di scene lama tetap jalan, tidak perlu migrasi.
+- `TEAM_NAME_TO_ABBR` (mapping nama tim → singkatan 3 huruf) masih **hardcoded di `src/index.ts`** (bukan di file template), butuh restart server kalau diedit — belum dipindah ke file editable karena dianggap jarang berubah (cuma ganti kalau ada tim baru/rebrand).
+
+**Fix whitespace untuk separator custom (tab/spasi ganda)** — commit `0e16627`. CSS `white-space: pre-line` (dipakai di 3 tempat: `styleStaticText`/`createBlock` di `overlay.html`, `textP` di `index.html`) ternyata **collapse tab & spasi ganda jadi 1 spasi**, jadi separator `\t` di template gak ada bedanya sama spasi biasa. Diganti ke `white-space: pre-wrap` + `tab-size: 4` di ketiganya — tab (ditulis `\t`, 2 karakter escape di JSON, BUKAN karakter tab mentah karena itu bikin JSON invalid) dan spasi ganda sekarang dipertahankan persis sesuai template.
+
+**Starting Grid — actual (post-penalty) via OpenF1, bukan raw Qualifying** — dikerjakan di sisi fetcher (`fetch_f1_data.py`, project F1GStats terpisah, tidak ada di repo ini). Masalah awal: `starting_grid` sebelumnya diambil murni dari hasil Qualifying (Ergast), yang **belum termasuk grid penalty** (mis. penalti komponen mesin, impeding, dll) — beda dari starting grid resmi race. Perbaikan:
+- Tambah `fetch_openf1_starting_grid()` yang hit OpenF1 API (`/v1/sessions` → `/v1/starting_grid` → `/v1/drivers`, dicocokkan lewat `location` venue) untuk dapat grid actual yang sudah termasuk penalty.
+- OpenF1 dicoba dulu; kalau 404/kosong (endpoint ini "beta/sparse", **banyak sesi belum ada datanya sampai mendekati race day**) → fallback otomatis ke Qualifying (behavior lama).
+- Kolom baru `grid_source` (`'openf1'` / `'qualifying_fallback'`) di tabel `starting_grid` untuk debugging round mana yang masih fallback — murni informatif, tidak mempengaruhi LiveOverlay (query backend select kolom eksplisit).
+- **Keterbatasan yang diketahui & diterima**: OpenF1 baru publish grid actual mendekati race day (setelah FIA umumkan penalty final), jadi fetch yang dilakukan jauh-jauh hari sebelum race kemungkinan besar masih fallback ke Qualifying. Belum ada rencana nambah sumber ketiga (mis. scraping dokumen FIA) — dianggap di luar prinsip "tetap ringan" untuk saat ini, lihat juga catatan di "F1GStats — kemungkinan pengembangan lanjutan" di bawah.
 
 **Backend** (`src/index.ts`): endpoint `GET /api/f1-data` return snapshot dalam bentuk:
 ```
@@ -142,6 +156,23 @@ Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Pane
 
 ---
 
+## Fase 9 — Element Binding/Grouping (Parent-Child Transform) — Selesai
+
+Commit `6395073`. Child mengikuti posisi **dan** animasi parent secara otomatis — kalau parent dipindah manual atau dianimasikan, semua child ikut bergerak/ter-animasi bersamaan tanpa perlu setup animasi sendiri di child. Child tetap boleh punya `animation.sequence` sendiri di atasnya (independen dari transform parent). Detail desain settled di `Vision.md` §3.3.2.
+
+**Implementasi**:
+- `SceneElement.parentId?: string | null` (`src/index.ts`) — kalau terisi & merujuk elemen valid (bukan diri sendiri, parent-nya sendiri bukan child juga), `x`/`y` elemen jadi **relatif terhadap parent**. Referensi tidak valid → fallback graceful ke top-level (tidak pernah crash).
+- **Scope sengaja 1 level nesting** (parent → child langsung, bukan grandchildren) sesuai keputusan desain — kalau `parentId` menunjuk ke elemen yang parent-nya sendiri sudah terisi, referensi diabaikan.
+- Render (`overlay.html` & `index.html`): child di-mount sebagai **DOM descendant** dari node parent-nya (bukan container terpisah) — karena posisi/animasi tetap pakai `left`/`top` CSS langsung ke node, transform parent otomatis "membawa" child lewat containing-block CSS biasa, tanpa perlu sinkronisasi/duplikasi tween manual. Elemen yang punya child di-set `overflow: visible` (bukan `hidden`) supaya child yang posisinya melebihi bounding box parent tidak ter-clip.
+- `overlay.html`: `renderScene()` dua-pass (top-level dulu, baru child ke dalam node parent-nya), dengan guard reattach-DOM otomatis kalau parent sempat hilang/berubah antar render tick.
+- `index.html`: `renderCanvas()` di-refactor rekursif (`buildAndMount`) dengan logic sama persis (WYSIWYG dengan overlay). Drag & resize manual **tidak perlu diubah** — delta mouse yang diterapkan ke `el.x/el.y` generik terhadap frame referensi, otomatis tetap natural untuk child.
+- UI: dropdown **"Parent (Grouping)"** di panel Transform & Position (cuma menawarkan elemen yang bukan diri sendiri & bukan sudah jadi child, enforce 1 level juga di level UI). `reparentElement()` auto-convert `x`/`y` saat assign/ganti/lepas parent supaya posisi visual **tidak loncat** — concern yang tadinya jadi open question di desain awal, sudah diselesaikan.
+- Layers panel: child ditandai indent + ikon `⤷` dengan tooltip nama parent-nya.
+
+**Belum tercakup** (di luar scope 1 level yang disepakati): assign parent lewat drag-and-drop langsung di Layers panel (sekarang cuma via dropdown) — nice-to-have kalau nanti dirasa dropdown kurang natural dipakai sehari-hari.
+
+---
+
 ## Technical Debt (kandidat Fase 7)
 
 > ⚠️ **Catatan (caution)**: Race condition di `persistSceneStore()` — dua `Bun.write()` berurutan tanpa lock, kalau dua save scene terjadi nyaris bersamaan berpotensi `scenes.json` sempat inkonsisten. Belum jadi masalah nyata di penggunaan saat ini, tapi diwaspadai kalau nanti pola pemakaian berubah.
@@ -159,24 +190,10 @@ Panel yang boleh ditata ulang menyesuaikan arsitektur baru: GSAP Animations Pane
 
 ## Ide & Todo Berikutnya (belum masuk fase manapun)
 
-### Element Binding/Grouping untuk Animasi (Fase 9) — Desain Settled
-
-**Keputusan model** (final, hasil diskusi): **Parent-Child Transform**. Child mengikuti posisi **dan** animasi parent secara otomatis — kalau parent object dipindah manual atau dianimasikan, semua child ikut bergerak/ter-animasi bersamaan tanpa perlu setup animasi sendiri di child. Child tetap boleh punya `animation.sequence` sendiri di atasnya (independen, contoh: parent geser posisi, child sekaligus punya bounce loop sendiri).
-
-**Pendekatan teknis (arah implementasi)**:
-- Tambah field baru `parentId: string | null` di `SceneElement` (`src/index.ts`).
-- Saat elemen di-set jadi child (`parentId` terisi), `x`/`y` elemen tersebut berubah makna jadi **posisi relatif terhadap parent** (bukan lagi absolut terhadap kanvas) — supaya "ikut pindah" gak perlu recompute manual tiap parent gerak.
-- Render (editor `index.html` & overlay `overlay.html`/`animation-engine.js`): bungkus parent + children dalam satu **DOM container** per grup. Transform (`left`/`top`/`scale`/`rotation`/`opacity`) dari animasi/posisi parent diterapkan ke container itu; child tetap punya elemen DOM sendiri di dalam container dengan offset relatifnya sendiri. Dengan begini, "child ikut animasi parent" otomatis kebawa dari CSS/DOM nesting, gak perlu duplikasi/sinkronisasi manual tween parent ke tiap child.
-- Kalau child punya `animation.sequence` sendiri, tween itu jalan di elemen child di dalam container (independen dari tween container/parent) — jadi dua animasi (parent via container, child via elemen sendiri) jalan bersamaan tanpa konflik.
-- Scope awal: **1 level nesting** (parent → child langsung), belum perlu grandchildren/nested group berlapis — biar gak over-engineer, sejalan prinsip di `Vision.md` §6 & §7. Bisa diperluas ke multi-level nanti kalau kebutuhannya muncul beneran.
-- UI: cara assign child ke parent bisa lewat drag element ke atas elemen lain di Layers panel (indent = child), atau dropdown "Parent" di Transform & Position Panel — detail UX-nya masih perlu dipikirkan pas mulai Fase 9.
-- Perlu dipikirkan juga: efek ke sistem align/snap yang sudah ada (apakah align tetap kerja relatif terhadap kanvas atau terhadap parent), dan efek ke drag manual di editor (drag child harus tetap terasa natural, bukan malah "loncat" karena representasi koordinat berubah jadi relatif).
-
-Ini kandidat kerja berikutnya setelah Fase 7 (Browser Source Auto-Sync), atau bisa dikerjakan duluan kalau lebih prioritas — dua-duanya independen satu sama lain.
-
 ### Browser Source dimension tidak auto-sync ke Canvas Settings scene
 `scene.canvas.width/height` cuma ngatur ukuran artboard di dalam overlay — tidak otomatis mengubah ukuran window Browser Source di OBS/TikTok Studio. User harus set manual dimensi Browser Source (Properties) supaya sesuai scene (misal 1080×1920 untuk portrait), termasuk pastikan `?scene=` yang dipakai sudah benar. Untuk sekarang diakali manual (desain disesuaikan ke browser source). Kemungkinan penyebab teknis kalau mau digali: `scaleViewport()`/CSS transform overlay belum proper handle aspect ratio non-landscape — belum diverifikasi.
 
 ### F1GStats — kemungkinan pengembangan lanjutan
 - Auto-refresh terjadwal (misal cron/scheduled task) yang jalanin fetcher otomatis di waktu tertentu sebelum sesi live, biar tidak perlu diingat manual tiap kali. Belum diprioritaskan karena workflow manual saat ini masih cukup ringan (1 command).
 - Kalau ke depannya butuh histori multi-season (bukan cuma musim berjalan), perlu redesain skema (tambah kolom `season` eksplisit di tiap tabel, bukan cuma di `meta`).
+- Starting grid actual (lihat catatan `grid_source` di "F1GStats Integration" di atas) masih bisa fallback ke Qualifying kalau fetch dilakukan jauh sebelum race day (OpenF1 belum publish). Opsi lanjutan kalau ini jadi masalah nyata: tambah sumber ketiga (mis. scraping dokumen starting grid resmi FIA) — sengaja belum dikerjakan karena lebih berat/fragile (parsing PDF) dibanding manfaatnya saat ini.

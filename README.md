@@ -1,5 +1,7 @@
 # 🎬 LiveOverlay Studio
 
+**Versi: v1.0.0** · lihat [`CHANGELOG.md`](./CHANGELOG.md) untuk riwayat lengkap pengembangan.
+
 **LiveOverlay Studio** adalah editor kanvas visual (mirip Canva/Figma versi ringan) untuk merancang overlay live streaming, ditenagai oleh **Bun**, **ElysiaJS**, **Tailwind CSS**, dan animasi **GSAP**.
 
 Didesain khusus untuk live streamer (TikTok Live, YouTube, Twitch) yang ingin **menyusun sendiri komposisi visual overlay-nya** dari GUI — bukan sekadar isi form teks — lalu menampilkannya secara real-time sebagai OBS Browser Source, lengkap dengan animasi, aset custom (SVG/gambar), dan multi-scene untuk berbagai output sekaligus.
@@ -144,6 +146,16 @@ SETTINGS_SECRET=kunci_rahasia_anda_disini
 
 ---
 
+## ⚠️ Known Limitations
+
+- **Browser Source dimension tidak auto-sync** ke Canvas Settings scene — kamu perlu set manual dimensi Browser Source di OBS/TikTok Studio supaya sesuai ukuran scene (misal 1080×1920 untuk portrait).
+- **Race condition minor** di penyimpanan scene (`persistSceneStore`) kalau dua penyimpanan terjadi nyaris bersamaan — belum jadi masalah nyata di pemakaian normal (personal-use, single editor session).
+- File `f1gstats.sqlite` bisa ter-lock oleh proses lain saat fetcher F1GStats jalan bersamaan server LiveOverlay masih aktif (khususnya di Windows) — stop server dulu sebelum re-run fetcher.
+
+Detail & status lengkap ada di [`issue.md`](./issue.md).
+
+---
+
 ## 📁 Struktur Proyek
 
 ```text
@@ -162,14 +174,17 @@ LiveOverlay/
 ├── scene.example.json        # Template satu scene tunggal
 ├── settings.example.json     # Template konfigurasi platform live stats
 ├── live-stats.example.json   # Template cache data live stats
+├── data-sources.example.json # (Legacy, fitur External Data Source sudah dihapus — lihat CHANGELOG.md)
+├── f1-text-templates.example.json # Template format teks F1GStats (custom text templates)
 ├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)
-├── issue.md                  # Status implementasi & technical debt (selalu up-to-date)
+├── issue.md                  # Backlog & technical debt aktif (selalu up-to-date)
+├── CHANGELOG.md              # Riwayat lengkap pengembangan tiap fase
 ├── package.json              # Project dependencies & scripts
 ├── tsconfig.json             # TypeScript configuration
 └── README.md                 # Dokumentasi proyek
 ```
 
-Untuk detail visi produk & arsitektur, lihat [`Vision.md`](./Vision.md). Untuk roadmap dan status implementasi tiap fase, lihat [`issue.md`](./issue.md).
+Untuk detail visi produk & arsitektur, lihat [`Vision.md`](./Vision.md). Untuk backlog & status implementasi terkini, lihat [`issue.md`](./issue.md). Untuk riwayat pengembangan lengkap, lihat [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 

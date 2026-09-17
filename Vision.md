@@ -1,6 +1,8 @@
 # LiveOverlay Studio — Visi & Arsitektur Produk
 
-> Dokumen ini berisi visi produk, pilar fitur, dan prinsip desain yang **sudah settled** — jarang berubah. Baca ini kalau ragu soal arah/prinsip produk. Untuk status implementasi terkini, lihat [`issue.md`](./issue.md).
+> Dokumen ini berisi visi produk, pilar fitur, dan prinsip desain yang **sudah settled** — jarang berubah. Baca ini kalau ragu soal arah/prinsip produk. Untuk status implementasi terkini, lihat [`issue.md`](./issue.md). Untuk riwayat lengkap pengembangan, lihat [`CHANGELOG.md`](./CHANGELOG.md).
+
+> ✅ **Status: v1.0 tercapai.** Semua pilar fitur di §3 sudah diimplementasikan & terverifikasi jalan. Yang tersisa (Fase 7 — Polish UX) bersifat *nice-to-have*, bukan bagian dari visi inti WYSIWYG.
 
 ---
 
@@ -102,12 +104,3 @@ Bun + ElysiaJS (backend) · vanilla JS + Tailwind CSS (frontend, kompilasi lokal
 - **WYSIWYG**: tampilan di editor kanvas harus proporsional & merepresentasikan hasil akhir di overlay seakurat mungkin.
 - **Extensible element model**: nambah tipe elemen baru di masa depan (misal nanti mau ada elemen "gauge", "chat box", dll) gak boleh butuh rombak ulang arsitektur data.
 - **Tetap ringan & personal-use**: gak perlu over-engineer ke arah SaaS, tapi kode tetap terstruktur rapi supaya gampang dikembangkan bertahap.
-
-## 8. Cara Kerja & Kolaborasi dengan AI Agent
-
-- User cuma prompt per-fase (keterbatasan token), kadang dikerjakan agent yang beda-beda untuk tiap fase, lanjutin progres yang keputus dari agent sebelumnya.
-- **Selalu verifikasi isi kode PR secara langsung (diff GitHub), jangan percaya judul/deskripsi PR mentah-mentah** — pernah ada insiden PR metadata ngaco karena model yang beda dipakai gak sengaja (isi kode tetap benar, tapi judul/deskripsi ngasal).
-- Implementasikan per-fase, jangan sekaligus. Setiap fase harus menghasilkan output yang bisa dijalankan dan diverifikasi sebelum lanjut ke fase berikutnya.
-- Fokus pada clean, functional implementation. Struktur data harus extensible tapi jangan over-engineer.
-- Overlay renderer harus tetap transparan dan kompatibel sebagai OBS Browser Source.
-- Tiap fase baru sebaiknya di-review dulu (cek diff GitHub) sebelum lanjut, diverifikasi align sama `VISION.md` ini + prinsip WYSIWYG, extensible element model, tetap ringan.

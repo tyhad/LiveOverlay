@@ -94,14 +94,25 @@
       return path.split(/[.[\]]+/).filter(Boolean).reduce((curr, key) => (curr && typeof curr === 'object' ? curr[key] : undefined), data)
     }
 
+    // PERF: cache signature terakhir supaya tidak menulis ulang style yang identik
+    // tiap poll (setiap 2 detik) — style-write yang tidak berubah tetap memicu
+    // reflow paksa pada seluruh viewport (dan child-nya) kalau tidak di-guard.
+    let lastViewportSignature = null
+
     function scaleViewport() {
       const { width, height } = getSceneCanvasSize(currentScene)
-      viewport.style.width = `${width}px`
-      viewport.style.height = `${height}px`
-      viewport.style.backgroundColor = currentScene?.canvas?.backgroundColor || 'transparent'
-
+      const backgroundColor = currentScene?.canvas?.backgroundColor || 'transparent'
       const windowW = window.innerWidth
       const windowH = window.innerHeight
+
+      const signature = `${width}|${height}|${backgroundColor}|${windowW}|${windowH}`
+      if (signature === lastViewportSignature) return
+      lastViewportSignature = signature
+
+      viewport.style.width = `${width}px`
+      viewport.style.height = `${height}px`
+      viewport.style.backgroundColor = backgroundColor
+
       if (windowW !== width || windowH !== height) {
         const scaleX = windowW / width
         const scaleY = windowH / height
@@ -544,6 +555,10 @@
         const nextAnimSignature = JSON.stringify(nextAnimConfig)
         const hasActiveSequence = nextAnimConfig.sequence.length > 0
         const hasChildren = parentIdsInUse.has(el.id)
+        // PERF: signature box/posisi elemen -> guard supaya applyElementBox/setBaselineState
+        // (yang menulis banyak inline style sekaligus) tidak dipanggil ulang tiap poll 2 detik
+        // kalau datanya persis sama dengan render sebelumnya (mencegah reflow sia-sia).
+        const nextBoxSignature = JSON.stringify({ el, hasChildren })
 
         if (existing) {
           // Pastikan node berada di container yang benar (mis. parentId baru diubah,
@@ -560,11 +575,15 @@
             AnimationEngine.setBaselineState(existing.node, el)
             AnimationEngine.buildTimelineFromSequence(el.id, existing.node, nextAnimConfig)
             existing.animationSignature = nextAnimSignature
+            existing.boxSignature = nextBoxSignature
           } else if (!hasActiveSequence) {
-            // Tidak ada animasi sama sekali -> tetap sinkronkan posisi/opacity/style setiap poll
-            // (supaya perubahan dari editor, drag, dll tetap tercermin).
-            applyElementBox(existing.node, el, hasChildren)
-            AnimationEngine.setBaselineState(existing.node, el)
+            // Tidak ada animasi sama sekali -> tetap sinkronkan posisi/opacity/style, TAPI
+            // cuma kalau datanya benar-benar berubah dari render sebelumnya.
+            if (existing.boxSignature !== nextBoxSignature) {
+              applyElementBox(existing.node, el, hasChildren)
+              AnimationEngine.setBaselineState(existing.node, el)
+              existing.boxSignature = nextBoxSignature
+            }
           } else {
             // Signature sama & sequence aktif: sengaja tidak menyentuh posisi/opacity/box-style
             // (supaya timeline yang berjalan, termasuk loop infinite, tidak "distop" tiap poll),
@@ -580,7 +599,7 @@
         div.dataset.elementId = el.id
         applyElementBox(div, el, hasChildren)
         container.appendChild(div)
-        renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature })
+        renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature, boxSignature: nextBoxSignature })
         applyElementContent(div, el)
         AnimationEngine.setBaselineState(div, el)
         AnimationEngine.buildTimelineFromSequence(el.id, div, nextAnimConfig)

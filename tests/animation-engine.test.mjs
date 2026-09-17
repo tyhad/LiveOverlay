@@ -10,6 +10,12 @@
  * multi-property, repeat finite/infinite, scene replacement, error handling),
  * plus fitur "Delay sebagai step tersendiri" (lihat issue.md, revisi pasca-Fase 7).
  *
+ * PERF MIGRATION NOTE: sejak migrasi ke transform-based positioning, posisi
+ * (x/y) elemen TIDAK LAGI tercermin di node.style.left/top selama animasi
+ * berjalan — left/top sekarang cuma posisi DASAR statis, pergerakan aktual
+ * ada di transform (x/y GSAP), dibaca lewat gsap.getProperty(node, 'x'|'y').
+ * Posisi visual efektif = base left/top + transform x/y.
+ *
  * Cara jalanin:
  *   bun run test
  * atau langsung:
@@ -62,7 +68,8 @@ function section(title, fn) {
 
 // ============================================================
 section('1. Sequential execution (Q0 → Q1 → Q2)', () => {
-  gsap.set(box, { left: 0, top: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0, top: 0, x: 0, y: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0, top: 0 }); // base position = 0 (setelah clearProps)
   const cfg = AnimationEngine.normalizeAnimationConfig({
     sequence: [
       { id: 'q0', type: 'to', properties: { x: 10 }, duration: 1 },
@@ -72,18 +79,19 @@ section('1. Sequential execution (Q0 → Q1 → Q2)', () => {
   });
   const tl = AnimationEngine.buildTimelineFromSequence('seq-el', box, cfg);
   tl.progress(0.001);
-  const startVal = parseFloat(box.style.left);
+  const startVal = gsap.getProperty(box, 'x');
   tl.progress(0.5);
-  const midVal = parseFloat(box.style.left);
+  const midVal = gsap.getProperty(box, 'x');
   tl.progress(1);
-  const endVal = parseFloat(box.style.left);
-  check('start≈0, mid antara 10-20, end=30', startVal < 2 && midVal > 10 && midVal < 20 && endVal === 30);
+  const endVal = gsap.getProperty(box, 'x');
+  check('start≈0, mid antara 10-20, end=30 (via transform x)', startVal < 2 && midVal > 10 && midVal < 20 && endVal === 30);
   AnimationEngine.killTimeline('seq-el');
 });
 
 // ============================================================
-section('2. Position transition (x/y → left/top, nilai akhir presisi)', () => {
-  gsap.set(box, { left: 5, top: 5, clearProps: 'all' });
+section('2. Position transition (x/y absolut → transform relatif base, hasil visual presisi)', () => {
+  gsap.set(box, { left: 5, top: 5, x: 0, y: 0, clearProps: 'all' });
+  gsap.set(box, { left: 5, top: 5 }); // base position = (5,5)
   const cfg = AnimationEngine.normalizeAnimationConfig({
     sequence: [
       { id: 'q0', type: 'to', properties: { x: 10, y: 10 }, duration: 1 },
@@ -92,13 +100,20 @@ section('2. Position transition (x/y → left/top, nilai akhir presisi)', () => 
   });
   const tl = AnimationEngine.buildTimelineFromSequence('pos-el', box, cfg);
   tl.progress(1);
-  check('posisi akhir x=20,y=5 (via left/top, bukan transform)', box.style.left === '20px' && box.style.top === '5px');
+  const baseUnchanged = box.style.left === '5px' && box.style.top === '5px';
+  const finalX = gsap.getProperty(box, 'x'); // ekspektasi: 20 - 5 = 15
+  const finalY = gsap.getProperty(box, 'y'); // ekspektasi: 5 - 5 = 0
+  check(
+    'base left/top tetap (5,5), transform delta akhir (15,0) -> visual efektif (20,5)',
+    baseUnchanged && finalX === 15 && finalY === 0
+  );
   AnimationEngine.killTimeline('pos-el');
 });
 
 // ============================================================
 section('3. Multi-property simultan (5 properti sekaligus dalam 1 step)', () => {
-  gsap.set(box, { left: 0, top: 0, opacity: 1, scale: 1, rotation: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0, top: 0, x: 0, y: 0, opacity: 1, scale: 1, rotation: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0, top: 0 }); // base = (0,0)
   const cfg = AnimationEngine.normalizeAnimationConfig({
     sequence: [
       { id: 'q0', type: 'to', properties: { x: 300, y: 100, opacity: 0.5, scale: 1.1, rotation: 45 }, duration: 1 },
@@ -108,7 +123,9 @@ section('3. Multi-property simultan (5 properti sekaligus dalam 1 step)', () => 
   tl.progress(1);
   const opacityOk = Math.abs(parseFloat(box.style.opacity) - 0.5) < 0.01;
   const transformOk = /rotate\(45deg\)/.test(box.style.transform) && /scale\(1\.1/.test(box.style.transform);
-  check('x=300,y=100,opacity≈0.5,scale&rotation ter-apply', box.style.left === '300px' && box.style.top === '100px' && opacityOk && transformOk);
+  const baseUnchanged = box.style.left === '0px' && box.style.top === '0px';
+  const posOk = gsap.getProperty(box, 'x') === 300 && gsap.getProperty(box, 'y') === 100;
+  check('base tetap (0,0), transform x=300,y=100,opacity≈0.5,scale&rotation ter-apply', baseUnchanged && posOk && opacityOk && transformOk);
   AnimationEngine.killTimeline('multi-el');
 });
 
@@ -141,7 +158,9 @@ section('5. Infinite repeat + terminasi eksplisit', () => {
 section('6. Scene replacement (timeline lama tidak boleh pengaruhi elemen baru)', () => {
   const boxA = win.document.getElementById('boxA');
   const boxB = win.document.getElementById('boxB');
+  gsap.set(boxA, { left: 0, x: 0, clearProps: 'transform' });
   gsap.set(boxA, { left: 0 });
+  gsap.set(boxB, { left: 0, x: 0, clearProps: 'transform' });
   gsap.set(boxB, { left: 0 });
 
   const cfgA = AnimationEngine.normalizeAnimationConfig({ sequence: [{ id: 'q0', type: 'to', properties: { x: 999 }, duration: 5, repeat: -1 }] });
@@ -154,8 +173,8 @@ section('6. Scene replacement (timeline lama tidak boleh pengaruhi elemen baru)'
   const tlB = AnimationEngine.buildTimelineFromSequence('el-B', boxB, cfgB);
   tlB.progress(1);
 
-  check('boxA berhenti di posisi awal (0), tidak lanjut ke 999', parseFloat(boxA.style.left) < 5);
-  check('boxB benar ke x=50, tidak terpengaruh timeline A', boxB.style.left === '50px');
+  check('boxA berhenti di posisi awal (transform x≈0), tidak lanjut ke 999', gsap.getProperty(boxA, 'x') < 5);
+  check('boxB benar ke transform x=50 (base 0), tidak terpengaruh timeline A', gsap.getProperty(boxB, 'x') === 50);
   check('registry cuma berisi el-B, el-A sudah bersih', !AnimationEngine._timelineRegistry.has('el-A') && AnimationEngine._timelineRegistry.has('el-B'));
   AnimationEngine.killTimeline('el-B');
 });
@@ -196,7 +215,8 @@ section('7. Error handling (step/config rusak tidak boleh crash)', () => {
 
 // ============================================================
 section('8. Sequence-level loop flag (restart dari Q0)', () => {
-  gsap.set(box, { left: 0, opacity: 1, clearProps: 'all' });
+  gsap.set(box, { left: 0, opacity: 1, x: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0 });
   const cfgLoop = AnimationEngine.normalizeAnimationConfig({
     loop: true,
     sequence: [
@@ -219,7 +239,8 @@ section('8. Sequence-level loop flag (restart dari Q0)', () => {
 
 // ============================================================
 section('9. Delay sebagai step tersendiri (bukan field per-step)', () => {
-  gsap.set(box, { left: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0, x: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0 });
   const cfg = AnimationEngine.normalizeAnimationConfig({
     sequence: [
       { id: 'q0', type: 'to', properties: { x: 10 }, duration: 1 },
@@ -231,11 +252,11 @@ section('9. Delay sebagai step tersendiri (bukan field per-step)', () => {
   const tl = AnimationEngine.buildTimelineFromSequence('delay-el', box, cfg);
   check('total durasi = 4s (1 to + 2 delay + 1 to)', Math.abs(tl.duration() - 4) < 0.01);
   tl.progress(1 / 4);
-  check('setelah q0 selesai, x=10', parseFloat(box.style.left) === 10);
+  check('setelah q0 selesai, transform x=10', gsap.getProperty(box, 'x') === 10);
   tl.progress(2.5 / 4);
-  check('di tengah masa delay, x masih 10 (tidak berubah)', parseFloat(box.style.left) === 10);
+  check('di tengah masa delay, x masih 10 (tidak berubah)', gsap.getProperty(box, 'x') === 10);
   tl.progress(1);
-  check('setelah semua selesai, x=20', parseFloat(box.style.left) === 20);
+  check('setelah semua selesai, transform x=20', gsap.getProperty(box, 'x') === 20);
   AnimationEngine.killTimeline('delay-el');
 });
 
@@ -255,6 +276,19 @@ section('10. Migrasi otomatis: field `delay` lama di step → step `delay` terse
     sequence: [{ id: 'q0', type: 'to', properties: { x: 5 }, duration: 1, delay: 0 }],
   });
   check('delay=0 tidak menghasilkan step delay tambahan (tetap 1 step)', cfgZero.sequence.length === 1 && cfgZero.sequence[0].type === 'to');
+});
+
+// ============================================================
+section('11. will-change: dipasang saat animasi aktif, dilepas saat timeline di-kill', () => {
+  gsap.set(box, { left: 0, x: 0, clearProps: 'all' });
+  gsap.set(box, { left: 0 });
+  const cfg = AnimationEngine.normalizeAnimationConfig({
+    sequence: [{ id: 'q0', type: 'to', properties: { x: 10 }, duration: 1 }],
+  });
+  AnimationEngine.buildTimelineFromSequence('wc-el', box, cfg);
+  check('will-change terpasang selagi timeline aktif', box.style.willChange === 'transform, opacity');
+  AnimationEngine.killTimeline('wc-el');
+  check('will-change dilepas (auto) setelah timeline di-kill', box.style.willChange === 'auto');
 });
 
 // ============================================================

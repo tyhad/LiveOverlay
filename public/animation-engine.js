@@ -166,12 +166,18 @@
   // Timeline Registry — satu timeline per elementId, cleanup terpusat
   // ---------------------------------------------------------------------
 
+  /** Map<elementId, { timeline: gsap.core.Timeline, node: HTMLElement }> */
   const timelineRegistry = new Map();
 
   /**
    * Set node DOM ke posisi/opacity/scale/rotation kanonis dari data elemen
    * (tanpa animasi). Dipakai sebelum (re)membangun timeline, supaya titik awal
    * animasi selalu konsisten dengan state kanonis elemen (Vision.md §3.3.1).
+   *
+   * `left`/`top` tetap jadi representasi posisi DASAR (statis, non-animasi) —
+   * TIDAK berubah dari sebelumnya. Yang baru: transform x/y GSAP direset ke 0,
+   * supaya "titik nol" animasi pergerakan selalu konsisten relatif terhadap
+   * posisi dasar ini (lihat buildTimelineFromSequence).
    *
    * @param {HTMLElement} node
    * @param {{x:number,y:number,opacity?:number,scale?:number,rotation?:number}} el
@@ -181,6 +187,8 @@
     gsap.set(node, {
       left: el.x,
       top: el.y,
+      x: 0,
+      y: 0,
       opacity: el.opacity !== undefined ? el.opacity : 1,
       scale: el.scale !== undefined ? el.scale : 1,
       rotation: el.rotation || 0,
@@ -192,9 +200,21 @@
    * Membunuh timeline lama untuk elementId yang sama sebelum membuat yang baru,
    * supaya tidak pernah ada dua timeline aktif mengontrol elemen yang sama.
    *
-   * Posisi (x/y) di-map ke properti CSS 'left'/'top' (bukan transform GSAP),
-   * konsisten dengan representasi kanonis pixel-absolut LiveOverlay — lihat
-   * Vision.md §3.3.1 (Opsi A: animate left/top langsung).
+   * PERF: posisi (x/y) di-map ke properti transform GSAP ('x'/'y', yaitu
+   * translate3d) — BUKAN lagi ke CSS 'left'/'top'. Animasi 'left'/'top' memicu
+   * layout+paint tiap frame (mahal, apalagi di software-rendering seperti CEF/
+   * browser-source TikTok Live Studio); transform hanya butuh composite (jalan
+   * di GPU/compositor thread, jauh lebih murah).
+   *
+   * 'left'/'top' TETAP dipakai sebagai posisi DASAR statis (lihat setBaselineState),
+   * konsisten dengan representasi kanonis pixel-absolut LiveOverlay (Vision.md §3.3.1).
+   * Target x/y tiap step tetap berupa koordinat absolut kanvas seperti sebelumnya —
+   * di sini dikonversi jadi SELISIH dari posisi dasar (baseLeft/baseTop) sebelum
+   * diserahkan ke GSAP, supaya translate-nya benar secara visual.
+   *
+   * PENTING: fungsi ini mengasumsikan setBaselineState(node, el) sudah dipanggil
+   * tepat sebelum ini (pola yang sudah dipakai di overlay.html & index.html),
+   * supaya node.style.left/top mencerminkan posisi dasar elemen saat ini.
    *
    * @param {string} elementId
    * @param {HTMLElement} node
@@ -217,6 +237,10 @@
       return null;
     }
 
+    // Posisi dasar (statis) elemen — acuan untuk menghitung selisih transform.
+    const baseLeft = parseFloat(node.style.left) || 0;
+    const baseTop = parseFloat(node.style.top) || 0;
+
     const shouldLoop = Boolean(normalizedConfig.loop);
     const timeline = gsap.timeline({ repeat: shouldLoop ? -1 : 0 });
 
@@ -236,12 +260,13 @@
       if (step.repeat) tweenVars.repeat = step.repeat;
       if (step.yoyo) tweenVars.yoyo = step.yoyo;
 
-      // x/y (posisi kanvas pixel-absolut) di-map ke 'left'/'top'. Properti lain
-      // (opacity, scale, rotation) diteruskan apa adanya ke GSAP.
+      // x/y (posisi kanvas pixel-absolut) di-map ke transform 'x'/'y' GSAP,
+      // dikonversi dulu jadi selisih dari posisi dasar (baseLeft/baseTop).
+      // Properti lain (opacity, scale, rotation) diteruskan apa adanya.
       const mappedProps = {};
       for (const key of Object.keys(step.properties)) {
-        if (key === 'x') mappedProps.left = step.properties.x;
-        else if (key === 'y') mappedProps.top = step.properties.y;
+        if (key === 'x') mappedProps.x = step.properties.x - baseLeft;
+        else if (key === 'y') mappedProps.y = step.properties.y - baseTop;
         else mappedProps[key] = step.properties[key];
       }
 
@@ -252,7 +277,12 @@
       }
     });
 
-    timelineRegistry.set(elementId, timeline);
+    // Hint compositing: promosikan elemen jadi layer GPU terpisah selama dia
+    // punya animasi aktif. Dilepas lagi di killTimeline supaya tidak ada layer
+    // menumpuk sia-sia untuk elemen yang animasinya sudah berhenti/diganti.
+    node.style.willChange = 'transform, opacity';
+
+    timelineRegistry.set(elementId, { timeline, node });
     return timeline;
   }
 
@@ -265,7 +295,8 @@
   function killTimeline(elementId) {
     const existing = timelineRegistry.get(elementId);
     if (existing) {
-      existing.kill();
+      existing.timeline.kill();
+      if (existing.node) existing.node.style.willChange = 'auto';
       timelineRegistry.delete(elementId);
     }
   }

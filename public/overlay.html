@@ -43,6 +43,12 @@
       position: absolute;
       box-sizing: border-box;
       overflow: hidden;
+      /* PERF: batasi scope kalkulasi layout & style browser ke dalam elemen ini saja,
+         tidak perlu mempengaruhi/dicek ulang terhadap elemen lain di luar boundary-nya.
+         Sengaja TIDAK pakai "paint" di sini, karena elemen dengan children (parent-child
+         transform) butuh overflow:visible dinamis (lihat mountOrUpdate) — contain:paint
+         akan memaksa clipping walau overflow:visible, jadi akan merusak fitur itu. */
+      contain: layout style;
     }
   </style>
 </head>
@@ -359,28 +365,35 @@
           }
         }
       } else {
-        // Tentukan jumlah salinan yang cukup untuk memenuhi canvas & offset
-        const approxUnit = (style.fontSize || 18) * 1.4 + gap
-        const copiesNeeded = Math.max(3, Math.ceil(el.height / approxUnit) + 3)
-
-        for (let i = 0; i < copiesNeeded; i++) {
-          const span = createBlock(text)
-          span.style.marginBottom = `${gap}px`
-          if (i > 0) span.setAttribute('aria-hidden', 'true')
-          track.appendChild(span)
-        }
+        // PERF: ukur TINGGI cuma dari 1 blok dulu (forced layout scope-nya kecil),
+        // baru tambahkan sisa salinan setelahnya (tidak perlu dipaksa sinkron —
+        // browser boleh lay-out itu di siklus render alami berikutnya). Sebelumnya
+        // semua salinan (bisa 5-10+ blok) dibuat DULU baru di-forced-layout sekaligus,
+        // padahal cuma butuh ukuran dari 1 blok saja.
+        const firstBlock = createBlock(text)
+        firstBlock.style.marginBottom = `${gap}px`
+        track.appendChild(firstBlock)
 
         void track.offsetHeight
 
-        const firstBlock = track.firstElementChild
         const measuredHeight = Math.max(
-          firstBlock ? firstBlock.scrollHeight : 0,
-          firstBlock ? firstBlock.offsetHeight : 0,
-          firstBlock ? firstBlock.getBoundingClientRect().height : 0
+          firstBlock.scrollHeight || 0,
+          firstBlock.offsetHeight || 0,
+          firstBlock.getBoundingClientRect().height || 0
         )
         const blockHeight = measuredHeight > 0 ? measuredHeight : (style.fontSize || 18) * 1.4
         const unit = blockHeight + gap
         const duration = unit / speed
+
+        // Tentukan jumlah salinan yang cukup untuk memenuhi canvas & offset,
+        // lalu tambahkan sisanya (tanpa perlu forced layout lagi).
+        const copiesNeeded = Math.max(3, Math.ceil(el.height / unit) + 3)
+        for (let i = 1; i < copiesNeeded; i++) {
+          const span = createBlock(text)
+          span.style.marginBottom = `${gap}px`
+          span.setAttribute('aria-hidden', 'true')
+          track.appendChild(span)
+        }
 
         let tween
         if (direction === 'up') {
@@ -657,7 +670,7 @@
             }
           }
         })
-        renderScene(currentScene)
+        requestAnimationFrame(() => renderScene(currentScene))
       }
     }
 
@@ -689,7 +702,10 @@
           if (text !== lastSceneHash || isInitial) {
             lastSceneHash = text
             currentScene = JSON.parse(text)
-            renderScene(currentScene)
+            // PERF: tunda DOM write ke awal frame render berikutnya, supaya browser
+            // bisa gabungkan dengan siklus render alami (bukan menyisip di tengah
+            // microtask fetch, yang berisiko memicu layout di waktu kurang optimal).
+            requestAnimationFrame(() => renderScene(currentScene))
           }
         }
       } catch (err) {
@@ -706,7 +722,7 @@
           lastLiveStatsHash = text
           liveStats = JSON.parse(text)
           processChatQueue(liveStats)
-          if (currentScene) renderScene(currentScene)
+          if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
         }
       } catch (err) {
         console.error('Failed to sync live stats:', err)

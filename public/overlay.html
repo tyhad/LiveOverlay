@@ -753,10 +753,15 @@
       syncScene(true)
       syncPlatformConnectorConfig()
       restartChatDisplayTimer()
-      setInterval(() => syncScene(false), 2000)
-      setInterval(() => syncLiveStats(false), 2000)
-      setInterval(() => syncF1Data(false), 30000)
-      setInterval(syncPlatformConnectorConfig, 5000)
+
+      // PERF: offset waktu MULAI tiap interval polling (bukan mengubah frekuensinya),
+      // supaya syncScene & syncLiveStats (sama-sama tiap 2 detik) tidak selalu
+      // menumpuk trigger renderScene() di momen yang persis sama. Ini menyebar
+      // beban kerja main thread lebih rata sepanjang waktu.
+      setTimeout(() => setInterval(() => syncScene(false), 2000), 0)
+      setTimeout(() => setInterval(() => syncLiveStats(false), 2000), 300)
+      setTimeout(() => setInterval(() => syncF1Data(false), 30000), 600)
+      setTimeout(() => setInterval(syncPlatformConnectorConfig, 5000), 900)
     })
   </script>
 </body>

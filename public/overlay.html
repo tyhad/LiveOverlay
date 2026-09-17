@@ -482,6 +482,37 @@
       }
     }
 
+    // PERF: signature ringan pengganti JSON.stringify(). JSON.stringify generik
+    // (harus traverse semua key, urutan, quoting, dst) padahal kita cuma butuh
+    // bandingkan beberapa field yang benar-benar dibaca oleh applyElementBox/
+    // setBaselineState/buildTimelineFromSequence. String concat manual jauh lebih
+    // murah dan hasilnya tetap unik untuk kombinasi nilai yang berbeda.
+    function computeBoxSignature(el, hasChildren) {
+      const s = el.style || {}
+      const g = s.gradient || {}
+      return [
+        el.x, el.y, el.width, el.height, el.zIndex, el.opacity, hasChildren ? 1 : 0,
+        s.borderRadius, s.borderWidth, s.borderStyle, s.borderColor,
+        g.enabled ? 1 : 0, g.from, g.to, g.angle,
+        s.backgroundColor,
+        s.shadowColor, s.shadowOffsetX, s.shadowOffsetY, s.shadowBlur,
+      ].join('|')
+    }
+
+    function computeAnimationSignature(config) {
+      if (!config || !Array.isArray(config.sequence)) return 'loop:0|seq:'
+      let out = `loop:${config.loop ? 1 : 0}|seq:`
+      for (const step of config.sequence) {
+        if (step.type === 'delay') {
+          out += `[delay,${step.duration}]`
+          continue
+        }
+        const p = step.properties || {}
+        out += `[${step.type},${step.duration},${step.ease},${step.repeat},${step.yoyo ? 1 : 0},x:${p.x},y:${p.y},op:${p.opacity},sc:${p.scale},rot:${p.rotation}]`
+      }
+      return out
+    }
+
     function applyElementContent(node, el) {
       if (el.type === 'image' && el.src) {
         let image = node.querySelector('img[data-asset-image]')
@@ -565,13 +596,13 @@
       function mountOrUpdate(el, container) {
         const existing = renderedElements.get(el.id)
         const nextAnimConfig = AnimationEngine.normalizeAnimationConfig(el.animation)
-        const nextAnimSignature = JSON.stringify(nextAnimConfig)
+        const nextAnimSignature = computeAnimationSignature(nextAnimConfig)
         const hasActiveSequence = nextAnimConfig.sequence.length > 0
         const hasChildren = parentIdsInUse.has(el.id)
         // PERF: signature box/posisi elemen -> guard supaya applyElementBox/setBaselineState
         // (yang menulis banyak inline style sekaligus) tidak dipanggil ulang tiap poll 2 detik
         // kalau datanya persis sama dengan render sebelumnya (mencegah reflow sia-sia).
-        const nextBoxSignature = JSON.stringify({ el, hasChildren })
+        const nextBoxSignature = computeBoxSignature(el, hasChildren)
 
         if (existing) {
           // Pastikan node berada di container yang benar (mis. parentId baru diubah,

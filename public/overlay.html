@@ -485,6 +485,7 @@
       // melebihi bounding box parent tetap terlihat penuh (container murni pembungkus
       // transform, bukan viewport visual yang membatasi konten anaknya).
       node.style.overflow = hasChildren ? 'visible' : 'hidden'
+      node.style.transformStyle = hasChildren ? 'preserve-3d' : 'flat'
       node.style.borderRadius = `${el.style?.borderRadius || 0}px`
       node.style.borderWidth = `${el.style?.borderWidth || 0}px`
       node.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
@@ -515,7 +516,7 @@
       const s = el.style || {}
       const g = s.gradient || {}
       return [
-        el.x, el.y, el.width, el.height, el.zIndex, el.opacity, hasChildren ? 1 : 0,
+        el.x, el.y, el.width, el.height, el.zIndex, el.opacity, el.scale, el.rotation, el.rotationX, el.rotationY, el.perspective, hasChildren ? 1 : 0,
         s.borderRadius, s.borderWidth, s.borderStyle, s.borderColor,
         g.enabled ? 1 : 0, g.from, g.to, g.angle,
         s.backgroundColor,
@@ -533,7 +534,7 @@
           continue
         }
         const p = step.properties || {}
-        out += `[${step.type},${step.duration},${step.ease},${step.repeat},${step.yoyo ? 1 : 0},x:${p.x},y:${p.y},op:${p.opacity},sc:${p.scale},rot:${p.rotation}]`
+        out += `[${step.type},${step.duration},${step.ease},${step.repeat},${step.yoyo ? 1 : 0},x:${p.x},y:${p.y},op:${p.opacity},sc:${p.scale},rot:${p.rotation},rx:${p.rotationX},ry:${p.rotationY},pers:${p.perspective}]`
       }
       return out
     }

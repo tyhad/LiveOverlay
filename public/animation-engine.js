@@ -37,7 +37,7 @@
   // ---------------------------------------------------------------------
 
   /** Properti yang didukung di rilis awal. Jangan expose properti CSS lain dulu. */
-  const SUPPORTED_PROPERTIES = ['x', 'y', 'opacity', 'scale', 'rotation'];
+  const SUPPORTED_PROPERTIES = ['x', 'y', 'opacity', 'scale', 'rotation', 'rotationX', 'rotationY', 'perspective'];
 
   /** Tipe step yang didukung. 'delay' adalah step khusus (cuma nunggu, tanpa animasi
    *  properti apapun) — bukan field nempel di tiap step, biar bisa di-reorder/duplikat/
@@ -192,6 +192,9 @@
       opacity: el.opacity !== undefined ? el.opacity : 1,
       scale: el.scale !== undefined ? el.scale : 1,
       rotation: el.rotation || 0,
+      rotationX: el.rotationX || 0,
+      rotationY: el.rotationY || 0,
+      transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
     });
   }
 
@@ -262,11 +265,12 @@
 
       // x/y (posisi kanvas pixel-absolut) di-map ke transform 'x'/'y' GSAP,
       // dikonversi dulu jadi selisih dari posisi dasar (baseLeft/baseTop).
-      // Properti lain (opacity, scale, rotation) diteruskan apa adanya.
+      // Properti lain (opacity, scale, rotation, rotationX, rotationY, perspective) diteruskan apa adanya.
       const mappedProps = {};
       for (const key of Object.keys(step.properties)) {
         if (key === 'x') mappedProps.x = step.properties.x - baseLeft;
         else if (key === 'y') mappedProps.y = step.properties.y - baseTop;
+        else if (key === 'perspective') mappedProps.transformPerspective = step.properties.perspective;
         else mappedProps[key] = step.properties[key];
       }
 

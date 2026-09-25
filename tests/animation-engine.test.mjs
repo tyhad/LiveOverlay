@@ -292,6 +292,26 @@ section('11. will-change: dipasang saat animasi aktif, dilepas saat timeline di-
 });
 
 // ============================================================
+section('12. 3D Transforms (rotationX, rotationY, perspective baseline & animation)', () => {
+  gsap.set(box, { left: 0, top: 0, clearProps: 'all' });
+  const el = { x: 10, y: 20, rotationX: 15, rotationY: -30, perspective: 1200 };
+  AnimationEngine.setBaselineState(box, el);
+  check('setBaselineState sets rotationX', gsap.getProperty(box, 'rotationX') === 15);
+  check('setBaselineState sets rotationY', gsap.getProperty(box, 'rotationY') === -30);
+  check('setBaselineState sets transformPerspective', gsap.getProperty(box, 'transformPerspective') === 1200);
+
+  const cfg = AnimationEngine.normalizeAnimationConfig({
+    sequence: [{ id: 'q0', type: 'to', properties: { rotationX: 45, rotationY: 45, perspective: 800 }, duration: 1 }],
+  });
+  const tl = AnimationEngine.buildTimelineFromSequence('3d-el', box, cfg);
+  tl.progress(1);
+  check('timeline animates rotationX to 45', gsap.getProperty(box, 'rotationX') === 45);
+  check('timeline animates rotationY to 45', gsap.getProperty(box, 'rotationY') === 45);
+  check('timeline animates transformPerspective to 800', gsap.getProperty(box, 'transformPerspective') === 800);
+  AnimationEngine.killTimeline('3d-el');
+});
+
+// ============================================================
 console.log(`\n${'='.repeat(50)}`);
 console.log(`HASIL: ${pass} lolos, ${fail} gagal (total ${pass + fail})`);
 console.log('='.repeat(50));

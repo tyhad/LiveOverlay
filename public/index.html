@@ -880,15 +880,51 @@
             </div>
           </div>
 
-          <!-- Rotation & Opacity -->
+          <!-- Rotation & 3D Tilt -->
           <div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Rotation (Deg)</span>
+              <span>Rotation Z (Roll)</span>
               <span id="prop-rotation-val" class="font-mono text-white">0°</span>
             </div>
             <div class="flex items-center gap-2">
               <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
               <input type="number" id="prop-rotation-num" min="-180" max="180"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Tilt X (Pitch)</span>
+              <span id="prop-rotation-x-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-rotation-x" min="-60" max="60" value="0" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-rotation-x-num" min="-60" max="60"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Yaw Y (Tilt Y)</span>
+              <span id="prop-rotation-y-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-rotation-y" min="-60" max="60" value="0" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-rotation-y-num" min="-60" max="60"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Perspective Distance</span>
+              <span id="prop-perspective-val" class="font-mono text-white">1000px</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-perspective" min="300" max="2500" value="1000" step="10" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-perspective-num" min="300" max="2500" value="1000"
                 class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
           </div>
@@ -1899,7 +1935,6 @@
         div.style.height = `${el.height}px`
         div.style.zIndex = el.zIndex || 1
         div.style.opacity = el.hidden ? 0.3 : (el.opacity !== undefined ? el.opacity : 1)
-        div.style.transform = `rotate(${el.rotation || 0}deg) scale(${el.scale !== undefined ? el.scale : 1})`
         div.style.borderRadius = `${el.style?.borderRadius || 0}px`
         div.style.borderWidth = `${el.style?.borderWidth || 0}px`
         div.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
@@ -1908,6 +1943,16 @@
         // Elemen yang jadi parent (punya child) tidak di-clip, supaya child yang posisinya
         // melebihi bounding box parent tetap terlihat penuh di preview editor.
         div.style.overflow = parentIdsInUse.has(el.id) ? 'visible' : 'hidden'
+        div.style.transformStyle = parentIdsInUse.has(el.id) ? 'preserve-3d' : 'flat'
+        gsap.set(div, {
+          x: 0,
+          y: 0,
+          rotation: el.rotation || 0,
+          rotationX: el.rotationX || 0,
+          rotationY: el.rotationY || 0,
+          scale: el.scale !== undefined ? el.scale : 1,
+          transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
+        })
 
         if (el.style?.gradient?.enabled) {
           const from = el.style.gradient.from || '#0f172a'
@@ -2197,6 +2242,21 @@
       document.getElementById('prop-rotation-num').value = rot
       document.getElementById('prop-rotation-val').textContent = `${rot}°`
 
+      const rotX = el.rotationX || 0
+      document.getElementById('prop-rotation-x').value = rotX
+      document.getElementById('prop-rotation-x-num').value = rotX
+      document.getElementById('prop-rotation-x-val').textContent = `${rotX}°`
+
+      const rotY = el.rotationY || 0
+      document.getElementById('prop-rotation-y').value = rotY
+      document.getElementById('prop-rotation-y-num').value = rotY
+      document.getElementById('prop-rotation-y-val').textContent = `${rotY}°`
+
+      const pers = el.perspective !== undefined ? el.perspective : 1000
+      document.getElementById('prop-perspective').value = pers
+      document.getElementById('prop-perspective-num').value = pers
+      document.getElementById('prop-perspective-val').textContent = `${pers}px`
+
       const scaleVal = el.scale !== undefined ? el.scale : 1
       document.getElementById('prop-scale').value = scaleVal
       document.getElementById('prop-scale-num').value = scaleVal
@@ -2440,7 +2500,7 @@
 
         // Target Properties: satu baris checkbox+angka per properti yang didukung engine.
         const propsContainer = card.querySelector('[data-role="properties"]')
-        const PROPERTY_DEFAULTS = { x: el.x, y: el.y, opacity: 1, scale: 1, rotation: 0 }
+        const PROPERTY_DEFAULTS = { x: el.x, y: el.y, opacity: 1, scale: 1, rotation: 0, rotationX: 0, rotationY: 0, perspective: 1000 }
         AnimationEngine.SUPPORTED_PROPERTIES.forEach(propName => {
           const row = propRowTemplate.content.firstElementChild.cloneNode(true)
           const toggle = row.querySelector('[data-role="prop-toggle"]')
@@ -2591,6 +2651,51 @@
       }
       document.getElementById('prop-rotation').addEventListener('input', (e) => handleRotationChange(e.target.value))
       document.getElementById('prop-rotation-num').addEventListener('input', (e) => handleRotationChange(e.target.value))
+
+      // RotationX (Tilt)
+      const handleRotationXChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const deg = parseInt(val) || 0
+          el.rotationX = deg
+          document.getElementById('prop-rotation-x').value = deg
+          document.getElementById('prop-rotation-x-num').value = deg
+          document.getElementById('prop-rotation-x-val').textContent = `${deg}°`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-rotation-x').addEventListener('input', (e) => handleRotationXChange(e.target.value))
+      document.getElementById('prop-rotation-x-num').addEventListener('input', (e) => handleRotationXChange(e.target.value))
+
+      // RotationY (Yaw)
+      const handleRotationYChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const deg = parseInt(val) || 0
+          el.rotationY = deg
+          document.getElementById('prop-rotation-y').value = deg
+          document.getElementById('prop-rotation-y-num').value = deg
+          document.getElementById('prop-rotation-y-val').textContent = `${deg}°`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-rotation-y').addEventListener('input', (e) => handleRotationYChange(e.target.value))
+      document.getElementById('prop-rotation-y-num').addEventListener('input', (e) => handleRotationYChange(e.target.value))
+
+      // Perspective Distance
+      const handlePerspectiveChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const px = Math.max(300, Math.min(2500, parseInt(val) || 1000))
+          el.perspective = px
+          document.getElementById('prop-perspective').value = px
+          document.getElementById('prop-perspective-num').value = px
+          document.getElementById('prop-perspective-val').textContent = `${px}px`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-perspective').addEventListener('input', (e) => handlePerspectiveChange(e.target.value))
+      document.getElementById('prop-perspective-num').addEventListener('input', (e) => handlePerspectiveChange(e.target.value))
 
       // Scale
       const handleScaleChange = (val) => {

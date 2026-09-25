@@ -761,9 +761,10 @@
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                   <option value="platform">Platform Stats</option>
                   <option value="f1data">F1 Data (Local DB)</option>
+                  <option value="clock">Current Time (Clock)</option>
                 </select>
               </div>
-              <div>
+              <div id="standard-format-group">
                 <label class="block text-[11px] text-slate-400 mb-1">Format</label>
                 <select id="prop-text-binding-format"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
@@ -803,6 +804,42 @@
                 baris), <code>constructorStandingsText.fullMultiline</code> (WCC lengkap per baris),
                 <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code> (jadwal race berjalan).
               </p>
+            </div>
+
+            <div id="clock-binding-group" class="hidden space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Timezone</label>
+                  <select id="prop-text-binding-timezone"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
+                    <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
+                    <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">America/New_York (EST)</option>
+                    <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                    <option value="Europe/London">Europe/London (GMT)</option>
+                    <option value="Europe/Paris">Europe/Paris (CET)</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                    <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                    <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Clock Format</label>
+                  <input type="text" id="prop-text-binding-clock-format" list="clock-format-presets"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    placeholder="HH:mm:ss">
+                  <datalist id="clock-format-presets">
+                    <option value="HH:mm:ss">14:30:00 (24h with Sec)</option>
+                    <option value="HH:mm">14:30 (24h)</option>
+                    <option value="hh:mm:ss A">02:30:00 PM (12h with Sec)</option>
+                    <option value="hh:mm A">02:30 PM (12h)</option>
+                    <option value="dddd, DD MMM YYYY HH:mm:ss">Friday, 25 Sep 2026 14:30:00</option>
+                    <option value="YYYY-MM-DD HH:mm:ss">2026-09-25 14:30:00</option>
+                  </datalist>
+                </div>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -1439,6 +1476,9 @@
     }
 
     function formatBindingStatus(binding) {
+      if (binding?.source === 'clock') {
+        return `Source: Current Time (Clock) | Timezone: ${binding.timezone || 'Asia/Jakarta'}`
+      }
       if (binding?.source === 'f1data') {
         if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
         const stamp = f1Data.lastFetchedAt ? new Date(f1Data.lastFetchedAt).toLocaleString() : 'never'
@@ -1453,11 +1493,14 @@
       const el = scene.elements.find(item => item.id === selectedElementId)
       const binding = el ? ensureTextBinding(el) : null
       const isF1Data = binding?.source === 'f1data'
-      const isPlatform = !isF1Data
+      const isClock = binding?.source === 'clock'
+      const isPlatform = !isF1Data && !isClock
       const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
 
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
       document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
+      document.getElementById('clock-binding-group').classList.toggle('hidden', !isClock)
+      document.getElementById('standard-format-group').classList.toggle('hidden', isClock)
 
         ;[
           'prop-text-binding-source',
@@ -1466,7 +1509,9 @@
           'prop-text-binding-prefix',
           'prop-text-binding-suffix',
           'prop-text-binding-fallback',
-          'prop-text-binding-f1-field-path'
+          'prop-text-binding-f1-field-path',
+          'prop-text-binding-timezone',
+          'prop-text-binding-clock-format'
         ].forEach(id => {
           const input = document.getElementById(id)
           if (input) input.disabled = !isEnabled
@@ -1486,13 +1531,104 @@
       return String(value)
     }
 
+    function formatClockTime(timezone, formatStr, prefix = '', suffix = '') {
+      const tz = timezone || 'Asia/Jakarta'
+      const fmt = formatStr || 'HH:mm:ss'
+      const now = new Date()
+
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          weekday: 'long',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })
+        const parts = formatter.formatToParts(now)
+        const p = {}
+        for (const part of parts) {
+          p[part.type] = part.value
+        }
+
+        let hour24 = parseInt(p.hour || '0', 10)
+        if (hour24 === 24) hour24 = 0
+        const hour12 = hour24 % 12 || 12
+        const ampm = hour24 >= 12 ? 'PM' : 'AM'
+
+        const monthNameFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' })
+        const monthShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'short' })
+        const weekdayShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
+
+        const monthName = monthNameFormatter.format(now)
+        const monthShort = monthShortFormatter.format(now)
+        const weekdayShort = weekdayShortFormatter.format(now)
+
+        const strHH = String(hour24).padStart(2, '0')
+        const strH = String(hour24)
+        const strhh = String(hour12).padStart(2, '0')
+        const strh = String(hour12)
+        const strmm = String(p.minute || '00').padStart(2, '0')
+        const strm = String(parseInt(p.minute || '0', 10))
+        const strss = String(p.second || '00').padStart(2, '0')
+        const strs = String(parseInt(p.second || '0', 10))
+        const strYYYY = p.year || '2026'
+        const strYY = strYYYY.slice(-2)
+        const strMM = p.month || '01'
+        const strM = String(parseInt(strMM, 10))
+        const strDD = p.day || '01'
+        const strD = String(parseInt(strDD, 10))
+        const strdddd = p.weekday || ''
+        const strddd = weekdayShort
+
+        const replacements = {
+          dddd: strdddd,
+          ddd: strddd,
+          YYYY: strYYYY,
+          yyyy: strYYYY,
+          YY: strYY,
+          yy: strYY,
+          MMMM: monthName,
+          MMM: monthShort,
+          MM: strMM,
+          M: strM,
+          DD: strDD,
+          dd: strDD,
+          D: strD,
+          d: strD,
+          HH: strHH,
+          H: strH,
+          hh: strhh,
+          h: strh,
+          mm: strmm,
+          m: strm,
+          ss: strss,
+          s: strs,
+          A: ampm,
+          a: ampm.toLowerCase(),
+        }
+
+        const regex = /dddd|ddd|YYYY|yyyy|YY|yy|MMMM|MMM|MM|M|DD|dd|D|d|HH|H|hh|h|mm|m|ss|s|A|a/g
+        const result = fmt.replace(regex, (match) => replacements[match] !== undefined ? replacements[match] : match)
+
+        return `${prefix}${result}${suffix}`
+      } catch (e) {
+        return `${prefix}${now.toLocaleTimeString()}${suffix}`
+      }
+    }
+
     function resolveElementText(el) {
       const binding = el?.textBinding
       const fallback = binding?.fallback || el?.style?.text || ''
       if (!binding?.enabled) return el?.style?.text || fallback
 
       let rawValue
-      if (binding.source === 'f1data') {
+      if (binding.source === 'clock') {
+        return formatClockTime(binding.timezone, binding.format, binding.prefix, binding.suffix)
+      } else if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
       } else {
         rawValue = liveStats?.[binding.field]
@@ -2298,6 +2434,8 @@
         document.getElementById('prop-text-binding-source').value = binding.source || 'platform'
         document.getElementById('prop-text-binding-field').value = binding.field || 'username'
         document.getElementById('prop-text-binding-format').value = binding.format || 'raw'
+        document.getElementById('prop-text-binding-timezone').value = binding.timezone || 'Asia/Jakarta'
+        document.getElementById('prop-text-binding-clock-format').value = binding.source === 'clock' ? (binding.format || 'HH:mm:ss') : 'HH:mm:ss'
         document.getElementById('prop-text-binding-prefix').value = binding.prefix || ''
         document.getElementById('prop-text-binding-suffix').value = binding.suffix || ''
         document.getElementById('prop-text-binding-fallback').value = binding.fallback || el.style?.text || ''
@@ -2743,6 +2881,27 @@
         if (!el) return
         const binding = ensureTextBinding(el)
         binding.source = e.target.value
+        if (e.target.value === 'clock') {
+          if (!binding.timezone) binding.timezone = 'Asia/Jakarta'
+          if (!binding.field) binding.field = 'currentTime'
+          if (binding.format === 'raw' || binding.format === 'number' || binding.format === 'uppercase' || binding.format === 'lowercase') {
+            binding.format = 'HH:mm:ss'
+          }
+        }
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-timezone').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).timezone = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-clock-format').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).format = e.target.value || 'HH:mm:ss'
         renderCanvas()
         updateBindingPreview()
       })
@@ -3280,6 +3439,15 @@
       setInterval(loadLiveStats, 2000)
       setInterval(loadF1Data, 30000)
       setInterval(loadPlatformConnectorStatus, 4000)
+      setInterval(() => {
+        if (scene && scene.elements) {
+          const hasClock = scene.elements.some(el => !el.hidden && el.textBinding?.enabled && el.textBinding?.source === 'clock')
+          if (hasClock) {
+            renderCanvas()
+            updateBindingPreview()
+          }
+        }
+      }, 1000)
     })
 
     // ── Platform Live Stats Connector UI ──────────────────────────────────────

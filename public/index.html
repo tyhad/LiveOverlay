@@ -617,6 +617,38 @@
               </div>
             </div>
           </div>
+
+          <!-- Text Drop Shadow & Glow -->
+          <div class="pt-2 border-t border-slate-800/60 space-y-2">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow & Glow</label>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
+              <div class="flex items-center gap-2">
+                <input type="color" id="prop-text-shadow-color-picker"
+                  class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-text-shadow-color" placeholder="rgba(0,0,0,0.5)"
+                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Blur (px)</label>
+                <input type="number" id="prop-text-shadow-blur" min="0" max="100"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Offset X</label>
+                <input type="number" id="prop-text-shadow-x" min="-100" max="100"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Offset Y</label>
+                <input type="number" id="prop-text-shadow-y" min="-100" max="100"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              </div>
+            </div>
+          </div>
         </details>
 
         <!-- Dynamic Content: Running Text (Marquee) & Data Binding -->
@@ -1921,6 +1953,14 @@
           textP.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
           textP.style.whiteSpace = 'pre-wrap'
           textP.style.tabSize = '4'
+          if (el.style?.textShadowColor) {
+            const tsX = el.style.textShadowOffsetX || 0
+            const tsY = el.style.textShadowOffsetY || 0
+            const tsBlur = el.style.textShadowBlur || 0
+            textP.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${el.style.textShadowColor}`
+          } else {
+            textP.style.textShadow = 'none'
+          }
           textP.textContent = resolveElementText(el)
           div.appendChild(textP)
 
@@ -2188,6 +2228,11 @@
         document.getElementById('prop-letter-spacing').value = el.style?.letterSpacing || 0
         document.getElementById('prop-text-color').value = el.style?.color || '#ffffff'
         document.getElementById('prop-text-color-picker').value = el.style?.color?.startsWith('#') ? el.style.color : '#ffffff'
+        document.getElementById('prop-text-shadow-color').value = el.style?.textShadowColor || ''
+        document.getElementById('prop-text-shadow-color-picker').value = el.style?.textShadowColor?.startsWith('#') ? el.style.textShadowColor : '#000000'
+        document.getElementById('prop-text-shadow-blur').value = el.style?.textShadowBlur ?? 0
+        document.getElementById('prop-text-shadow-x').value = el.style?.textShadowOffsetX ?? 0
+        document.getElementById('prop-text-shadow-y').value = el.style?.textShadowOffsetY ?? 0
         const binding = ensureTextBinding(el)
         document.getElementById('prop-text-binding-enabled').checked = !!binding.enabled
         document.getElementById('prop-text-binding-source').value = binding.source || 'platform'
@@ -2719,6 +2764,12 @@
 
       document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderCanvas(); } })
       document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderCanvas(); } })
+
+      document.getElementById('prop-text-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; document.getElementById('prop-text-shadow-color').value = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowBlur = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-text-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowOffsetX = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-text-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowOffsetY = parseInt(e.target.value) || 0; renderCanvas(); } })
 
       // Gradient Toggle & Fill
       document.getElementById('prop-gradient-toggle').addEventListener('change', (e) => {

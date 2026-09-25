@@ -197,6 +197,14 @@
       textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
       textEl.style.whiteSpace = 'pre-wrap'
       textEl.style.tabSize = '4'
+      if (el.style?.textShadowColor) {
+        const tsX = el.style.textShadowOffsetX || 0
+        const tsY = el.style.textShadowOffsetY || 0
+        const tsBlur = el.style.textShadowBlur || 0
+        textEl.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${el.style.textShadowColor}`
+      } else {
+        textEl.style.textShadow = 'none'
+      }
       textEl.textContent = text
     }
 
@@ -208,7 +216,7 @@
       const textWidth = measureTextWidth(text, style)
 
       const record = renderedElements.get(el.id)
-      const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing].join('|')
+      const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur].join('|')
 
       if (record && record.scrollTween) {
         record.scrollTween.kill()
@@ -237,6 +245,14 @@
         span.style.color = style.color || '#ffffff'
         span.style.letterSpacing = `${style.letterSpacing || 0}px`
         span.style.textTransform = style.textTransform || 'none'
+        if (style.textShadowColor) {
+          const tsX = style.textShadowOffsetX || 0
+          const tsY = style.textShadowOffsetY || 0
+          const tsBlur = style.textShadowBlur || 0
+          span.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${style.textShadowColor}`
+        } else {
+          span.style.textShadow = 'none'
+        }
         if (i > 0) span.setAttribute('aria-hidden', 'true')
         track.appendChild(span)
       }
@@ -280,7 +296,7 @@
       const style = el.style || {}
 
       const record = renderedElements.get(el.id)
-      const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform].join('|')
+      const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur].join('|')
 
       if (record && record.marqueeTween) {
         record.marqueeTween.kill()
@@ -309,6 +325,14 @@
         block.style.wordBreak = 'break-word'
         block.style.lineHeight = '1.4'
         block.style.padding = `${style.padding || 0}px`
+        if (style.textShadowColor) {
+          const tsX = style.textShadowOffsetX || 0
+          const tsY = style.textShadowOffsetY || 0
+          const tsBlur = style.textShadowBlur || 0
+          block.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${style.textShadowColor}`
+        } else {
+          block.style.textShadow = 'none'
+        }
         block.textContent = content
         return block
       }
@@ -496,6 +520,7 @@
         g.enabled ? 1 : 0, g.from, g.to, g.angle,
         s.backgroundColor,
         s.shadowColor, s.shadowOffsetX, s.shadowOffsetY, s.shadowBlur,
+        s.textShadowColor, s.textShadowOffsetX, s.textShadowOffsetY, s.textShadowBlur,
       ].join('|')
     }
 

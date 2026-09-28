@@ -177,10 +177,8 @@ LiveOverlay/
 ├── tests/
 │   └── animation-engine.test.mjs  # Regression test untuk Animation Sequence Engine
 ├── scenes.example.json       # Template data scene
-├── scene.example.json        # Template satu scene tunggal
 ├── settings.example.json     # Template konfigurasi platform live stats
 ├── live-stats.example.json   # Template cache data live stats
-├── data-sources.example.json # (Legacy, fitur External Data Source sudah dihapus — lihat CHANGELOG.md)
 ├── f1-text-templates.example.json # Template format teks F1GStats (custom text templates)
 ├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)
 ├── issue.md                  # Backlog & technical debt aktif (selalu up-to-date)

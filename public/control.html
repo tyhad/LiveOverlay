@@ -683,8 +683,6 @@
       })
     }
 
-    function tickRunningTimerDisplays() { updateTimerDisplays() }
-
     function render() {
       const app = document.getElementById('app')
       const counterNames = [...usedGroups.counters].sort()
@@ -755,7 +753,7 @@
       setInterval(syncControlState, POLL_MS)
       // Tick lokal buat display timer yang sedang running, tanpa nunggu poll 1 detik
       // (spec: hitung elapsed di client, checkpoint aja yang dipoll dari server).
-      setInterval(tickRunningTimerDisplays, 250)
+      setInterval(updateTimerDisplays, 250)
       // Re-scan binding usage tiap beberapa detik supaya section baru dari Editor
       // (tanpa perlu reload manual Control Panel) tetap ke-detect.
       setInterval(async () => {

@@ -1089,26 +1089,12 @@ const controlStateStore = new ControlStateStore({
   save: async (state) => { await Bun.write(CONTROL_STATE_FILE, JSON.stringify(state, null, 2)) },
 })
 
-async function getControlState(): Promise<ControlStateData> { return controlStateStore.read() }
 function rejectInvalidControlName(name: string, set: { status?: unknown }): boolean {
   const message = validateControlName(name)
   if (!message) return false
   set.status = 400
   return true
 }
-const bumpCounter = (name: string, direction: 1 | -1) => controlStateStore.bumpCounter(name, direction)
-const resetCounter = (name: string) => controlStateStore.resetCounter(name)
-const setCounter = (name: string, value: number) => controlStateStore.setCounter(name, value)
-const setEventState = (group: string, value: string) => controlStateStore.setEventState(group, value)
-const addEventStateOption = (group: string, option: string) => controlStateStore.addEventStateOption(group, option)
-const setEventStateOptionColor = (group: string, option: string, color: string) => controlStateStore.setEventStateOptionColor(group, option, color)
-const removeEventStateOption = (group: string, option: string) => controlStateStore.removeEventStateOption(group, option)
-const setControlText = (name: string, value: string) => controlStateStore.setControlText(name, value)
-const startTimer = (name: string, mode?: 'countdown' | 'countup', durationMs?: number, restart = false) => controlStateStore.startTimer(name, mode, durationMs, restart)
-const pauseTimer = (name: string) => controlStateStore.pauseTimer(name)
-const resetTimer = (name: string) => controlStateStore.resetTimer(name)
-const configureTimer = (name: string, patch: { mode?: 'countdown' | 'countup'; durationMs?: number; continueBelowZero?: boolean }) => controlStateStore.configureTimer(name, patch)
-
 async function listAssets() {
   try {
     const names = await readdir(ASSET_DIRECTORY)
@@ -1723,13 +1709,13 @@ const app = new Elysia()
     return await getLiveStats()
   })
   .get('/api/control-state', async () => {
-    return await getControlState()
+    return await controlStateStore.read()
   })
   .post(
     '/api/control-state/counters/:name/inc',
     async ({ params, set }) => {
       if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
-      const data = await bumpCounter(params.name, 1)
+      const data = await controlStateStore.bumpCounter(params.name, 1)
       return { success: true, data }
     }
   )
@@ -1737,7 +1723,7 @@ const app = new Elysia()
     '/api/control-state/counters/:name/dec',
     async ({ params, set }) => {
       if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
-      const data = await bumpCounter(params.name, -1)
+      const data = await controlStateStore.bumpCounter(params.name, -1)
       return { success: true, data }
     }
   )
@@ -1745,7 +1731,7 @@ const app = new Elysia()
     '/api/control-state/counters/:name/reset',
     async ({ params, set }) => {
       if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
-      const data = await resetCounter(params.name)
+      const data = await controlStateStore.resetCounter(params.name)
       return { success: true, data }
     }
   )
@@ -1758,7 +1744,7 @@ const app = new Elysia()
         set.status = 400
         return { success: false, message: '"value" harus berupa angka' }
       }
-      const data = await setCounter(params.name, value)
+      const data = await controlStateStore.setCounter(params.name, value)
       return { success: true, data }
     },
     { body: t.Object({ value: t.Numeric() }) }
@@ -1772,7 +1758,7 @@ const app = new Elysia()
         set.status = 400
         return { success: false, message: '"value" harus berupa string non-kosong' }
       }
-      const data = await setEventState(params.group, value)
+      const data = await controlStateStore.setEventState(params.group, value)
       return { success: true, data }
     },
     { body: t.Object({ value: t.String() }) }
@@ -1781,7 +1767,7 @@ const app = new Elysia()
     '/api/control-state/texts/:name/set',
     async ({ params, body, set }) => {
       if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
-      const data = await setControlText(params.name, String((body as { value: string }).value ?? ''))
+      const data = await controlStateStore.setControlText(params.name, String((body as { value: string }).value ?? ''))
       return { success: true, data }
     },
     { body: t.Object({ value: t.String() }) }
@@ -1795,7 +1781,7 @@ const app = new Elysia()
         set.status = 400
         return { success: false, message: '"option" harus berupa string non-kosong' }
       }
-      const data = await addEventStateOption(params.group, option)
+      const data = await controlStateStore.addEventStateOption(params.group, option)
       return { success: true, data }
     },
     { body: t.Object({ option: t.String() }) }
@@ -1810,7 +1796,7 @@ const app = new Elysia()
         set.status = 400
         return { success: false, message: '"color" harus berupa hex (mis. #ff0000) atau kosong' }
       }
-      const data = await setEventStateOptionColor(params.group, option, color)
+      const data = await controlStateStore.setEventStateOptionColor(params.group, option, color)
       return { success: true, data }
     },
     { body: t.Object({ option: t.String(), color: t.String() }) }
@@ -1819,7 +1805,7 @@ const app = new Elysia()
     '/api/control-state/event-states/:group/options/remove',
     async ({ params, body, set }) => {
       if (rejectInvalidControlName(params.group, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
-      const data = await removeEventStateOption(params.group, (body as { option: string }).option)
+      const data = await controlStateStore.removeEventStateOption(params.group, (body as { option: string }).option)
       return { success: true, data }
     },
     { body: t.Object({ option: t.String() }) }
@@ -1829,7 +1815,7 @@ const app = new Elysia()
     async ({ params, body, set }) => {
       if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
       const { mode, durationMs, restart } = body as { mode?: string; durationMs?: number; restart?: boolean }
-      const data = await startTimer(
+      const data = await controlStateStore.startTimer(
         params.name,
         mode === 'countdown' || mode === 'countup' ? mode : undefined,
         durationMs,
@@ -1849,7 +1835,7 @@ const app = new Elysia()
     '/api/control-state/timers/:name/pause',
     async ({ params, set }) => {
       if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
-      const data = await pauseTimer(params.name)
+      const data = await controlStateStore.pauseTimer(params.name)
       return { success: true, data }
     }
   )
@@ -1857,7 +1843,7 @@ const app = new Elysia()
     '/api/control-state/timers/:name/reset',
     async ({ params, set }) => {
       if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
-      const data = await resetTimer(params.name)
+      const data = await controlStateStore.resetTimer(params.name)
       return { success: true, data }
     }
   )
@@ -1870,7 +1856,7 @@ const app = new Elysia()
         durationMs?: number
         continueBelowZero?: boolean
       }
-      const data = await configureTimer(params.name, {
+      const data = await controlStateStore.configureTimer(params.name, {
         mode: mode === 'countdown' || mode === 'countup' ? mode : undefined,
         durationMs,
         continueBelowZero,

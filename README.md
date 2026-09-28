@@ -1,6 +1,6 @@
 # 🎬 LiveOverlay Studio
 
-**Versi: v1.0.0** · lihat [`CHANGELOG.md`](./CHANGELOG.md) untuk riwayat lengkap pengembangan.
+**Versi: v1.1.0** · lihat [`CHANGELOG.md`](./CHANGELOG.md) untuk riwayat lengkap pengembangan.
 
 **LiveOverlay Studio** adalah editor kanvas visual (mirip Canva/Figma versi ringan) untuk merancang overlay live streaming, ditenagai oleh **Bun**, **ElysiaJS**, **Tailwind CSS**, dan animasi **GSAP**.
 
@@ -108,11 +108,17 @@ Perubahan tersimpan otomatis / lewat tombol Save, dan langsung ter-refresh di ov
 | `bun run build` | Mengompilasi Tailwind CSS (`src/styles/input.css` ke `public/styles.css`) |
 | `bun run build:css` | Mengompilasi `src/styles/input.css` ke `public/styles.css` secara langsung |
 | `bun start` | Menjalankan server dalam mode produksi |
-| `bun run test` | Menjalankan regression test untuk Animation Sequence Engine (`tests/animation-engine.test.mjs`) |
+| `bun run test` | Menjalankan regression test Animation Sequence Engine dan Control State |
 
 ---
 
 ## 🔒 Konfigurasi & Keamanan
+
+### Fase 10 — Text, 3D, Current Time, dan Control Panel
+
+Fase 10 mencakup 10.1 Text Drop Shadow, 10.2 RotateX/Y/Z + Perspective, 10.3 Current Time, dan 10.4 Control Panel: Counter, Event State, Timer, Text. Control Panel tersedia di `/control`, endpoint baru berada di `/api/control-state/*`, dan state disimpan di `control-state.json` dengan template `control-state.example.json`.
+
+Perbaikannya mencakup serialisasi mutasi dan cache in-memory, validasi nama grup reserved, fallback file korup, Restart/Resume timer, serta pencegahan re-render tombol saat angka timer berubah.
 
 ### Data Scene
 

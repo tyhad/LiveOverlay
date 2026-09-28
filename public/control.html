@@ -558,10 +558,11 @@
       return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`
     }
 
-    function startTimer(name) {
+    function startTimer(name, restart = false) {
       const durationInput = document.getElementById(`timer-duration-${name}`)
       const mode = timerPendingMode[name] || 'countdown'
       const body = { mode }
+      if (restart) body.restart = true
       if (mode === 'countdown') {
         const durationMs = parseDurationInput(durationInput ? durationInput.value : '')
         if (durationMs === null) {
@@ -592,8 +593,8 @@
         mode: 'countdown', durationMs: 0, startedAtMs: null, pausedAccumMs: 0, isRunning: false, continueBelowZero: false,
       }
       timerPendingMode[name] = timerPendingMode[name] || timer.mode
-      const displayMs = computeTimerDisplayMs(timer)
       const durationText = formatDurationInput(timer.durationMs)
+      const startLabel = timer.isRunning ? 'Restart' : (timer.pausedAccumMs > 0 ? 'Resume' : 'Start')
       return `
         <section class="group">
           <div class="group-title"><span>${name}</span><span class="kind">Timer</span></div>
@@ -601,9 +602,9 @@
             <button class="mode-btn ${timer.mode === 'countdown' ? 'active' : ''}" onclick="setTimerMode('${name}', 'countdown')">Countdown</button>
             <button class="mode-btn ${timer.mode === 'countup' ? 'active' : ''}" onclick="setTimerMode('${name}', 'countup')">Count Up</button>
           </div>
-          <div class="timer-display" data-timer-name="${name}">${formatTimerMs(displayMs)}</div>
+          <div class="timer-display" data-timer-name="${name}"></div>
           <div class="timer-controls">
-            <button class="start" onclick="startTimer('${name}')">${timer.isRunning ? 'Restart' : 'Start'}</button>
+            <button class="start" onclick="startTimer('${name}', ${timer.isRunning})">${startLabel}</button>
             <button onclick="pauseTimer('${name}')">Pause</button>
             <button class="stop" onclick="resetTimer('${name}')">Reset</button>
           </div>
@@ -674,15 +675,15 @@
       }
     })
 
-    function tickRunningTimerDisplays() {
+    function updateTimerDisplays() {
       document.querySelectorAll('[data-timer-name]').forEach(node => {
         const name = node.dataset.timerName
         const timer = controlState.timers?.[name]
-        if (timer?.isRunning) {
-          node.textContent = formatTimerMs(computeTimerDisplayMs(timer))
-        }
+        node.textContent = formatTimerMs(computeTimerDisplayMs(timer))
       })
     }
+
+    function tickRunningTimerDisplays() { updateTimerDisplays() }
 
     function render() {
       const app = document.getElementById('app')
@@ -728,6 +729,7 @@
       if (html === app.dataset.lastHtml) return
       app.dataset.lastHtml = html
       app.innerHTML = html
+      updateTimerDisplays()
 
       Object.entries(saved).forEach(([id, val]) => {
         const inp = document.getElementById(id)

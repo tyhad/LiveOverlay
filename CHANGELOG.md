@@ -4,6 +4,22 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ---
 
+## [1.1.0] — Fase 10
+
+### Fase 10.1 — Text Drop Shadow
+✅ Selesai.
+
+### Fase 10.2 — RotateX/Y/Z + Perspective
+✅ Selesai.
+
+### Fase 10.3 — Current Time
+✅ Selesai.
+
+### Fase 10.4 — Control Panel: Counter, Event State, Timer, Text
+✅ Selesai. Halaman `/control`, endpoint `/api/control-state/*`, dan persistence `control-state.json` / `control-state.example.json`.
+
+Perbaikan fase ini: mutasi control-state diserialkan dan dicache di memori, nama grup reserved dan nama lebih dari 64 karakter ditolak, file korup fallback ke state kosong, Restart/Resume timer diperbaiki, dan render display timer tidak mengganti tombol pada setiap tick.
+
 ## [1.0.0] — LiveOverlay Studio
 
 Rilis pertama yang dianggap **visi tercapai** (lihat `Vision.md`): editor kanvas visual penuh, model animasi sequence generik, multi-scene/multi-output, data binding live (Platform Live Stats + F1GStats), asset management, dan parent-child grouping — semua terverifikasi jalan end-to-end.

@@ -13,6 +13,7 @@ const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENES_FILE = 'scenes.json'
 const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
+const CONTROL_STATE_FILE = 'control-state.json'
 const PLATFORM_CONFIG_FILE = 'platform-config.json'
 const ASSET_DIRECTORY = 'public/uploads'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
@@ -171,7 +172,78 @@ interface F1TextBinding {
   fallback?: string
 }
 
-type TextBinding = PlatformTextBinding | F1TextBinding
+/** Infrastruktur Control Panel (fondasi #5/#6) — teks yang dibind ke sebuah Counter
+ *  di control-state.json. `group` = nama grup counter (auto-create kalau belum ada).
+ *  (`name` = alias lama, masih dibaca overlay untuk scene lama.) */
+interface CounterTextBinding {
+  enabled?: boolean
+  source: 'counter'
+  group: string
+  /** @deprecated alias lama untuk `group` */
+  name?: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+/** Infrastruktur Control Panel (fondasi #5/#6) — teks yang dibind ke sebuah Event State
+ *  (enum single-active) di control-state.json. `group` = nama grup event state. */
+interface EventStateTextBinding {
+  enabled?: boolean
+  source: 'eventState'
+  group: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+/** Infrastruktur Control Panel — teks yang dibind ke sebuah Timer (countdown/count up)
+ *  di control-state.json. `group` = nama grup timer. `format`: 'mm:ss' (default,
+ *  meluap ke menit kalau >1 jam), 'hh:mm:ss', atau 'seconds' (total detik bulat). */
+interface TimerTextBinding {
+  enabled?: boolean
+  source: 'timer'
+  group: string
+  format?: 'mm:ss' | 'hh:mm:ss' | 'seconds'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+/** Control Panel — teks bebas (single/multiline) yang ditulis di /control dan bisa di-bind ke
+ *  banyak elemen teks sekaligus lewat nama grup yang sama. `group` = nama grup teks. */
+interface TextControlBinding {
+  enabled?: boolean
+  source: 'text'
+  group: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | CounterTextBinding | EventStateTextBinding | TimerTextBinding
+
+/** Infrastruktur Control Panel (fondasi #5/#6) — kontrol visibility elemen berdasarkan
+ *  nilai Counter (dibanding dengan `matchValue` pakai `comparator`) atau Event State (elemen
+ *  tampil kalau eventState grup tsb bernilai `matchValue`). Terpisah dari `hidden` (manual toggle
+ *  di Editor); kalau keduanya ada, `hidden=true` selalu menang (override manual tetap final).
+ */
+interface VisibilityBinding {
+  enabled?: boolean
+  source: 'counter' | 'eventState'
+  /** Nama grup counter, atau nama grup eventState. */
+  group: string
+  /** Hanya dipakai kalau source === 'counter'. Default 'eq'. */
+  comparator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'
+  /** counter: angka pembanding. eventState: opsi yang harus aktif supaya elemen tampil. */
+  matchValue: number | string
+  /** @deprecated alias lama untuk `group` / `matchValue` (scene lama) */
+  name?: string
+  value?: number | string
+}
 
 interface MarqueeConfig {
   enabled?: boolean
@@ -208,6 +280,7 @@ interface SceneElement {
   style: ElementStyle
   animation?: AnimationConfig
   textBinding?: TextBinding
+  visibilityBinding?: VisibilityBinding
   marquee?: MarqueeConfig
   scroll?: ScrollConfig
   /**
@@ -1006,6 +1079,303 @@ async function saveLiveStats(data: LiveStatsUpdate): Promise<LiveStatsData> {
   return updated
 }
 
+/** Infrastruktur Control Panel (fondasi #5/#6) — state generik lintas scene, disimpan
+ *  terpisah dari scene.json, pola sama seperti live-stats.json: dikunci per nama grup,
+ *  grup auto-create kalau belum terdaftar (tidak perlu setup manual lebih dulu). */
+interface CounterState {
+  value: number
+  step: number
+}
+
+interface EventStateState {
+  value: string
+  options: string[]
+  /** Warna font (CSS color, mis. '#ff0000') per opsi. Dipakai teks yang di-bind ke event state
+   *  ini: warna opsi aktif menimpa style.color elemen. Opsional; opsi tanpa warna = warna default elemen. */
+  colors?: Record<string, string>
+}
+
+/** Timer (Countdown & Count Up), dikontrol dari Control Panel (bukan Editor). Server
+ *  cuma nyimpen checkpoint waktu — elapsed dihitung live di client (overlay/control
+ *  panel) dari `Date.now() - startedAtMs + pausedAccumMs`, supaya tidak perlu polling
+ *  super cepat (16ms) buat animasi mulus; cukup ikut interval polling control-state
+ *  (300-500ms) + tick lokal di antara poll. */
+interface TimerState {
+  mode: 'countdown' | 'countup'
+  /** Hanya dipakai mode 'countdown', diisi manual dari Control Panel. */
+  durationMs: number
+  /** Epoch ms saat Start terakhir dipencet. null kalau belum pernah start / lagi pause. */
+  startedAtMs: number | null
+  /** Total waktu yang sudah lewat sebelum pause terakhir (akumulasi lintas start/pause). */
+  pausedAccumMs: number
+  isRunning: boolean
+  /** Khusus mode countdown: kalau true, angka boleh lanjut minus setelah tembus 0. */
+  continueBelowZero: boolean
+}
+
+/** Teks bebas dari Control Panel. `value` boleh mengandung newline ("\n") untuk multiline. */
+interface TextState {
+  value: string
+}
+
+interface ControlStateData {
+  counters: Record<string, CounterState>
+  eventStates: Record<string, EventStateState>
+  timers: Record<string, TimerState>
+  texts: Record<string, TextState>
+}
+
+const DEFAULT_CONTROL_STATE: ControlStateData = {
+  counters: {},
+  eventStates: {},
+  timers: {},
+  texts: {},
+}
+
+function normalizeControlState(data: Partial<ControlStateData> | null | undefined): ControlStateData {
+  const counters: Record<string, CounterState> = {}
+  if (data?.counters && typeof data.counters === 'object') {
+    for (const [name, raw] of Object.entries(data.counters)) {
+      if (!raw || typeof raw !== 'object') continue
+      counters[name] = {
+        value: Number.isFinite((raw as CounterState).value) ? Number((raw as CounterState).value) : 0,
+        step: Number.isFinite((raw as CounterState).step) && Number((raw as CounterState).step) !== 0 ? Number((raw as CounterState).step) : 1,
+      }
+    }
+  }
+
+  const eventStates: Record<string, EventStateState> = {}
+  if (data?.eventStates && typeof data.eventStates === 'object') {
+    for (const [group, raw] of Object.entries(data.eventStates)) {
+      if (!raw || typeof raw !== 'object') continue
+      const options = Array.isArray((raw as EventStateState).options)
+        ? (raw as EventStateState).options.filter((opt) => typeof opt === 'string' && opt.length > 0)
+        : []
+      const value = typeof (raw as EventStateState).value === 'string' ? (raw as EventStateState).value : (options[0] || '')
+      const colors: Record<string, string> = {}
+      const rawColors = (raw as EventStateState).colors
+      if (rawColors && typeof rawColors === 'object') {
+        for (const [opt, color] of Object.entries(rawColors)) {
+          if (typeof color === 'string' && color.trim()) colors[opt] = color.trim()
+        }
+      }
+      eventStates[group] = { value, options, colors }
+    }
+  }
+
+  const texts: Record<string, TextState> = {}
+  if (data?.texts && typeof data.texts === 'object') {
+    for (const [name, raw] of Object.entries(data.texts)) {
+      if (!raw || typeof raw !== 'object') continue
+      texts[name] = { value: typeof (raw as TextState).value === 'string' ? (raw as TextState).value : '' }
+    }
+  }
+
+  return { counters, eventStates, timers: normalizeTimers(data?.timers), texts }
+}
+
+function normalizeTimers(raw: Record<string, Partial<TimerState>> | null | undefined): Record<string, TimerState> {
+  const timers: Record<string, TimerState> = {}
+  if (raw && typeof raw === 'object') {
+    for (const [name, t] of Object.entries(raw)) {
+      if (!t || typeof t !== 'object') continue
+      timers[name] = {
+        mode: t.mode === 'countup' ? 'countup' : 'countdown',
+        durationMs: Number.isFinite(t.durationMs) ? Number(t.durationMs) : 0,
+        startedAtMs: Number.isFinite(t.startedAtMs as number) ? Number(t.startedAtMs) : null,
+        pausedAccumMs: Number.isFinite(t.pausedAccumMs) ? Number(t.pausedAccumMs) : 0,
+        isRunning: typeof t.isRunning === 'boolean' ? t.isRunning : false,
+        continueBelowZero: typeof t.continueBelowZero === 'boolean' ? t.continueBelowZero : false,
+      }
+    }
+  }
+  return timers
+}
+
+async function readControlState(): Promise<ControlStateData> {
+  const file = Bun.file(CONTROL_STATE_FILE)
+  if (await file.exists()) {
+    try {
+      return normalizeControlState(JSON.parse(await file.text()))
+    } catch {
+      // fallback ke default kalau file korup, tidak crash server
+    }
+  }
+  return { ...DEFAULT_CONTROL_STATE }
+}
+
+async function writeControlState(state: ControlStateData): Promise<ControlStateData> {
+  await Bun.write(CONTROL_STATE_FILE, JSON.stringify(state, null, 2))
+  return state
+}
+
+async function getControlState(): Promise<ControlStateData> {
+  return await readControlState()
+}
+
+/** Ambil (atau auto-create dengan default step=1, value=0) definisi counter bernama `name`. */
+async function ensureCounter(state: ControlStateData, name: string): Promise<CounterState> {
+  if (!state.counters[name]) {
+    state.counters[name] = { value: 0, step: 1 }
+  }
+  return state.counters[name]
+}
+
+/** Ambil (atau auto-create dengan options kosong, value='') definisi eventState grup `group`. */
+async function ensureEventState(state: ControlStateData, group: string): Promise<EventStateState> {
+  if (!state.eventStates[group]) {
+    state.eventStates[group] = { value: '', options: [], colors: {} }
+  }
+  return state.eventStates[group]
+}
+
+async function bumpCounter(name: string, direction: 1 | -1): Promise<ControlStateData> {
+  const state = await readControlState()
+  const counter = await ensureCounter(state, name)
+  counter.value += direction * (counter.step || 1)
+  return await writeControlState(state)
+}
+
+async function resetCounter(name: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  const counter = await ensureCounter(state, name)
+  counter.value = 0
+  return await writeControlState(state)
+}
+
+async function setCounter(name: string, value: number): Promise<ControlStateData> {
+  const state = await readControlState()
+  const counter = await ensureCounter(state, name)
+  counter.value = Number.isFinite(value) ? value : counter.value
+  return await writeControlState(state)
+}
+
+async function setEventState(group: string, value: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  const eventState = await ensureEventState(state, group)
+  // Auto-register opsi baru kalau belum ada di daftar (grup = named registry, tidak perlu
+  // predefine opsi lebih dulu; Control Panel yang mengirim opsi apa saja yang dipakai).
+  if (!eventState.options.includes(value)) {
+    eventState.options = [...eventState.options, value]
+  }
+  eventState.value = value
+  return await writeControlState(state)
+}
+
+/** Tambah opsi ke daftar Event State TANPA mengubah nilai aktif (kecuali grup masih
+ *  kosong: opsi pertama otomatis jadi nilai aktif). Dipakai tombol "Tambah opsi" di Control Panel. */
+async function addEventStateOption(group: string, option: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  const eventState = await ensureEventState(state, group)
+  const clean = option.trim()
+  if (clean && !eventState.options.includes(clean)) {
+    eventState.options = [...eventState.options, clean]
+  }
+  if (!eventState.value && eventState.options.length > 0) {
+    eventState.value = eventState.options[0] ?? ''
+  }
+  return await writeControlState(state)
+}
+
+/** Set warna font untuk satu opsi Event State. `color` kosong = hapus warna (kembali ke warna elemen). */
+async function setEventStateOptionColor(group: string, option: string, color: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  const eventState = await ensureEventState(state, group)
+  if (!eventState.options.includes(option)) {
+    eventState.options = [...eventState.options, option]
+  }
+  eventState.colors = eventState.colors || {}
+  const clean = color.trim()
+  if (clean) eventState.colors[option] = clean
+  else delete eventState.colors[option]
+  return await writeControlState(state)
+}
+
+/** Hapus opsi. Kalau yang dihapus sedang aktif, nilai pindah ke opsi pertama tersisa (atau ''). */
+async function removeEventStateOption(group: string, option: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  const eventState = await ensureEventState(state, group)
+  eventState.options = eventState.options.filter((opt) => opt !== option)
+  if (eventState.colors) delete eventState.colors[option]
+  if (eventState.value === option) {
+    eventState.value = eventState.options[0] || ''
+  }
+  return await writeControlState(state)
+}
+
+/** Set isi teks bebas grup `name` (auto-create). Newline dipertahankan apa adanya; dibatasi 5000 karakter. */
+async function setControlText(name: string, value: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  state.texts[name] = { value: value.replace(/\r\n/g, '\n').slice(0, 5000) }
+  return await writeControlState(state)
+}
+
+/** Ambil (atau auto-create dengan default countdown 0ms, belum jalan) definisi timer bernama `name`. */
+function ensureTimer(state: ControlStateData, name: string): TimerState {
+  if (!state.timers[name]) {
+    state.timers[name] = {
+      mode: 'countdown',
+      durationMs: 0,
+      startedAtMs: null,
+      pausedAccumMs: 0,
+      isRunning: false,
+      continueBelowZero: false,
+    }
+  }
+  return state.timers[name]
+}
+
+/** Start (atau resume dari pause). `pausedAccumMs` yang sudah terkumpul tetap dibawa,
+ *  cuma checkpoint `startedAtMs` yang di-reset ke sekarang — supaya resume tidak
+ *  kehilangan progres sebelumnya. `mode`/`durationMs` opsional: kalau dikirim, berarti
+ *  user memulai ulang timer dari 0 dengan konfigurasi baru (lihat resetTimer di caller
+ *  Control Panel kalau memang mau full-reset dulu). */
+async function startTimer(name: string, mode?: 'countdown' | 'countup', durationMs?: number): Promise<ControlStateData> {
+  const state = await readControlState()
+  const timer = ensureTimer(state, name)
+  if (mode === 'countdown' || mode === 'countup') timer.mode = mode
+  if (Number.isFinite(durationMs)) timer.durationMs = Number(durationMs)
+  timer.startedAtMs = Date.now()
+  timer.isRunning = true
+  return await writeControlState(state)
+}
+
+async function pauseTimer(name: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  const timer = ensureTimer(state, name)
+  if (timer.isRunning && typeof timer.startedAtMs === 'number') {
+    timer.pausedAccumMs += Date.now() - timer.startedAtMs
+  }
+  timer.startedAtMs = null
+  timer.isRunning = false
+  return await writeControlState(state)
+}
+
+async function resetTimer(name: string): Promise<ControlStateData> {
+  const state = await readControlState()
+  const timer = ensureTimer(state, name)
+  timer.startedAtMs = null
+  timer.pausedAccumMs = 0
+  timer.isRunning = false
+  return await writeControlState(state)
+}
+
+/** Ekstensi kecil di luar 3 endpoint start/pause/reset di spec: patch field konfigurasi
+ *  (mode, durationMs, continueBelowZero) TANPA menyentuh status jalan/checkpoint waktu —
+ *  dipakai Control Panel buat toggle "Lanjut ke minus" atau ganti durasi selagi timer
+ *  di-pause, tanpa harus Start ulang (yang bakal reset checkpoint `startedAtMs`). */
+async function configureTimer(
+  name: string,
+  patch: { mode?: 'countdown' | 'countup'; durationMs?: number; continueBelowZero?: boolean }
+): Promise<ControlStateData> {
+  const state = await readControlState()
+  const timer = ensureTimer(state, name)
+  if (patch.mode === 'countdown' || patch.mode === 'countup') timer.mode = patch.mode
+  if (Number.isFinite(patch.durationMs)) timer.durationMs = Number(patch.durationMs)
+  if (typeof patch.continueBelowZero === 'boolean') timer.continueBelowZero = patch.continueBelowZero
+  return await writeControlState(state)
+}
+
 async function listAssets() {
   try {
     const names = await readdir(ASSET_DIRECTORY)
@@ -1485,6 +1855,7 @@ getPlatformConfig().then((config) => {
 
 const app = new Elysia()
   .get('/', () => Bun.file('public/index.html'))
+  .get('/control', () => Bun.file('public/control.html'))
   .get('/api/health', () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -1618,6 +1989,154 @@ const app = new Elysia()
   .get('/api/live-stats', async () => {
     return await getLiveStats()
   })
+  .get('/api/control-state', async () => {
+    return await getControlState()
+  })
+  .post(
+    '/api/control-state/counters/:name/inc',
+    async ({ params }) => {
+      const data = await bumpCounter(params.name, 1)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/counters/:name/dec',
+    async ({ params }) => {
+      const data = await bumpCounter(params.name, -1)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/counters/:name/reset',
+    async ({ params }) => {
+      const data = await resetCounter(params.name)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/counters/:name/set',
+    async ({ params, body, set }) => {
+      const value = Number((body as { value?: number })?.value)
+      if (!Number.isFinite(value)) {
+        set.status = 400
+        return { success: false, message: '"value" harus berupa angka' }
+      }
+      const data = await setCounter(params.name, value)
+      return { success: true, data }
+    },
+    { body: t.Object({ value: t.Numeric() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/set',
+    async ({ params, body, set }) => {
+      const value = (body as { value?: string })?.value
+      if (typeof value !== 'string' || !value) {
+        set.status = 400
+        return { success: false, message: '"value" harus berupa string non-kosong' }
+      }
+      const data = await setEventState(params.group, value)
+      return { success: true, data }
+    },
+    { body: t.Object({ value: t.String() }) }
+  )
+  .post(
+    '/api/control-state/texts/:name/set',
+    async ({ params, body }) => {
+      const data = await setControlText(params.name, String((body as { value: string }).value ?? ''))
+      return { success: true, data }
+    },
+    { body: t.Object({ value: t.String() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/options/add',
+    async ({ params, body, set }) => {
+      const option = String((body as { option?: string })?.option ?? '').trim()
+      if (!option) {
+        set.status = 400
+        return { success: false, message: '"option" harus berupa string non-kosong' }
+      }
+      const data = await addEventStateOption(params.group, option)
+      return { success: true, data }
+    },
+    { body: t.Object({ option: t.String() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/options/color',
+    async ({ params, body, set }) => {
+      const { option, color } = body as { option: string; color: string }
+      // Validasi sederhana: hex (#rgb/#rrggbb/#rrggbbaa) atau kosong (hapus warna)
+      if (color && !/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color.trim())) {
+        set.status = 400
+        return { success: false, message: '"color" harus berupa hex (mis. #ff0000) atau kosong' }
+      }
+      const data = await setEventStateOptionColor(params.group, option, color)
+      return { success: true, data }
+    },
+    { body: t.Object({ option: t.String(), color: t.String() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/options/remove',
+    async ({ params, body }) => {
+      const data = await removeEventStateOption(params.group, (body as { option: string }).option)
+      return { success: true, data }
+    },
+    { body: t.Object({ option: t.String() }) }
+  )
+  .post(
+    '/api/control-state/timers/:name/start',
+    async ({ params, body }) => {
+      const { mode, durationMs } = body as { mode?: string; durationMs?: number }
+      const data = await startTimer(
+        params.name,
+        mode === 'countdown' || mode === 'countup' ? mode : undefined,
+        durationMs
+      )
+      return { success: true, data }
+    },
+    {
+      body: t.Object({
+        mode: t.Optional(t.Union([t.Literal('countdown'), t.Literal('countup')])),
+        durationMs: t.Optional(t.Numeric()),
+      }),
+    }
+  )
+  .post(
+    '/api/control-state/timers/:name/pause',
+    async ({ params }) => {
+      const data = await pauseTimer(params.name)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/timers/:name/reset',
+    async ({ params }) => {
+      const data = await resetTimer(params.name)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/timers/:name/configure',
+    async ({ params, body }) => {
+      const { mode, durationMs, continueBelowZero } = body as {
+        mode?: string
+        durationMs?: number
+        continueBelowZero?: boolean
+      }
+      const data = await configureTimer(params.name, {
+        mode: mode === 'countdown' || mode === 'countup' ? mode : undefined,
+        durationMs,
+        continueBelowZero,
+      })
+      return { success: true, data }
+    },
+    {
+      body: t.Object({
+        mode: t.Optional(t.Union([t.Literal('countdown'), t.Literal('countup')])),
+        durationMs: t.Optional(t.Numeric()),
+        continueBelowZero: t.Optional(t.Boolean()),
+      }),
+    }
+  )
   .get('/api/f1-data', () => {
     return getF1DataSnapshot()
   })

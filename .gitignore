@@ -28,6 +28,7 @@ scene.json
 scenes.json
 data-sources.json
 live-stats.json
+control-state.json
 platform-config.json
 f1-text-templates.json
 public/uploads/

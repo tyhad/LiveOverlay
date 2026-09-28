@@ -191,6 +191,16 @@
             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
       </a>
+
+      <a id="control-panel-link" href="/control" target="_blank"
+        class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5"
+        title="Buka Control Panel (Counter, Event State, Timer)">
+        <span>🎛️ Control Panel</span>
+        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
     </div>
   </header>
 
@@ -513,6 +523,63 @@
           </div>
         </details>
 
+        <!-- Visibility Binding (semua tipe elemen) — tampil/sembunyi berdasarkan Counter / Event State -->
+        <details id="visibility-binding-section" class="space-y-2 pt-2 border-t border-slate-800 group">
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Visibility Binding</span>
+          </summary>
+          <div class="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-600/10 p-3 mt-2">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Tampil Kalau…</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                <input id="prop-vis-enabled" type="checkbox" class="accent-emerald-500">
+                <span>Enable</span>
+              </label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Source</label>
+                <select id="prop-vis-source"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="counter">Counter</option>
+                  <option value="eventState">Event State</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
+                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. killCount"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+                <datalist id="vis-group-names"></datalist>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div id="prop-vis-comparator-wrap">
+                <label class="block text-[11px] text-slate-400 mb-1">Kondisi</label>
+                <select id="prop-vis-comparator"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="eq">= sama dengan</option>
+                  <option value="neq">≠ tidak sama</option>
+                  <option value="gt">&gt; lebih dari</option>
+                  <option value="gte">≥ minimal</option>
+                  <option value="lt">&lt; kurang dari</option>
+                  <option value="lte">≤ maksimal</option>
+                </select>
+              </div>
+              <div id="prop-vis-value-wrap" class="col-span-1">
+                <label class="block text-[11px] text-slate-400 mb-1">Nilai</label>
+                <input type="text" id="prop-vis-value" list="vis-value-options" placeholder="mis. 10 / red"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+                <datalist id="vis-value-options"></datalist>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-500">Toggle 👁️ manual (hidden) tetap menang: kalau elemen di-hide manual,
+              binding ini diabaikan. Nilai live dikontrol dari <code>/control</code>.</p>
+          </div>
+        </details>
+
 
         <!-- Typography Section (Text Elements) -->
         <details id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
@@ -762,6 +829,17 @@
                   <option value="platform">Platform Stats</option>
                   <option value="f1data">F1 Data (Local DB)</option>
                   <option value="clock">Current Time (Clock)</option>
+                  <option value="control">Control Panel</option>
+                </select>
+              </div>
+              <div id="control-type-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Format</label>
+                <select id="prop-control-type"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="counter">Counter</option>
+                  <option value="eventState">Event State</option>
+                  <option value="timer">Timer</option>
+                  <option value="text">Text</option>
                 </select>
               </div>
               <div id="standard-format-group">
@@ -840,6 +918,48 @@
                   </datalist>
                 </div>
               </div>
+            </div>
+
+            <!-- Control Panel bindings (Counter / Event State / Timer): nama grup = named registry,
+                 auto-create di server kalau belum ada. Datalist diisi dari /api/control-state. -->
+            <div id="control-binding-group" class="hidden space-y-2">
+              <div>
+                <label id="prop-control-group-label" class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
+                <input type="text" id="prop-control-group" list="control-group-names" placeholder="mis. killCount"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                <datalist id="control-group-names"></datalist>
+              </div>
+              <div id="eventstate-options-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Daftar Opsi (pisahkan koma)</label>
+                <div class="flex gap-2">
+                  <input type="text" id="prop-es-options" placeholder="green, yellow, red, vsc, sc, finish"
+                    class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                  <button id="prop-es-options-save" type="button"
+                    class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium">Simpan</button>
+                </div>
+                <p id="prop-es-options-status" class="text-[10px] text-slate-500 mt-1">Jadi tombol pill di /control. Opsi lama tidak dihapus.</p>
+              </div>
+              <div id="control-text-format-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Gaya Teks</label>
+                <select id="prop-control-text-format"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="raw">Raw</option>
+                  <option value="number">Number</option>
+                  <option value="uppercase">UPPERCASE</option>
+                  <option value="lowercase">lowercase</option>
+                </select>
+              </div>
+              <div id="timer-format-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Timer Format</label>
+                <select id="prop-timer-format"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="mm:ss">mm:ss (10:00)</option>
+                  <option value="hh:mm:ss">hh:mm:ss (00:10:00)</option>
+                  <option value="seconds">Detik (600)</option>
+                </select>
+              </div>
+              <p class="text-[10px] text-slate-500">Nilai dikontrol dari halaman <code>/control</code>. Section di
+                Control Panel muncul otomatis setelah binding ini disimpan.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -1429,6 +1549,165 @@
       return el.textBinding
     }
 
+    function ensureVisibilityBinding(el) {
+      if (!el.visibilityBinding) {
+        el.visibilityBinding = {
+          enabled: false,
+          source: 'counter',
+          group: '',
+          comparator: 'eq',
+          matchValue: ''
+        }
+      }
+      return el.visibilityBinding
+    }
+
+    /** Sesuaikan tampilan form Visibility Binding: comparator cuma relevan untuk counter,
+     *  dan semua input di-disable selama binding belum di-Enable. */
+    function updateVisibilityControls() {
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const vb = el?.visibilityBinding
+      const isCounter = (vb?.source || 'counter') === 'counter'
+      const enabled = !!vb?.enabled
+      document.getElementById('prop-vis-comparator-wrap').classList.toggle('hidden', !isCounter)
+      document.getElementById('prop-vis-value-wrap').classList.toggle('col-span-2', !isCounter)
+      ;['prop-vis-source', 'prop-vis-name', 'prop-vis-comparator', 'prop-vis-value'].forEach(id => {
+        const input = document.getElementById(id)
+        if (input) input.disabled = !enabled
+      })
+      document.getElementById('prop-vis-value').placeholder = isCounter ? 'mis. 10' : 'mis. red'
+    }
+
+    // ── Control Panel state (Counter / Event State / Timer) untuk preview & autocomplete ──
+    let controlStateEditor = { counters: {}, eventStates: {}, timers: {}, texts: {} }
+    let lastControlStateEditorHash = ''
+
+    /** Warna font efektif: kalau teks di-bind ke Event State dan opsi aktif punya warna
+     *  (diatur di Control Panel), warna itu menimpa style.color. */
+    function getEffectiveTextColor(el) {
+      const b = el?.textBinding
+      if (b?.enabled && b.source === 'eventState') {
+        const es = controlStateEditor.eventStates?.[b.group]
+        const c = es?.colors?.[es.value]
+        if (c) return c
+      }
+      return el?.style?.color || '#ffffff'
+    }
+
+    function computeTimerDisplayMs(timer) {
+      if (!timer) return 0
+      const elapsed = (timer.isRunning && typeof timer.startedAtMs === 'number')
+        ? Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
+        : (timer.pausedAccumMs || 0)
+      if (timer.mode === 'countdown') {
+        const remaining = (timer.durationMs || 0) - elapsed
+        return remaining <= 0 && !timer.continueBelowZero ? 0 : remaining
+      }
+      return elapsed
+    }
+
+    function formatTimerMs(ms, format) {
+      const sign = ms < 0 ? '-' : ''
+      const abs = Math.abs(Math.round(ms / 1000))
+      const pad = (n) => String(n).padStart(2, '0')
+      if (format === 'hh:mm:ss') {
+        return `${sign}${pad(Math.floor(abs / 3600))}:${pad(Math.floor((abs % 3600) / 60))}:${pad(abs % 60)}`
+      }
+      if (format === 'seconds') return `${sign}${abs}`
+      return `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+    }
+
+    /** Kumpulkan nama grup yang sudah dikenal: dari control-state.json + binding di semua scene
+     *  yang sedang dimuat editor, supaya autocomplete konsisten dengan Control Panel. */
+    function getKnownControlGroups(kind) {
+      const names = new Set(Object.keys(controlStateEditor[kind] || {}))
+      const sourceKey = kind === 'counters' ? 'counter' : kind === 'eventStates' ? 'eventState' : kind === 'texts' ? 'text' : 'timer'
+      ;(scene?.elements || []).forEach(el => {
+        const tb = el.textBinding
+        if (tb?.source === sourceKey) {
+          const n = tb.group || tb.name
+          if (n) names.add(n)
+        }
+        const vb = el.visibilityBinding
+        if (vb?.source === sourceKey && (vb.group || vb.name)) names.add(vb.group || vb.name)
+      })
+      return [...names].sort()
+    }
+
+    function fillDatalist(id, values) {
+      const list = document.getElementById(id)
+      if (!list) return
+      list.innerHTML = values.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}"></option>`).join('')
+    }
+
+    function refreshControlDatalists() {
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const binding = el?.textBinding
+      if (binding?.source === 'counter') fillDatalist('control-group-names', getKnownControlGroups('counters'))
+      else if (binding?.source === 'eventState') fillDatalist('control-group-names', getKnownControlGroups('eventStates'))
+      else if (binding?.source === 'timer') fillDatalist('control-group-names', getKnownControlGroups('timers'))
+      else if (binding?.source === 'text') fillDatalist('control-group-names', getKnownControlGroups('texts'))
+
+      const vb = el?.visibilityBinding
+      const visKind = vb?.source === 'eventState' ? 'eventStates' : 'counters'
+      fillDatalist('vis-group-names', getKnownControlGroups(visKind))
+      if (vb?.source === 'eventState' && (vb.group || vb.name)) {
+        fillDatalist('vis-value-options', controlStateEditor.eventStates?.[vb.group || vb.name]?.options || [])
+      } else {
+        fillDatalist('vis-value-options', [])
+      }
+    }
+
+    /** Isi kolom "Daftar Opsi" dari server (kecuali sedang diketik) untuk grup eventState terpilih. */
+    function prefillEventStateOptions() {
+      const input = document.getElementById('prop-es-options')
+      if (!input || document.activeElement === input) return
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const b = el?.textBinding
+      if (b?.source !== 'eventState') return
+      input.value = (controlStateEditor.eventStates?.[b.group ?? b.name]?.options || []).join(', ')
+    }
+
+    async function saveEventStateOptions() {
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const b = el?.textBinding
+      const group = (b?.group ?? b?.name ?? '').trim()
+      const statusEl = document.getElementById('prop-es-options-status')
+      if (!group) { statusEl.textContent = 'Isi nama grup dulu.'; return }
+      const options = [...new Set(document.getElementById('prop-es-options').value.split(',').map(v => v.trim()).filter(Boolean))]
+      if (options.length === 0) { statusEl.textContent = 'Isi minimal satu opsi.'; return }
+      try {
+        for (const option of options) {
+          const res = await fetch(`/api/control-state/event-states/${encodeURIComponent(group)}/options/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ option })
+          })
+          if (!res.ok) throw new Error('gagal menyimpan opsi')
+        }
+        await loadControlStateForEditor()
+        statusEl.textContent = `Tersimpan ${options.length} opsi ke grup "${group}".`
+        refreshControlDatalists()
+      } catch (err) {
+        statusEl.textContent = 'Gagal menyimpan opsi: ' + err.message
+      }
+    }
+
+    async function loadControlStateForEditor() {
+      try {
+        const res = await fetch('/api/control-state')
+        if (!res.ok) return
+        const text = await res.text()
+        const changed = text !== lastControlStateEditorHash
+        lastControlStateEditorHash = text
+        controlStateEditor = JSON.parse(text)
+        if (changed) { refreshControlDatalists(); prefillEventStateOptions() }
+        return changed
+      } catch (err) {
+        console.error('Failed to load control state:', err)
+      }
+    }
+
     function ensureMarqueeConfig(el) {
       if (!el.marquee) {
         el.marquee = {
@@ -1479,6 +1758,20 @@
       if (binding?.source === 'clock') {
         return `Source: Current Time (Clock) | Timezone: ${binding.timezone || 'Asia/Jakarta'}`
       }
+      if (binding?.source === 'counter') {
+        return `Source: Counter "${binding.group || binding.name || '-'}" | Dikontrol dari /control`
+      }
+      if (binding?.source === 'text') {
+        return `Source: Text "${binding.group || '-'}" | Isi ditulis dari /control`
+      }
+      if (binding?.source === 'eventState') {
+        return `Source: Event State "${binding.group || '-'}" | Dikontrol dari /control`
+      }
+      if (binding?.source === 'timer') {
+        const t = controlStateEditor.timers?.[binding.group]
+        const state = t ? (t.isRunning ? 'running' : 'paused/stopped') : 'belum dibuat'
+        return `Source: Timer "${binding.group || '-'}" | Status: ${state} | Dikontrol dari /control`
+      }
       if (binding?.source === 'f1data') {
         if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
         const stamp = f1Data.lastFetchedAt ? new Date(f1Data.lastFetchedAt).toLocaleString() : 'never'
@@ -1494,15 +1787,32 @@
       const binding = el ? ensureTextBinding(el) : null
       const isF1Data = binding?.source === 'f1data'
       const isClock = binding?.source === 'clock'
-      const isPlatform = !isF1Data && !isClock
+      const isControl = ['counter', 'eventState', 'timer', 'text'].includes(binding?.source)
+      const isTimer = binding?.source === 'timer'
+      const isPlatform = !isF1Data && !isClock && !isControl
       const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
 
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
       document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
       document.getElementById('clock-binding-group').classList.toggle('hidden', !isClock)
-      document.getElementById('standard-format-group').classList.toggle('hidden', isClock)
+      document.getElementById('control-binding-group').classList.toggle('hidden', !isControl)
+      document.getElementById('timer-format-group').classList.toggle('hidden', !isTimer)
+      document.getElementById('standard-format-group').classList.toggle('hidden', isClock || isControl)
+      document.getElementById('control-type-group').classList.toggle('hidden', !isControl)
+      document.getElementById('control-text-format-group').classList.toggle('hidden', !isControl || isTimer)
+      document.getElementById('eventstate-options-group').classList.toggle('hidden', binding?.source !== 'eventState')
+      if (isControl) {
+        document.getElementById('prop-control-group-label').textContent =
+          binding.source === 'counter' ? 'Nama Counter' : binding.source === 'eventState' ? 'Nama Event State' : binding.source === 'text' ? 'Nama Teks' : 'Nama Timer'
+      }
 
         ;[
+          'prop-control-group',
+          'prop-control-type',
+          'prop-control-text-format',
+          'prop-es-options',
+          'prop-es-options-save',
+          'prop-timer-format',
           'prop-text-binding-source',
           'prop-text-binding-field',
           'prop-text-binding-format',
@@ -1630,6 +1940,17 @@
         return formatClockTime(binding.timezone, binding.format, binding.prefix, binding.suffix)
       } else if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
+      } else if (binding.source === 'counter') {
+        const counterGroup = binding.group ?? binding.name
+        rawValue = controlStateEditor.counters?.[counterGroup]?.value
+        if (rawValue === undefined && counterGroup) rawValue = 0
+      } else if (binding.source === 'eventState') {
+        rawValue = controlStateEditor.eventStates?.[binding.group]?.value
+      } else if (binding.source === 'text') {
+        rawValue = controlStateEditor.texts?.[binding.group]?.value
+      } else if (binding.source === 'timer') {
+        const timer = controlStateEditor.timers?.[binding.group]
+        return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
       } else {
         rawValue = liveStats?.[binding.field]
       }
@@ -2126,7 +2447,7 @@
           textP.style.fontFamily = getFontStack(el.style?.fontFamily)
           textP.style.fontSize = `${el.style?.fontSize || 18}px`
           textP.style.fontWeight = el.style?.fontWeight || 'normal'
-          textP.style.color = el.style?.color || '#ffffff'
+          textP.style.color = getEffectiveTextColor(el)
           textP.style.padding = `${el.style?.padding || 0}px`
           textP.style.textAlign = el.style?.textAlign || 'left'
           textP.style.textTransform = el.style?.textTransform || 'none'
@@ -2406,6 +2727,17 @@
       document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
       document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
 
+      // Visibility Binding (semua tipe elemen)
+      const visBinding = ensureVisibilityBinding(el)
+      document.getElementById('prop-vis-enabled').checked = !!visBinding.enabled
+      document.getElementById('prop-vis-source').value = visBinding.source || 'counter'
+      document.getElementById('prop-vis-name').value = visBinding.group ?? visBinding.name ?? ''
+      document.getElementById('prop-vis-comparator').value = visBinding.comparator || 'eq'
+      document.getElementById('prop-vis-value').value = visBinding.matchValue ?? visBinding.value ?? ''
+      updateVisibilityControls()
+      // Buka otomatis kalau binding aktif supaya user sadar elemen ini punya kondisi tampil
+      if (visBinding.enabled) document.getElementById('visibility-binding-section').open = true
+
       // Animation Sequence Editor
       document.getElementById('anim-loop-toggle').checked = Boolean(el.animation?.loop)
       renderAnimationSequenceEditor(el)
@@ -2431,7 +2763,13 @@
         document.getElementById('prop-text-shadow-y').value = el.style?.textShadowOffsetY ?? 0
         const binding = ensureTextBinding(el)
         document.getElementById('prop-text-binding-enabled').checked = !!binding.enabled
-        document.getElementById('prop-text-binding-source').value = binding.source || 'platform'
+        const isControlSource = ['counter', 'eventState', 'timer', 'text'].includes(binding.source)
+        // UI: satu opsi "Control Panel"; tipenya (Counter/Event State/Timer) di dropdown Format.
+        // Data model tetap: textBinding.source = 'counter' | 'eventState' | 'timer'.
+        document.getElementById('prop-text-binding-source').value = isControlSource ? 'control' : (binding.source || 'platform')
+        document.getElementById('prop-control-type').value = isControlSource ? binding.source : 'counter'
+        document.getElementById('prop-control-text-format').value =
+          ['raw', 'number', 'uppercase', 'lowercase'].includes(binding.format) ? binding.format : 'raw'
         document.getElementById('prop-text-binding-field').value = binding.field || 'username'
         document.getElementById('prop-text-binding-format').value = binding.format || 'raw'
         document.getElementById('prop-text-binding-timezone').value = binding.timezone || 'Asia/Jakarta'
@@ -2440,6 +2778,12 @@
         document.getElementById('prop-text-binding-suffix').value = binding.suffix || ''
         document.getElementById('prop-text-binding-fallback').value = binding.fallback || el.style?.text || ''
         document.getElementById('prop-text-binding-f1-field-path').value = binding.source === 'f1data' ? (binding.fieldPath || '') : ''
+        document.getElementById('prop-control-group').value =
+          ['counter', 'eventState', 'timer', 'text'].includes(binding.source) ? (binding.group ?? binding.name ?? '') : ''
+        document.getElementById('prop-timer-format').value =
+          binding.source === 'timer' && ['mm:ss', 'hh:mm:ss', 'seconds'].includes(binding.format) ? binding.format : 'mm:ss'
+        refreshControlDatalists()
+        prefillEventStateOptions()
         updateBindingPreview()
 
         const marquee = ensureMarqueeConfig(el)
@@ -2876,20 +3220,107 @@
         renderCanvas()
         updateBindingPreview()
       })
-      document.getElementById('prop-text-binding-source').addEventListener('change', (e) => {
+      // Ganti sumber binding. `newSource` = nilai data-model sebenarnya
+      // ('platform' | 'f1data' | 'clock' | 'counter' | 'eventState' | 'timer').
+      const applyBindingSource = (newSource) => {
         const el = getSelected()
         if (!el) return
         const binding = ensureTextBinding(el)
-        binding.source = e.target.value
-        if (e.target.value === 'clock') {
+        const prevSource = binding.source
+        binding.source = newSource
+        const standardFormats = ['raw', 'number', 'uppercase', 'lowercase']
+        const timerFormats = ['mm:ss', 'hh:mm:ss', 'seconds']
+        if (newSource === 'clock') {
           if (!binding.timezone) binding.timezone = 'Asia/Jakarta'
           if (!binding.field) binding.field = 'currentTime'
-          if (binding.format === 'raw' || binding.format === 'number' || binding.format === 'uppercase' || binding.format === 'lowercase') {
+          if (standardFormats.includes(binding.format) || timerFormats.includes(binding.format)) {
             binding.format = 'HH:mm:ss'
           }
+        } else if (newSource === 'timer') {
+          if (!timerFormats.includes(binding.format)) binding.format = 'mm:ss'
+        } else if (prevSource === 'timer' || prevSource === 'clock') {
+          // keluar dari timer/clock: kembalikan format ke standar supaya select Format valid
+          binding.format = 'raw'
         }
+        // Nama grup dibawa antar tipe Control Panel (counter pakai `name`, lainnya `group`)
+        if (['counter', 'eventState', 'timer', 'text'].includes(newSource)) {
+          const current = document.getElementById('prop-control-group').value.trim()
+          const carried = current || binding.group || binding.name || ''
+          binding.group = carried
+          delete binding.name
+          document.getElementById('prop-control-group').value = carried
+          document.getElementById('prop-control-type').value = newSource
+          refreshControlDatalists()
+        }
+        document.getElementById('prop-text-binding-format').value = standardFormats.includes(binding.format) ? binding.format : 'raw'
+        document.getElementById('prop-control-text-format').value = standardFormats.includes(binding.format) ? binding.format : 'raw'
         renderCanvas()
         updateBindingPreview()
+      }
+      document.getElementById('prop-text-binding-source').addEventListener('change', (e) => {
+        // Opsi tunggal "Control Panel" -> tipe diambil dari dropdown Format (default Counter)
+        applyBindingSource(e.target.value === 'control'
+          ? (document.getElementById('prop-control-type').value || 'counter')
+          : e.target.value)
+      })
+      document.getElementById('prop-control-type').addEventListener('change', (e) => { applyBindingSource(e.target.value); prefillEventStateOptions() })
+      document.getElementById('prop-es-options-save').addEventListener('click', saveEventStateOptions)
+      document.getElementById('prop-control-text-format').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).format = e.target.value
+        document.getElementById('prop-text-binding-format').value = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-control-group').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        const binding = ensureTextBinding(el)
+        const name = e.target.value.trim()
+        if (['counter', 'eventState', 'timer', 'text'].includes(binding.source)) { binding.group = name; delete binding.name }
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-timer-format').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).format = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+
+      // Visibility Binding controls
+      const getVis = () => { const el = getSelected(); return el ? ensureVisibilityBinding(el) : null }
+      document.getElementById('prop-vis-enabled').addEventListener('change', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.enabled = e.target.checked
+        updateVisibilityControls()
+      })
+      document.getElementById('prop-vis-source').addEventListener('change', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.source = e.target.value
+        if (vb.source === 'eventState') vb.comparator = 'eq'
+        updateVisibilityControls()
+        refreshControlDatalists()
+      })
+      document.getElementById('prop-vis-name').addEventListener('input', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.group = e.target.value.trim()
+        delete vb.name
+        refreshControlDatalists()
+      })
+      document.getElementById('prop-vis-comparator').addEventListener('change', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.comparator = e.target.value
+      })
+      document.getElementById('prop-vis-value').addEventListener('input', (e) => {
+        const vb = getVis(); if (!vb) return
+        // counter: simpan angka; eventState: simpan string apa adanya
+        vb.matchValue = vb.source === 'counter' && e.target.value.trim() !== '' && Number.isFinite(Number(e.target.value))
+          ? Number(e.target.value)
+          : e.target.value
+        delete vb.value
       })
       document.getElementById('prop-text-binding-timezone').addEventListener('change', (e) => {
         const el = getSelected()
@@ -3439,10 +3870,17 @@
       setInterval(loadLiveStats, 2000)
       setInterval(loadF1Data, 30000)
       setInterval(loadPlatformConnectorStatus, 4000)
-      setInterval(() => {
+      loadControlStateForEditor().then(() => { renderCanvas(); updateBindingPreview() })
+      setInterval(async () => {
+        const changed = await loadControlStateForEditor()
         if (scene && scene.elements) {
+          const controlSources = ['counter', 'eventState', 'timer', 'text']
+          const hasControlBinding = scene.elements.some(el => !el.hidden && el.textBinding?.enabled && controlSources.includes(el.textBinding?.source))
+          const hasRunningTimer = scene.elements.some(el =>
+            !el.hidden && el.textBinding?.enabled && el.textBinding?.source === 'timer' &&
+            controlStateEditor.timers?.[el.textBinding.group]?.isRunning)
           const hasClock = scene.elements.some(el => !el.hidden && el.textBinding?.enabled && el.textBinding?.source === 'clock')
-          if (hasClock) {
+          if (hasClock || hasRunningTimer || (hasControlBinding && changed)) {
             renderCanvas()
             updateBindingPreview()
           }

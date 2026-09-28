@@ -80,6 +80,10 @@
     }
     let f1Data = { sessions: [], driverStandings: [], constructorStandings: [] }
     let lastF1DataHash = ''
+    // Infrastruktur Control Panel (fondasi #5/#6) — state Counter/Event State, dipoll terpisah
+    // (300-500ms) dari syncScene/syncLiveStats (2 detik) karena butuh terasa instan saat dipencet live.
+    let controlState = { counters: {}, eventStates: {}, timers: {}, texts: {} }
+    let lastControlStateHash = ''
     let displayedChat = { author: '', message: '' }
     let chatDisplayQueue = []
     let displayedChatIds = new Set()
@@ -181,6 +185,18 @@
       return track
     }
 
+    // Warna font per opsi Event State (diatur dari Control Panel). Kalau elemen teks di-bind ke
+    // eventState dan opsi aktif punya warna, warna itu menimpa style.color elemen.
+    function getEffectiveTextColor(el) {
+      const b = el?.textBinding
+      if (b?.enabled && b.source === 'eventState') {
+        const es = controlState.eventStates?.[b.group]
+        const c = es?.colors?.[es.value]
+        if (c) return c
+      }
+      return el?.style?.color || '#ffffff'
+    }
+
     function styleStaticText(textEl, el, text) {
       textEl.style.width = '100%'
       textEl.style.height = '100%'
@@ -189,7 +205,7 @@
       textEl.style.fontFamily = getFontStack(el.style?.fontFamily)
       textEl.style.fontSize = `${el.style?.fontSize || 18}px`
       textEl.style.fontWeight = el.style?.fontWeight || 'normal'
-      textEl.style.color = el.style?.color || '#ffffff'
+      textEl.style.color = getEffectiveTextColor(el)
       textEl.style.padding = `${el.style?.padding || 0}px`
       textEl.style.textAlign = el.style?.textAlign || 'left'
       textEl.style.textTransform = el.style?.textTransform || 'none'
@@ -216,7 +232,7 @@
       const textWidth = measureTextWidth(text, style)
 
       const record = renderedElements.get(el.id)
-      const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur].join('|')
+      const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur, getEffectiveTextColor(el)].join('|')
 
       if (record && record.scrollTween) {
         record.scrollTween.kill()
@@ -242,7 +258,7 @@
         span.style.fontFamily = getFontStack(style.fontFamily)
         span.style.fontSize = `${style.fontSize || 18}px`
         span.style.fontWeight = style.fontWeight || 'normal'
-        span.style.color = style.color || '#ffffff'
+        span.style.color = getEffectiveTextColor(el)
         span.style.letterSpacing = `${style.letterSpacing || 0}px`
         span.style.textTransform = style.textTransform || 'none'
         if (style.textShadowColor) {
@@ -296,7 +312,7 @@
       const style = el.style || {}
 
       const record = renderedElements.get(el.id)
-      const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur].join('|')
+      const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur, getEffectiveTextColor(el)].join('|')
 
       if (record && record.marqueeTween) {
         record.marqueeTween.kill()
@@ -316,7 +332,7 @@
         block.style.fontFamily = getFontStack(style.fontFamily)
         block.style.fontSize = `${style.fontSize || 18}px`
         block.style.fontWeight = style.fontWeight || 'normal'
-        block.style.color = style.color || '#ffffff'
+        block.style.color = getEffectiveTextColor(el)
         block.style.letterSpacing = `${style.letterSpacing || 0}px`
         block.style.textTransform = style.textTransform || 'none'
         block.style.textAlign = style.textAlign || 'left'
@@ -529,6 +545,46 @@
       }
     }
 
+    // Infrastruktur Control Panel — Timer (Countdown & Count Up). Server cuma nyimpen
+    // checkpoint (startedAtMs, pausedAccumMs, isRunning); elapsed dihitung live di sini
+    // (client-side) supaya tampilan bisa tick tiap detik tanpa perlu polling super cepat.
+    function computeTimerElapsedMs(timer) {
+      if (!timer) return 0
+      if (timer.isRunning && typeof timer.startedAtMs === 'number') {
+        return Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
+      }
+      return timer.pausedAccumMs || 0
+    }
+
+    function computeTimerDisplayMs(timer) {
+      const elapsed = computeTimerElapsedMs(timer)
+      if (timer?.mode === 'countdown') {
+        const remaining = (timer.durationMs || 0) - elapsed
+        if (remaining <= 0 && !timer.continueBelowZero) return 0
+        return remaining
+      }
+      return elapsed
+    }
+
+    function formatTimerMs(ms, format) {
+      const sign = ms < 0 ? '-' : ''
+      const abs = Math.abs(Math.round(ms / 1000)) // detik bulat
+      const hh = Math.floor(abs / 3600)
+      const mm = Math.floor((abs % 3600) / 60)
+      const ss = abs % 60
+      const pad = (n) => String(n).padStart(2, '0')
+
+      if (format === 'hh:mm:ss') {
+        return `${sign}${pad(hh)}:${pad(mm)}:${pad(ss)}`
+      }
+      if (format === 'seconds') {
+        return `${sign}${abs}`
+      }
+      // default 'mm:ss' — kalau lebih dari 1 jam, ikut meluap ke menit (tidak dipotong)
+      const totalMinutes = Math.floor(abs / 60)
+      return `${sign}${pad(totalMinutes)}:${pad(ss)}`
+    }
+
     function resolveElementText(el) {
       const binding = el?.textBinding
       const fallback = binding?.fallback || el?.style?.text || ''
@@ -539,6 +595,15 @@
         return formatClockTime(binding.timezone, binding.format, binding.prefix, binding.suffix)
       } else if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
+      } else if (binding.source === 'counter') {
+        rawValue = controlState.counters?.[binding.group ?? binding.name]?.value
+      } else if (binding.source === 'eventState') {
+        rawValue = controlState.eventStates?.[binding.group]?.value
+      } else if (binding.source === 'text') {
+        rawValue = controlState.texts?.[binding.group]?.value
+      } else if (binding.source === 'timer') {
+        const timer = controlState.timers?.[binding.group]
+        return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
       } else if (binding.field === 'latestChatAuthor') {
         rawValue = displayedChat.author
       } else if (binding.field === 'latestChatMessage') {
@@ -677,10 +742,37 @@
       applyElementContent(node, el)
     }
 
+    // Infrastruktur Control Panel (fondasi #5/#6) — visibilityBinding terpisah dari `hidden`
+    // (toggle manual di Editor). Kalau `hidden=true`, itu selalu menang (manual override final).
+    function isElementHidden(el) {
+      if (el.hidden) return true
+      const binding = el.visibilityBinding
+      if (!binding?.enabled) return false
+      if (binding.source === 'counter') {
+        const group = binding.group ?? binding.name
+        const current = Number(controlState.counters?.[group]?.value ?? 0)
+        const target = Number(binding.matchValue ?? binding.value)
+        switch (binding.comparator || 'eq') {
+          case 'neq': return current === target
+          case 'gt': return !(current > target)
+          case 'gte': return !(current >= target)
+          case 'lt': return !(current < target)
+          case 'lte': return !(current <= target)
+          default: return current !== target
+        }
+      }
+      if (binding.source === 'eventState') {
+        const group = binding.group ?? binding.name
+        const current = controlState.eventStates?.[group]?.value
+        return current !== (binding.matchValue ?? binding.value)
+      }
+      return false
+    }
+
     function renderScene(scene) {
       if (!scene || !scene.elements) return
       scaleViewport()
-      const visibleElements = scene.elements.filter(el => !el.hidden)
+      const visibleElements = scene.elements.filter(el => !isElementHidden(el))
       const visibleIds = new Set(visibleElements.map(el => el.id))
       const byId = new Map(scene.elements.map(el => [el.id, el]))
 
@@ -892,6 +984,23 @@
       }
     }
 
+    // Infrastruktur Control Panel (fondasi #5/#6) — payload kecil (cuma angka/string per
+    // grup), jadi polling 300-500ms murah dan cukup untuk v1 (tidak perlu WebSocket/SSE).
+    async function syncControlState(isInitial = false) {
+      try {
+        const res = await fetch('/api/control-state')
+        if (!res.ok) return
+        const text = await res.text()
+        if (text !== lastControlStateHash || isInitial) {
+          lastControlStateHash = text
+          controlState = JSON.parse(text)
+          if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
+        }
+      } catch (err) {
+        console.error('Failed to sync control state:', err)
+      }
+    }
+
     window.addEventListener('resize', scaleViewport)
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -899,6 +1008,7 @@
       syncLiveStats(true)
       syncF1Data(true)
       syncScene(true)
+      syncControlState(true)
       syncPlatformConnectorConfig()
       restartChatDisplayTimer()
 
@@ -910,12 +1020,20 @@
       setTimeout(() => setInterval(() => syncLiveStats(false), 2000), 300)
       setTimeout(() => setInterval(() => syncF1Data(false), 30000), 600)
       setTimeout(() => setInterval(syncPlatformConnectorConfig, 5000), 900)
+      // Mulai dari 500ms; turunkan ke 300ms kalau masih kerasa lag pas dites riil live.
+      setTimeout(() => setInterval(() => syncControlState(false), 500), 150)
 
-      // Tick per 1 detik khusus elemen jam (clock) tanpa re-render scene penuh
+      // Tick per 1 detik khusus elemen jam (clock) & timer yang sedang running, tanpa
+      // re-render scene penuh — elapsed timer dihitung live di sini, tidak nunggu poll
+      // control-state (300-500ms) supaya angka tetap jalan mulus di antara dua poll.
       setInterval(() => {
         if (!currentScene || !currentScene.elements) return
         currentScene.elements.forEach(el => {
-          if (!el.hidden && el.textBinding?.enabled && el.textBinding?.source === 'clock') {
+          const binding = el.textBinding
+          if (isElementHidden(el) || !binding?.enabled) return
+          const isClock = binding.source === 'clock'
+          const isRunningTimer = binding.source === 'timer' && controlState.timers?.[binding.group]?.isRunning
+          if (isClock || isRunningTimer) {
             const record = renderedElements.get(el.id)
             if (record && record.node) {
               applyElementContent(record.node, el)

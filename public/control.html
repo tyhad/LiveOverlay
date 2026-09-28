@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Control Panel — LiveOverlay</title>
+<style>
+  :root {
+    --bg: #020618;
+    --panel: #0f172b;
+    --panel-2: #1d293d;
+    --border: #314158;
+    --indigo: #4f39f6;
+    --indigo-2: #625fff;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --danger: #ff2357;
+    --ok: #10b981;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  body {
+    padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+    padding-top: calc(max(12px, env(safe-area-inset-top)));
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin: 0;
+    color: #fff;
+  }
+  header h1 span { color: var(--indigo-2); }
+  #status-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  #status-dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  #status-dot.err { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  main { display: flex; flex-direction: column; gap: 16px; max-width: 720px; margin: 0 auto; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    padding: 40px 16px;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+  }
+
+  section.group {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .group-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin: 0 0 10px 2px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .group-title .kind {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+    background: var(--panel-2);
+    border-radius: 999px;
+    padding: 2px 8px;
+    color: var(--indigo-2);
+  }
+
+  /* Counter */
+  .counter-row {
+    display: grid;
+    grid-template-columns: 72px 1fr 72px;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .counter-btn {
+    font-size: 30px;
+    font-weight: 800;
+    border: none;
+    border-radius: 14px;
+    background: var(--panel-2);
+    color: #fff;
+    cursor: pointer;
+    touch-action: manipulation;
+    min-height: 76px;
+  }
+  .counter-btn:active { transform: scale(0.94); background: var(--indigo); }
+  .counter-btn.dec:active { background: var(--danger); }
+  .counter-value {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    line-height: 1;
+  }
+  .counter-value small {
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .reset-btn {
+    margin-top: 8px;
+    width: 100%;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .reset-btn:active { background: var(--panel-2); color: var(--text); }
+
+  /* Event state pills */
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pill {
+    flex: 1 1 auto;
+    min-width: 72px;
+    padding: 14px 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text-dim);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .pill.active {
+    background: var(--indigo);
+    border-color: var(--indigo-2);
+    color: #fff;
+    box-shadow: 0 0 0 2px rgba(98, 95, 255, 0.35);
+  }
+  .pill:active { transform: scale(0.96); }
+  .pill-wrap { position: relative; flex: 1 1 auto; min-width: 72px; display: flex; }
+  .pill-wrap .pill { flex: 1; }
+  .pill-wrap.managing { flex-direction: column; gap: 4px; }
+  .pill-tools { display: flex; gap: 4px; align-items: center; justify-content: center; }
+  .color-tool {
+    display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-dim);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px 2px 4px; cursor: pointer;
+  }
+  .color-tool input { width: 22px; height: 22px; padding: 0; border: none; background: transparent; cursor: pointer; }
+  .tool-btn {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text-dim); font-size: 12px; cursor: pointer; line-height: 1;
+  }
+  .tool-btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; border: 1px solid rgba(255,255,255,.4); vertical-align: middle; }
+  .pill-remove {
+    position: absolute; top: -6px; right: -4px;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: none; background: var(--danger); color: #fff;
+    font-size: 11px; font-weight: 800; cursor: pointer; line-height: 1;
+  }
+  .manage-btn {
+    font-size: 10px; font-weight: 700; text-transform: none; letter-spacing: normal;
+    padding: 2px 10px; border-radius: 999px; cursor: pointer;
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .manage-btn.on { background: var(--indigo); border-color: var(--indigo-2); color: #fff; }
+  .add-option-row { display: flex; gap: 8px; margin-top: 10px; }
+  .add-option-row input {
+    flex: 1; min-width: 0; padding: 10px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: 13px; user-select: text;
+  }
+  .add-option-row button {
+    padding: 10px 14px; border-radius: 10px; border: none;
+    background: var(--indigo); color: #fff; font-weight: 700; cursor: pointer;
+  }
+
+  /* Timer (placeholder UI — backend penuh menyusul di #5) */
+  .timer-display {
+    text-align: center;
+    font-size: 44px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .timer-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .timer-controls button {
+    flex: 1;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    background: var(--panel-2);
+    color: #fff;
+    cursor: pointer;
+  }
+  .timer-controls button.start { background: var(--ok); }
+  .timer-controls button.stop { background: var(--danger); }
+  .timer-manual {
+    display: flex;
+    gap: 8px;
+  }
+  .timer-manual input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 13px;
+  }
+  .timer-manual button {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    background: var(--indigo);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .timer-note {
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .timer-manual input.invalid { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(255,35,87,.3); }
+  .text-input {
+    width: 100%; padding: 10px; border-radius: 10px; resize: vertical; min-height: 72px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: 14px; font-family: inherit; line-height: 1.4; user-select: text;
+  }
+  .text-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .text-send {
+    flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: 700; font-size: 13px;
+    background: var(--panel-2); color: #fff; cursor: pointer;
+  }
+  .text-send.dirty { background: var(--ok); }
+  .text-clear {
+    padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-dim); font-weight: 700; font-size: 12px; cursor: pointer;
+  }
+  .text-status { margin-top: 6px; font-size: 10px; color: var(--text-dim); }
+  .timer-mode-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+  .mode-btn.active {
+    background: var(--indigo);
+    border-color: var(--indigo-2);
+    color: #fff;
+  }
+  .timer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .timer-toggle input { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Control <span>Panel</span></h1>
+    <div id="status-dot" title="Sinkronisasi control-state"></div>
+  </header>
+
+  <main id="app">
+    <div class="empty-state">Memuat binding dari scene…</div>
+  </main>
+
+  <script>
+    const POLL_MS = 1000
+    let controlState = { counters: {}, eventStates: {} }
+    let usedGroups = { counters: new Set(), eventStates: new Set(), timers: new Set(), texts: new Set() }
+    let scanned = false
+
+    function setStatus(ok) {
+      const dot = document.getElementById('status-dot')
+      dot.classList.remove('live', 'err')
+      dot.classList.add(ok ? 'live' : 'err')
+    }
+
+    /** Scan semua scene, kumpulkan nama grup unik dari textBinding/visibilityBinding
+     *  dengan source 'counter' atau 'eventState' — supaya section muncul otomatis di
+     *  Control Panel begitu ada binding baru dibuat di Editor, tanpa setup ganda. */
+    async function scanUsedGroups() {
+      const counters = new Set()
+      const eventStates = new Set()
+      const timers = new Set()
+      const texts = new Set()
+      try {
+        const res = await fetch('/api/scenes')
+        if (!res.ok) return { counters, eventStates, timers, texts }
+        const data = await res.json()
+        const scenes = Array.isArray(data.scenes) ? data.scenes : []
+        scenes.forEach(scene => {
+          (scene.elements || []).forEach(el => {
+            const tb = el.textBinding
+            if (tb?.source === 'counter' && (tb.group || tb.name)) counters.add(tb.group || tb.name)
+            if (tb?.source === 'eventState' && tb.group) eventStates.add(tb.group)
+            if (tb?.source === 'timer' && tb.group) timers.add(tb.group)
+            if (tb?.source === 'text' && tb.group) texts.add(tb.group)
+            const vb = el.visibilityBinding
+            if (vb?.source === 'counter' && (vb.group || vb.name)) counters.add(vb.group || vb.name)
+            if (vb?.source === 'eventState' && (vb.group || vb.name)) eventStates.add(vb.group || vb.name)
+          })
+        })
+      } catch (err) {
+        console.error('Failed to scan scenes for control groups:', err)
+      }
+      return { counters, eventStates, timers, texts }
+    }
+
+    async function syncControlState() {
+      try {
+        const res = await fetch('/api/control-state')
+        if (!res.ok) throw new Error('bad status')
+        controlState = await res.json()
+        setStatus(true)
+        render()
+      } catch (err) {
+        setStatus(false)
+      }
+    }
+    async function callApi(path, body) {
+      try {
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: body ? { 'Content-Type': 'application/json' } : undefined,
+          body: body ? JSON.stringify(body) : undefined,
+        })
+        if (res.ok) {
+          controlState = (await res.json()).data
+          render()
+        }
+      } catch (err) {
+        console.error('Control action failed:', err)
+      }
+    }
+
+    function incCounter(name) { callApi(`/api/control-state/counters/${encodeURIComponent(name)}/inc`) }
+    function decCounter(name) { callApi(`/api/control-state/counters/${encodeURIComponent(name)}/dec`) }
+    function resetCounter(name) { callApi(`/api/control-state/counters/${encodeURIComponent(name)}/reset`) }
+    function setEventState(group, value) { callApi(`/api/control-state/event-states/${encodeURIComponent(group)}/set`, { value }) }
+
+    function renderCounterSection(name) {
+      const counter = controlState.counters?.[name] || { value: 0, step: 1 }
+      return `
+        <section class="group">
+          <div class="group-title"><span>${name}</span><span class="kind">Counter</span></div>
+          <div class="counter-row">
+            <button class="counter-btn dec" onclick="decCounter('${name}')" aria-label="Kurangi">−</button>
+            <div class="counter-value">${counter.value}<small>step ${counter.step}</small></div>
+            <button class="counter-btn inc" onclick="incCounter('${name}')" aria-label="Tambah">+</button>
+          </div>
+          <button class="reset-btn" onclick="resetCounter('${name}')">Reset ke 0</button>
+        </section>
+      `
+    }
+
+    function esc(v) {
+      return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+    const manageGroups = new Set() // grup event state yang sedang mode "Kelola" (tampilkan ✕ hapus opsi)
+
+    function renderEventStateSection(group) {
+      const es = controlState.eventStates?.[group] || { value: '', options: [] }
+      const options = es.options.length > 0 ? es.options : (es.value ? [es.value] : [])
+      const managing = manageGroups.has(group)
+      const pills = options.map(opt => {
+        const color = es.colors?.[opt] || ''
+        return `
+        <div class="pill-wrap ${managing ? 'managing' : ''}">
+          <button class="pill ${opt === es.value ? 'active' : ''}" data-es-set data-group="${esc(group)}" data-option="${esc(opt)}">
+            ${color ? `<span class="color-dot" style="background:${esc(color)}"></span>` : ''}${esc(opt)}
+          </button>
+          ${managing ? `
+            <div class="pill-tools">
+              <label class="color-tool" title="Warna font opsi ini">
+                <input type="color" data-es-color data-group="${esc(group)}" data-option="${esc(opt)}" value="${/^#[0-9a-fA-F]{6}$/.test(color) ? color : '#ffffff'}" />
+                <span>Warna</span>
+              </label>
+              ${color ? `<button class="tool-btn" data-es-color-clear data-group="${esc(group)}" data-option="${esc(opt)}" title="Hapus warna">⟲</button>` : ''}
+              <button class="tool-btn danger" data-es-remove data-group="${esc(group)}" data-option="${esc(opt)}" aria-label="Hapus opsi">✕</button>
+            </div>` : ''}
+        </div>
+      `}).join('')
+      return `
+        <section class="group">
+          <div class="group-title">
+            <span>${esc(group)}</span>
+            <span style="display:flex;gap:6px;align-items:center;">
+              <button class="manage-btn ${managing ? 'on' : ''}" data-es-manage data-group="${esc(group)}">${managing ? 'Selesai' : 'Kelola'}</button>
+              <span class="kind">Event State</span>
+            </span>
+          </div>
+          <div class="pill-row">${pills || '<span style="color:var(--text-dim);font-size:12px;">Belum ada opsi — tambah di bawah.</span>'}</div>
+          <div class="add-option-row">
+            <input id="add-option-${esc(group)}" data-es-input data-group="${esc(group)}" type="text" placeholder="Tambah opsi (mis. green)" autocomplete="off" />
+            <button data-es-add data-group="${esc(group)}">Tambah</button>
+          </div>
+        </section>
+      `
+    }
+
+    async function addEventStateOptionFromInput(group) {
+      const input = document.getElementById(`add-option-${group}`)
+      const option = input ? input.value.trim() : ''
+      if (!option) return
+      if (input) input.value = ''
+      await callApi(`/api/control-state/event-states/${encodeURIComponent(group)}/options/add`, { option })
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('button')
+      if (!btn) return
+      const group = btn.dataset.group
+      if (btn.hasAttribute('data-es-set')) setEventState(group, btn.dataset.option)
+      else if (btn.hasAttribute('data-es-add')) addEventStateOptionFromInput(group)
+      else if (btn.hasAttribute('data-es-color-clear')) {
+        callApi(`/api/control-state/event-states/${encodeURIComponent(group)}/options/color`, { option: btn.dataset.option, color: '' })
+      } else if (btn.hasAttribute('data-es-remove')) {
+        callApi(`/api/control-state/event-states/${encodeURIComponent(group)}/options/remove`, { option: btn.dataset.option })
+      } else if (btn.hasAttribute('data-es-manage')) {
+        manageGroups.has(group) ? manageGroups.delete(group) : manageGroups.add(group)
+        render()
+      }
+    })
+    // 'change' (bukan 'input') supaya request cuma terkirim sekali saat picker warna ditutup
+    document.addEventListener('change', (e) => {
+      const inp = e.target
+      if (inp.matches && inp.matches('[data-es-color]')) {
+        callApi(`/api/control-state/event-states/${encodeURIComponent(inp.dataset.group)}/options/color`, { option: inp.dataset.option, color: inp.value })
+      }
+    })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.matches('[data-es-input]')) addEventStateOptionFromInput(e.target.dataset.group)
+    })
+
+    // Timer (Countdown & Count Up) — real, tersinkron ke server via control-state.json.
+    // Elapsed dihitung live di sini dari checkpoint server (startedAtMs/pausedAccumMs),
+    // di-tick tiap 250ms lokal (setInterval) supaya display mulus di antara poll 1 detik,
+    // tanpa perlu polling super cepat ke server.
+    let timerTickHandle = null
+
+    function computeTimerElapsedMs(timer) {
+      if (!timer) return 0
+      if (timer.isRunning && typeof timer.startedAtMs === 'number') {
+        return Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
+      }
+      return timer.pausedAccumMs || 0
+    }
+    function computeTimerDisplayMs(timer) {
+      const elapsed = computeTimerElapsedMs(timer)
+      if (timer?.mode === 'countdown') {
+        const remaining = (timer.durationMs || 0) - elapsed
+        if (remaining <= 0 && !timer.continueBelowZero) return 0
+        return remaining
+      }
+      return elapsed
+    }
+    function formatTimerMs(ms) {
+      const sign = ms < 0 ? '-' : ''
+      const abs = Math.abs(Math.round(ms / 1000))
+      const mm = Math.floor(abs / 60).toString().padStart(2, '0')
+      const ss = (abs % 60).toString().padStart(2, '0')
+      return `${sign}${mm}:${ss}`
+    }
+
+    /** Parse durasi ketikan manual. Format:
+     *   "50"       -> 50 menit (angka polos = menit, kompatibel dengan versi lama)
+     *   "05:30"    -> mm:ss   (5 menit 30 detik)
+     *   "01:00:00" -> hh:mm:ss (1 jam)
+     *   "1:02:03.5"-> detik boleh desimal
+     * Jumlah tanda ':' menentukan arti: 1 = mm:ss, 2 = hh:mm:ss. Return ms, atau null kalau tidak valid. */
+    function parseDurationInput(raw) {
+      const text = String(raw ?? '').trim().replace(',', '.')
+      if (!text) return null
+      const parts = text.split(':')
+      if (parts.length > 3) return null
+      if (!parts.every(p => /^\d+(\.\d+)?$/.test(p.trim()))) return null
+      const nums = parts.map(p => Number(p))
+      let seconds
+      if (nums.length === 1) seconds = nums[0] * 60
+      else if (nums.length === 2) seconds = nums[0] * 60 + nums[1]
+      else seconds = nums[0] * 3600 + nums[1] * 60 + nums[2]
+      if (!Number.isFinite(seconds) || seconds <= 0) return null
+      return Math.round(seconds * 1000)
+    }
+
+    /** ms -> "mm:ss" atau "hh:mm:ss" (kalau >= 1 jam) untuk ditampilkan di input durasi. */
+    function formatDurationInput(ms) {
+      const total = Math.round((ms || 0) / 1000)
+      if (total <= 0) return ''
+      const h = Math.floor(total / 3600)
+      const m = Math.floor((total % 3600) / 60)
+      const sec = total % 60
+      const pad = (n) => String(n).padStart(2, '0')
+      return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`
+    }
+
+    function startTimer(name) {
+      const durationInput = document.getElementById(`timer-duration-${name}`)
+      const mode = timerPendingMode[name] || 'countdown'
+      const body = { mode }
+      if (mode === 'countdown') {
+        const durationMs = parseDurationInput(durationInput ? durationInput.value : '')
+        if (durationMs === null) {
+          if (durationInput) {
+            durationInput.classList.add('invalid')
+            durationInput.focus()
+          }
+          return
+        }
+        if (durationInput) durationInput.classList.remove('invalid')
+        body.durationMs = durationMs
+      }
+      callApi(`/api/control-state/timers/${encodeURIComponent(name)}/start`, body)
+    }
+    function pauseTimer(name) { callApi(`/api/control-state/timers/${encodeURIComponent(name)}/pause`) }
+    function resetTimer(name) { callApi(`/api/control-state/timers/${encodeURIComponent(name)}/reset`) }
+    function toggleContinueBelowZero(name, checked) {
+      callApi(`/api/control-state/timers/${encodeURIComponent(name)}/configure`, { continueBelowZero: checked })
+    }
+    const timerPendingMode = {}
+    function setTimerMode(name, mode) {
+      timerPendingMode[name] = mode
+      callApi(`/api/control-state/timers/${encodeURIComponent(name)}/configure`, { mode })
+    }
+
+    function renderTimerSection(name) {
+      const timer = controlState.timers?.[name] || {
+        mode: 'countdown', durationMs: 0, startedAtMs: null, pausedAccumMs: 0, isRunning: false, continueBelowZero: false,
+      }
+      timerPendingMode[name] = timerPendingMode[name] || timer.mode
+      const displayMs = computeTimerDisplayMs(timer)
+      const durationText = formatDurationInput(timer.durationMs)
+      return `
+        <section class="group">
+          <div class="group-title"><span>${name}</span><span class="kind">Timer</span></div>
+          <div class="timer-mode-row">
+            <button class="mode-btn ${timer.mode === 'countdown' ? 'active' : ''}" onclick="setTimerMode('${name}', 'countdown')">Countdown</button>
+            <button class="mode-btn ${timer.mode === 'countup' ? 'active' : ''}" onclick="setTimerMode('${name}', 'countup')">Count Up</button>
+          </div>
+          <div class="timer-display" data-timer-name="${name}">${formatTimerMs(displayMs)}</div>
+          <div class="timer-controls">
+            <button class="start" onclick="startTimer('${name}')">${timer.isRunning ? 'Restart' : 'Start'}</button>
+            <button onclick="pauseTimer('${name}')">Pause</button>
+            <button class="stop" onclick="resetTimer('${name}')">Reset</button>
+          </div>
+          ${timer.mode === 'countdown' ? `
+            <div class="timer-manual">
+              <input id="timer-duration-${name}" type="text" autocomplete="off" placeholder="Durasi mm:ss atau hh:mm:ss (mis. 10:00 / 01:00:00)" value="${esc(durationText)}" />
+            </div>
+            <label class="timer-toggle">
+              <input type="checkbox" ${timer.continueBelowZero ? 'checked' : ''} onchange="toggleContinueBelowZero('${name}', this.checked)" />
+              Lanjut ke minus setelah 0
+            </label>
+          ` : ''}
+        </section>
+      `
+    }
+
+    // Teks bebas (single/multiline). Draft disimpan lokal selama user mengetik supaya
+    // re-render poll 1 detik tidak menimpa ketikan; baru dikirim ke server saat Kirim.
+    const textDrafts = {}
+
+    function renderTextSection(name) {
+      const serverValue = controlState.texts?.[name]?.value ?? ''
+      const hasDraft = Object.prototype.hasOwnProperty.call(textDrafts, name)
+      const draft = hasDraft ? textDrafts[name] : serverValue
+      const dirty = hasDraft && textDrafts[name] !== serverValue
+      const lines = serverValue ? serverValue.split('\n').length : 0
+      return `
+        <section class="group">
+          <div class="group-title"><span>${esc(name)}</span><span class="kind">Text</span></div>
+          <textarea id="text-input-${esc(name)}" class="text-input" data-text-input data-name="${esc(name)}" rows="3"
+            placeholder="Tulis teks… (Enter = baris baru, Ctrl+Enter = kirim)">${esc(draft)}</textarea>
+          <div class="text-actions">
+            <button class="text-send ${dirty ? 'dirty' : ''}" data-text-send data-name="${esc(name)}">Kirim ke overlay</button>
+            <button class="text-clear" data-text-clear data-name="${esc(name)}">Kosongkan</button>
+          </div>
+          <div class="text-status">${dirty ? 'Ada perubahan belum dikirim' : (serverValue ? `Tayang: ${lines} baris` : 'Kosong')}</div>
+        </section>
+      `
+    }
+
+    async function sendText(name, value) {
+      delete textDrafts[name]
+      await callApi(`/api/control-state/texts/${encodeURIComponent(name)}/set`, { value })
+    }
+
+    document.addEventListener('input', (e) => {
+      const ta = e.target
+      if (ta.matches && ta.matches('[data-text-input]')) {
+        textDrafts[ta.dataset.name] = ta.value
+        const btn = document.querySelector(`[data-text-send][data-name="${CSS.escape(ta.dataset.name)}"]`)
+        if (btn) btn.classList.add('dirty')
+      }
+    })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && e.target.matches && e.target.matches('[data-text-input]')) {
+        e.preventDefault()
+        sendText(e.target.dataset.name, e.target.value)
+      }
+    })
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('button')
+      if (!btn) return
+      if (btn.hasAttribute('data-text-send')) {
+        const ta = document.getElementById(`text-input-${btn.dataset.name}`)
+        sendText(btn.dataset.name, ta ? ta.value : '')
+      } else if (btn.hasAttribute('data-text-clear')) {
+        sendText(btn.dataset.name, '')
+      }
+    })
+
+    function tickRunningTimerDisplays() {
+      document.querySelectorAll('[data-timer-name]').forEach(node => {
+        const name = node.dataset.timerName
+        const timer = controlState.timers?.[name]
+        if (timer?.isRunning) {
+          node.textContent = formatTimerMs(computeTimerDisplayMs(timer))
+        }
+      })
+    }
+
+    function render() {
+      const app = document.getElementById('app')
+      const counterNames = [...usedGroups.counters].sort()
+      const eventGroups = [...usedGroups.eventStates].sort()
+      const timerGroups = [...usedGroups.timers].sort()
+      const textGroups = [...usedGroups.texts].sort()
+
+      if (!scanned) {
+        app.innerHTML = '<div class="empty-state">Memuat binding dari scene…</div>'
+        return
+      }
+
+      if (counterNames.length === 0 && eventGroups.length === 0 && timerGroups.length === 0 && textGroups.length === 0) {
+        app.innerHTML = `
+          <div class="empty-state">
+            Belum ada Counter, Event State, Timer, atau Text yang dipakai.<br/>
+            Buat binding baru (source: Control Panel → Counter / Event State / Timer / Text) di Editor — section-nya bakal otomatis muncul di sini.
+          </div>
+        `
+        return
+      }
+
+      // Jangan re-render saat picker warna sedang fokus (bisa menutup picker native).
+      const ae = document.activeElement
+      if (ae && ae.matches && ae.matches('input[type="color"], textarea') && app.contains(ae)) return
+
+      // Poll 1 detik me-render ulang seluruh #app; simpan isi input + fokus supaya
+      // ketikan user (mis. nama opsi / durasi) tidak hilang.
+      const saved = {}
+      app.querySelectorAll('input[id]').forEach(inp => {
+        saved[inp.id] = inp.type === 'checkbox' ? inp.checked : inp.value
+      })
+      const focusedId = document.activeElement && app.contains(document.activeElement) ? document.activeElement.id : null
+      const selStart = focusedId ? document.activeElement.selectionStart : null
+
+      const html = [
+        ...counterNames.map(renderCounterSection),
+        ...eventGroups.map(renderEventStateSection),
+        ...timerGroups.map(renderTimerSection),
+        ...textGroups.map(renderTextSection),
+      ].join('')
+      if (html === app.dataset.lastHtml) return
+      app.dataset.lastHtml = html
+      app.innerHTML = html
+
+      Object.entries(saved).forEach(([id, val]) => {
+        const inp = document.getElementById(id)
+        if (!inp) return
+        if (inp.type === 'checkbox') return // checkbox mengikuti state server
+        if (id.startsWith('add-option-') || document.activeElement?.id === id || val !== '') inp.value = val
+      })
+      if (focusedId) {
+        const inp = document.getElementById(focusedId)
+        if (inp) {
+          inp.focus()
+          if (selStart !== null && inp.setSelectionRange && inp.type !== 'number') inp.setSelectionRange(selStart, selStart)
+        }
+      }
+    }
+
+    async function init() {
+      const groups = await scanUsedGroups()
+      usedGroups = groups
+
+      scanned = true
+      await syncControlState()
+      setInterval(syncControlState, POLL_MS)
+      // Tick lokal buat display timer yang sedang running, tanpa nunggu poll 1 detik
+      // (spec: hitung elapsed di client, checkpoint aja yang dipoll dari server).
+      setInterval(tickRunningTimerDisplays, 250)
+      // Re-scan binding usage tiap beberapa detik supaya section baru dari Editor
+      // (tanpa perlu reload manual Control Panel) tetap ke-detect.
+      setInterval(async () => {
+        usedGroups = await scanUsedGroups()
+        render()
+      }, 8000)
+    }
+
+    document.addEventListener('DOMContentLoaded', init)
+  </script>
+</body>
+</html>

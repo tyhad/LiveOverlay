@@ -151,15 +151,21 @@ py fetch_f1_data.py --season 2026 --output ./f1gstats.sqlite
 
 Detail arsitektur & skema database ada di [`issue.md`](./issue.md) bagian "F1GStats Integration".
 
-### Opsi Token Rahasia (Shared Secret)
+### Akses dari Perangkat Lain di LAN
 
-Jika Anda ingin menambahkan proteksi ekstra pada endpoint yang mengubah data (misal `POST /api/scenes`), buat file `.env` dan tambahkan:
+Secara default server hanya mendengarkan `127.0.0.1`. Untuk mengaksesnya dari perangkat lain dalam Wi-Fi/LAN yang sama, buat file `.env` lokal:
 
 ```env
+HOST=0.0.0.0
+PORT=3000
 SETTINGS_SECRET=kunci_rahasia_anda_disini
 ```
 
-> ⚠️ **Catatan Penting**: Variabel `SETTINGS_SECRET` bersifat **opsional**. Jika tidak diatur, endpoint akan menerima perubahan tanpa autentikasi token (hanya mengandalkan pembatasan localhost `127.0.0.1`). Pastikan menyetel secret token ini jika Anda berencana mengekspos server ke jaringan luar/LAN.
+`HOST=0.0.0.0` membuat server menerima koneksi dari interface jaringan lokal. Buka `http://IP-DEVICE-SERVER:3000` dari perangkat lain. Gunakan `SETTINGS_SECRET` untuk semua request yang mengubah data dengan header `Authorization: Bearer <secret>` atau `X-Secret-Token: <secret>`.
+
+Editor dan Control Panel akan meminta secret saat aksi perubahan pertama dilakukan, lalu menyimpannya sementara selama tab browser masih terbuka.
+
+> ⚠️ `SETTINGS_SECRET` wajib diatur sebelum server dibuka ke LAN. File `.env` tidak masuk Git. Pengaturan ini ditujukan untuk jaringan lokal tepercaya, bukan internet publik; koneksi LAN ini belum menggunakan TLS.
 
 ---
 

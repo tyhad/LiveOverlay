@@ -19,6 +19,7 @@ const PLATFORM_CONFIG_FILE = 'platform-config.json'
 const ASSET_DIRECTORY = 'public/uploads'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
 const PORT = Number(process.env.PORT || 3000)
+const HOST = process.env.HOST || '127.0.0.1'
 const MAX_ASSET_SIZE = 10 * 1024 * 1024
 const DEFAULT_PLATFORM_POLL_INTERVAL_MS = 30_000
 const ASSET_MIME_TYPES = new Map([
@@ -1581,6 +1582,16 @@ getPlatformConfig().then((config) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const app = new Elysia()
+  .onBeforeHandle(({ request, headers, set }) => {
+    if (!SETTINGS_SECRET || !['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return
+
+    const authHeader = headers['authorization'] || headers['x-secret-token']
+    const token = authHeader?.replace(/^Bearer\s+/i, '')
+    if (token !== SETTINGS_SECRET) {
+      set.status = 401
+      return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
+    }
+  })
   .get('/', () => Bun.file('public/index.html'))
   .get('/control', () => Bun.file('public/control.html'))
   .get('/api/health', () => ({
@@ -2056,7 +2067,7 @@ const app = new Elysia()
   )
   .listen({
     port: PORT,
-    hostname: '127.0.0.1',
+    hostname: HOST,
   })
 
 console.log(`🦊 LiveOverlay Studio running at http://${app.server?.hostname}:${app.server?.port}`)

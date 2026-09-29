@@ -332,6 +332,20 @@
   </main>
 
   <script>
+    const nativeFetch = window.fetch.bind(window)
+    window.fetch = async (input, init = {}) => {
+      const method = (init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase()
+      const response = await nativeFetch(input, init)
+      if (response.status !== 401 || method === 'GET' || !String(input).includes('/api/')) return response
+
+      const token = sessionStorage.getItem('liveoverlay-secret') || window.prompt('Masukkan secret key LiveOverlay')
+      if (!token) return response
+      sessionStorage.setItem('liveoverlay-secret', token)
+      const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined))
+      headers.set('X-Secret-Token', token)
+      return nativeFetch(input, { ...init, headers })
+    }
+
     const POLL_MS = 1000
     let controlState = { counters: {}, eventStates: {} }
     let usedGroups = { counters: new Set(), eventStates: new Set(), timers: new Set(), texts: new Set() }

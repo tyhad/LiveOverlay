@@ -1,5 +1,9 @@
 # Changelog
 
+Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi terkini & backlog, lihat [`issue.md`](./issue.md). Untuk visi produk & prinsip desain, lihat [`Vision.md`](./Vision.md).
+
+---
+
 ## [Unreleased] - UI Refactor & Design System Cleanup
 
 - Menambahkan design tokens berbasis `DESIGN.md` untuk warna Studio Canvas, Sage Olive, typography Manrope, dan shadow neumorphic.
@@ -14,10 +18,6 @@
 - Regression check terakhir: 33 animation tests dan 4 control-state tests lulus.
 
 Catatan stylesheet: `design.css` berisi token bersama dan styling Control Panel; `editor.css` berisi styling khusus editor; `styles.css` adalah hasil build Tailwind.
-
-Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi terkini & backlog, lihat [`issue.md`](./issue.md). Untuk visi produk & prinsip desain, lihat [`Vision.md`](./Vision.md).
-
----
 
 ## [1.1.0] — Fase 10
 

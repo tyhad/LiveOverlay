@@ -207,9 +207,6 @@
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 
-.editor-page #add-badge-btn,
-.editor-page #add-banner-btn,
-.editor-page #upload-asset-btn { display: none !important; }
 .editor-page #assets-add-btn {
   color: var(--color-sage-hover) !important;
   cursor: pointer;
@@ -219,6 +216,9 @@
   background: var(--color-studio-canvas);
   box-shadow: var(--shadow-neu-flat);
 }
+.editor-page #add-badge-btn,
+.editor-page #add-banner-btn,
+.editor-page #upload-asset-btn { display: none !important; }
 .editor-page #assets-add-btn:hover { color: var(--color-pure-white) !important; border-color: var(--color-sage-olive); background: var(--color-surface-light); }
 .editor-page #test-element-animation-btn,
 .editor-page #anim-add-step-btn,
@@ -232,21 +232,18 @@
 .editor-page #test-element-animation-btn { background: var(--color-sage-olive) !important; color: white !important; }
 
 /* Inspector controls: editor.css is loaded only by the editor page. */
-#add-text-btn, #add-shape-btn, #add-badge-btn, #add-banner-btn, #upload-asset-btn {
+#add-text-btn, #add-shape-btn {
   background: var(--color-studio-canvas) !important;
   border-color: var(--color-surface-light) !important;
   border-radius: 12px !important;
   box-shadow: var(--shadow-neu-flat);
 }
-#add-text-btn:hover, #add-shape-btn:hover, #add-badge-btn:hover, #add-banner-btn:hover, #upload-asset-btn:hover {
+#add-text-btn:hover, #add-shape-btn:hover {
   background: var(--color-surface-light) !important;
   border-color: var(--color-sage-olive) !important;
 }
-#add-text-btn > span:first-child, #add-shape-btn > span:first-child, #add-badge-btn > span:first-child,
-#add-banner-btn > span:first-child, #upload-asset-btn > span:first-child { font-size: 0; display: block; height: 22px; }
-#add-text-btn > span:first-child::before, #add-shape-btn > span:first-child::before,
-#add-badge-btn > span:first-child::before, #add-banner-btn > span:first-child::before,
-#upload-asset-btn > span:first-child::before {
+#add-text-btn > span:first-child, #add-shape-btn > span:first-child { font-size: 0; display: block; height: 22px; }
+#add-text-btn > span:first-child::before, #add-shape-btn > span:first-child::before {
   content: ""; display: block; width: 22px; height: 22px; background: var(--color-sage-hover);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='5' width='14' height='14' rx='2' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='5' width='14' height='14' rx='2' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;

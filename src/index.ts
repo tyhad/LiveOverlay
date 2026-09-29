@@ -850,11 +850,6 @@ function createDefaultScene(id = 'default', name = 'Live Streaming Scene'): Scen
   }
 }
 
-interface SceneStoreError {
-  message: string
-  status: number
-}
-
 function normalizeSceneId(value: string, fallback: string): string {
   return String(value || fallback)
     .trim()

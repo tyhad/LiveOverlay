@@ -4,6 +4,37 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ---
 
+## [Unreleased] - UI Refactor & Design System Cleanup
+
+- Menambahkan design tokens berdasarkan referensi desain lokal pribadi untuk warna Studio Canvas, Sage Olive, typography Manrope, dan shadow neumorphic; sumber kebenaran token di repo adalah `public/design.css`.
+- Memisahkan styling editor ke `public/editor.css` dengan scope `.editor-page`.
+- Memisahkan styling Control Panel ke scope `.control-page` di `public/design.css`.
+- Mengurangi rebuild canvas saat mengubah warna/properti visual dengan `renderSelectedElement()`.
+- Mengganti emoji UI utama dengan icon CSS mask pada Save Scene, Control Panel, duplicate, platform, dan kontrol editor.
+- Memperbarui logo editor menggunakan `public/KerasnG.png` dengan background Studio Canvas.
+- Menghapus tampilan Social Badge dan Banner dari UI, serta memindahkan akses upload asset ke baris Assets.
+- Memperbarui preset Shape Box mengikuti palette dan surface baru.
+- Menjaga indikator status Control Panel tetap hijau/merah agar tetap informatif.
+- Regression check terakhir: 33 animation tests dan 4 control-state tests lulus.
+
+Catatan stylesheet: `design.css` berisi token bersama dan styling Control Panel; `editor.css` berisi styling khusus editor; `styles.css` adalah hasil build Tailwind. `DESIGN.md` hanya referensi lokal pribadi dan tidak disimpan di repo; kontributor memakai `public/design.css` sebagai sumber kebenaran token.
+
+## [1.1.0] — Fase 10
+
+### Fase 10.1 — Text Drop Shadow
+✅ Selesai.
+
+### Fase 10.2 — RotateX/Y/Z + Perspective
+✅ Selesai.
+
+### Fase 10.3 — Current Time
+✅ Selesai.
+
+### Fase 10.4 — Control Panel: Counter, Event State, Timer, Text
+✅ Selesai. Halaman `/control`, endpoint `/api/control-state/*`, dan persistence `control-state.json` / `control-state.example.json`.
+
+Perbaikan fase ini: mutasi control-state diserialkan dan dicache di memori, nama grup reserved dan nama lebih dari 64 karakter ditolak, file korup fallback ke state kosong, Restart/Resume timer diperbaiki, dan render display timer tidak mengganti tombol pada setiap tick.
+
 ## [1.0.0] — LiveOverlay Studio
 
 Rilis pertama yang dianggap **visi tercapai** (lihat `Vision.md`): editor kanvas visual penuh, model animasi sequence generik, multi-scene/multi-output, data binding live (Platform Live Stats + F1GStats), asset management, dan parent-child grouping — semua terverifikasi jalan end-to-end.
@@ -27,7 +58,7 @@ Rilis pertama yang dianggap **visi tercapai** (lihat `Vision.md`): editor kanvas
 Awalnya diimplementasikan penuh (config CRUD, caching + in-flight dedupe, per-source poll interval/timeout, auto-discover field), lalu **dibatalkan dan kodenya dihapus sepenuhnya** dari `main`. Alasan: use case awal (data F1 real-time) tidak feasible dengan API gratis (butuh tier berbayar), dan sudah tergantikan sepenuhnya oleh F1GStats Integration (baca lokal SQLite, bukan hit API eksternal saat live).
 
 **Yang dihapus** (backend, overlay, editor):
-- Backend: endpoint `GET/POST /api/data-sources`, `GET /api/external-data`; fungsi `getExternalDataSources`, `saveExternalDataSources`, `normalizeExternalDataSourceConfig`, `refreshExternalDataSource`, `getExternalDataSnapshot`, `getValueAtPath`/`collectFieldPaths` versi backend; interface `ExternalDataSourceConfig`, `ExternalDataSourceCacheEntry`, `ExternalTextBinding`; konstanta terkait; file `data-sources.json`/`data-sources.example.json` (boleh dihapus manual dari disk kalau masih ada).
+- Backend: endpoint `GET/POST /api/data-sources`, `GET /api/external-data`; fungsi `getExternalDataSources`, `saveExternalDataSources`, `normalizeExternalDataSourceConfig`, `refreshExternalDataSource`, `getExternalDataSnapshot`, `getValueAtPath`/`collectFieldPaths` versi backend; interface `ExternalDataSourceConfig`, `ExternalDataSourceCacheEntry`, `ExternalTextBinding`; konstanta dan file data source terkait (boleh dihapus manual dari disk kalau masih ada).
 - Overlay: state `externalData`/`lastExternalDataHash`, fungsi `getExternalSourceSnapshot`, `syncExternalData`, cabang `binding.source === 'external'`.
 - Editor: panel UI "External API Sources" — termasuk perbaikan struktur HTML karena panel ini membungkus section "Platform Live Stats Connector" dan "Layers List" di dalam div collapsible-nya (dipindah keluar). Juga dihapus opsi `external` di dropdown Binding Source, `external-binding-group`, dan semua state/fungsi/listener terkait.
 

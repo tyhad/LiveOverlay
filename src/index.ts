@@ -5,6 +5,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector'
 import { Database } from 'bun:sqlite'
+import { ControlStateStore, validateControlName, type ControlStateData } from './control-state'
 
 const SETTINGS_FILE = 'settings.json'
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
@@ -13,6 +14,7 @@ const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENES_FILE = 'scenes.json'
 const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
+const CONTROL_STATE_FILE = 'control-state.json'
 const PLATFORM_CONFIG_FILE = 'platform-config.json'
 const ASSET_DIRECTORY = 'public/uploads'
 const SETTINGS_SECRET = process.env.SETTINGS_SECRET
@@ -171,7 +173,91 @@ interface F1TextBinding {
   fallback?: string
 }
 
-type TextBinding = PlatformTextBinding | F1TextBinding
+/** Infrastruktur Control Panel (fondasi #5/#6) — teks yang dibind ke sebuah Counter
+ *  di control-state.json. `group` = nama grup counter (auto-create kalau belum ada).
+ *  (`name` = alias lama, masih dibaca overlay untuk scene lama.) */
+interface CounterTextBinding {
+  enabled?: boolean
+  source: 'counter'
+  group: string
+  /** @deprecated alias lama untuk `group` */
+  name?: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+/** Infrastruktur Control Panel (fondasi #5/#6) — teks yang dibind ke sebuah Event State
+ *  (enum single-active) di control-state.json. `group` = nama grup event state. */
+interface EventStateTextBinding {
+  enabled?: boolean
+  source: 'eventState'
+  group: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+/** Infrastruktur Control Panel — teks yang dibind ke sebuah Timer (countdown/count up)
+ *  di control-state.json. `group` = nama grup timer. `format`: 'mm:ss' (default,
+ *  meluap ke menit kalau >1 jam), 'hh:mm:ss', atau 'seconds' (total detik bulat). */
+interface TimerTextBinding {
+  enabled?: boolean
+  source: 'timer'
+  group: string
+  format?: 'mm:ss' | 'hh:mm:ss' | 'seconds'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+/** Teks berbasis jam lokal. `format`: token dddd, ddd, YYYY, YY, MMMM, MMM, MM, M,
+ *  DD, D, HH, H, hh, h, mm, m, ss, s, A, atau a. Default timezone `Asia/Jakarta`
+ *  dan format `HH:mm:ss`. */
+interface ClockTextBinding {
+  enabled?: boolean
+  source: 'clock'
+  timezone?: string
+  format?: string
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+/** Control Panel — teks bebas (single/multiline) yang ditulis di /control dan bisa di-bind ke
+ *  banyak elemen teks sekaligus lewat nama grup yang sama. `group` = nama grup teks. */
+interface TextControlBinding {
+  enabled?: boolean
+  source: 'text'
+  group: string
+  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
+type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | CounterTextBinding | EventStateTextBinding | TimerTextBinding | ClockTextBinding
+
+/** Infrastruktur Control Panel (fondasi #5/#6) — kontrol visibility elemen berdasarkan
+ *  nilai Counter (dibanding dengan `matchValue` pakai `comparator`) atau Event State (elemen
+ *  tampil kalau eventState grup tsb bernilai `matchValue`). Terpisah dari `hidden` (manual toggle
+ *  di Editor); kalau keduanya ada, `hidden=true` selalu menang (override manual tetap final).
+ */
+interface VisibilityBinding {
+  enabled?: boolean
+  source: 'counter' | 'eventState'
+  /** Nama grup counter, atau nama grup eventState. */
+  group: string
+  /** Hanya dipakai kalau source === 'counter'. Default 'eq'. */
+  comparator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'
+  /** counter: angka pembanding. eventState: opsi yang harus aktif supaya elemen tampil. */
+  matchValue: number | string
+  /** @deprecated alias lama untuk `group` / `matchValue` (scene lama) */
+  name?: string
+  value?: number | string
+}
 
 interface MarqueeConfig {
   enabled?: boolean
@@ -208,6 +294,7 @@ interface SceneElement {
   style: ElementStyle
   animation?: AnimationConfig
   textBinding?: TextBinding
+  visibilityBinding?: VisibilityBinding
   marquee?: MarqueeConfig
   scroll?: ScrollConfig
   /**
@@ -776,11 +863,6 @@ function createDefaultScene(id = 'default', name = 'Live Streaming Scene'): Scen
   }
 }
 
-interface SceneStoreError {
-  message: string
-  status: number
-}
-
 function normalizeSceneId(value: string, fallback: string): string {
   return String(value || fallback)
     .trim()
@@ -1006,6 +1088,21 @@ async function saveLiveStats(data: LiveStatsUpdate): Promise<LiveStatsData> {
   return updated
 }
 
+const controlStateStore = new ControlStateStore({
+  load: async () => {
+    const file = Bun.file(CONTROL_STATE_FILE)
+    if (!(await file.exists())) return null
+    return JSON.parse(await file.text())
+  },
+  save: async (state) => { await Bun.write(CONTROL_STATE_FILE, JSON.stringify(state, null, 2)) },
+})
+
+function rejectInvalidControlName(name: string, set: { status?: unknown }): boolean {
+  const message = validateControlName(name)
+  if (!message) return false
+  set.status = 400
+  return true
+}
 async function listAssets() {
   try {
     const names = await readdir(ASSET_DIRECTORY)
@@ -1485,6 +1582,7 @@ getPlatformConfig().then((config) => {
 
 const app = new Elysia()
   .get('/', () => Bun.file('public/index.html'))
+  .get('/control', () => Bun.file('public/control.html'))
   .get('/api/health', () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -1618,6 +1716,169 @@ const app = new Elysia()
   .get('/api/live-stats', async () => {
     return await getLiveStats()
   })
+  .get('/api/control-state', async () => {
+    return await controlStateStore.read()
+  })
+  .post(
+    '/api/control-state/counters/:name/inc',
+    async ({ params, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const data = await controlStateStore.bumpCounter(params.name, 1)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/counters/:name/dec',
+    async ({ params, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const data = await controlStateStore.bumpCounter(params.name, -1)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/counters/:name/reset',
+    async ({ params, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const data = await controlStateStore.resetCounter(params.name)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/counters/:name/set',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const value = Number((body as { value?: number })?.value)
+      if (!Number.isFinite(value)) {
+        set.status = 400
+        return { success: false, message: '"value" harus berupa angka' }
+      }
+      const data = await controlStateStore.setCounter(params.name, value)
+      return { success: true, data }
+    },
+    { body: t.Object({ value: t.Numeric() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/set',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.group, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const value = (body as { value?: string })?.value
+      if (typeof value !== 'string' || !value) {
+        set.status = 400
+        return { success: false, message: '"value" harus berupa string non-kosong' }
+      }
+      const data = await controlStateStore.setEventState(params.group, value)
+      return { success: true, data }
+    },
+    { body: t.Object({ value: t.String() }) }
+  )
+  .post(
+    '/api/control-state/texts/:name/set',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const data = await controlStateStore.setControlText(params.name, String((body as { value: string }).value ?? ''))
+      return { success: true, data }
+    },
+    { body: t.Object({ value: t.String() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/options/add',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.group, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const option = String((body as { option?: string })?.option ?? '').trim()
+      if (!option) {
+        set.status = 400
+        return { success: false, message: '"option" harus berupa string non-kosong' }
+      }
+      const data = await controlStateStore.addEventStateOption(params.group, option)
+      return { success: true, data }
+    },
+    { body: t.Object({ option: t.String() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/options/color',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.group, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const { option, color } = body as { option: string; color: string }
+      // Validasi sederhana: hex (#rgb/#rrggbb/#rrggbbaa) atau kosong (hapus warna)
+      if (color && !/^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color.trim())) {
+        set.status = 400
+        return { success: false, message: '"color" harus berupa hex (mis. #ff0000) atau kosong' }
+      }
+      const data = await controlStateStore.setEventStateOptionColor(params.group, option, color)
+      return { success: true, data }
+    },
+    { body: t.Object({ option: t.String(), color: t.String() }) }
+  )
+  .post(
+    '/api/control-state/event-states/:group/options/remove',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.group, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const data = await controlStateStore.removeEventStateOption(params.group, (body as { option: string }).option)
+      return { success: true, data }
+    },
+    { body: t.Object({ option: t.String() }) }
+  )
+  .post(
+    '/api/control-state/timers/:name/start',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const { mode, durationMs, restart } = body as { mode?: string; durationMs?: number; restart?: boolean }
+      const data = await controlStateStore.startTimer(
+        params.name,
+        mode === 'countdown' || mode === 'countup' ? mode : undefined,
+        durationMs,
+        restart === true
+      )
+      return { success: true, data }
+    },
+    {
+      body: t.Object({
+        mode: t.Optional(t.Union([t.Literal('countdown'), t.Literal('countup')])),
+        durationMs: t.Optional(t.Numeric()),
+        restart: t.Optional(t.Boolean()),
+      }),
+    }
+  )
+  .post(
+    '/api/control-state/timers/:name/pause',
+    async ({ params, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const data = await controlStateStore.pauseTimer(params.name)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/timers/:name/reset',
+    async ({ params, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const data = await controlStateStore.resetTimer(params.name)
+      return { success: true, data }
+    }
+  )
+  .post(
+    '/api/control-state/timers/:name/configure',
+    async ({ params, body, set }) => {
+      if (rejectInvalidControlName(params.name, set)) return { success: false, message: 'Nama grup tidak valid: reserved atau lebih dari 64 karakter' }
+      const { mode, durationMs, continueBelowZero } = body as {
+        mode?: string
+        durationMs?: number
+        continueBelowZero?: boolean
+      }
+      const data = await controlStateStore.configureTimer(params.name, {
+        mode: mode === 'countdown' || mode === 'countup' ? mode : undefined,
+        durationMs,
+        continueBelowZero,
+      })
+      return { success: true, data }
+    },
+    {
+      body: t.Object({
+        mode: t.Optional(t.Union([t.Literal('countdown'), t.Literal('countup')])),
+        durationMs: t.Optional(t.Numeric()),
+        continueBelowZero: t.Optional(t.Boolean()),
+      }),
+    }
+  )
   .get('/api/f1-data', () => {
     return getF1DataSnapshot()
   })

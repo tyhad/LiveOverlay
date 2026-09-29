@@ -1,0 +1,19 @@
+{
+  "counters": {
+    "killCount": { "value": 12, "step": 1 },
+    "winCount": { "value": 3, "step": 1 }
+  },
+  "eventStates": {
+    "raceFlag": { "value": "green", "options": ["green", "yellow", "red", "vsc", "sc", "finish"] }
+  },
+  "timers": {
+    "raceCountdown": {
+      "mode": "countdown",
+      "durationMs": 600000,
+      "startedAtMs": 1732450000000,
+      "pausedAccumMs": 0,
+      "isRunning": false,
+      "continueBelowZero": false
+    }
+  }
+}

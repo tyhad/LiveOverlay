@@ -1,0 +1,44 @@
+:root {
+  --color-studio-canvas: #1e2124;
+  --color-surface-light: #282c30;
+  --color-surface-dark: #141618;
+  --color-sage-olive: #7b8472;
+  --color-sage-hover: #8e9884;
+  --color-pure-white: #ffffff;
+  --color-muted-chalk: #c2c6be;
+  --color-slate-ash: #7e848c;
+  --color-dark-trench: #16181a;
+  --color-live-crimson: #e54d42;
+  --font-manrope: 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --shadow-neu-flat: -6px -6px 12px #282c30, 6px 6px 12px #141618;
+  --shadow-neu-pressed: inset -4px -4px 8px #282c30, inset 4px 4px 8px #141618;
+  --shadow-sage-glow: 0 0 12px rgba(123, 132, 114, .4);
+}
+
+/* Component rules moved to editor.css. */
+/* Play/save/action icon rules live in editor.css. */
+
+/* Editor component rules live in editor.css. */
+
+/* Animation sequence styles live in editor.css. */
+/* Asset and animation controls live in editor.css. */
+
+.control-page {
+  background: var(--color-studio-canvas) !important;
+  color: var(--color-pure-white) !important;
+  font-family: var(--font-manrope) !important;
+}
+.control-page section.group { box-shadow: var(--shadow-neu-flat); }
+.control-page .counter-btn, .control-page .timer-controls button, .control-page .pill,
+.control-page .text-send, .control-page .add-option-row button, .control-page .mode-btn,
+.control-page .manage-btn, .control-page .reset-btn, .control-page .text-clear,
+.control-page .timer-manual button { border-radius: 10px; }
+.control-page input, .control-page textarea { background: var(--color-dark-trench); border-color: var(--color-surface-light); }
+.control-page input:focus, .control-page textarea:focus { border-color: var(--color-sage-olive); outline: 2px solid rgba(142,152,132,.45); outline-offset: 1px; }
+.control-page button:focus-visible, .control-page input:focus-visible, .control-page textarea:focus-visible { outline: 2px solid var(--color-sage-hover); outline-offset: 2px; }
+.control-page .counter-btn, .control-page .timer-controls button, .control-page .pill,
+.control-page .text-send, .control-page .add-option-row button { box-shadow: var(--shadow-neu-flat); }
+.control-page .timer-controls button.start, .control-page .text-send.dirty { background: var(--ok); }
+.control-page .timer-controls button.stop, .control-page .tool-btn.danger, .control-page .pill-remove { background: var(--danger); }
+.control-page #status-dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.control-page #status-dot.err { background: var(--danger); box-shadow: 0 0 8px var(--danger); }

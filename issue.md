@@ -6,7 +6,7 @@
 
 ## Status Fase
 
-**v1.0 — Visi tercapai.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
+**v1.1.0 — Visi v1.0 tercapai.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
 
 | Fase | Nama | Status |
 |---|---|---|
@@ -17,6 +17,17 @@
 | 7 | Polish UX Editor | Belum dimulai — lihat Backlog di bawah |
 | 8 | Animation Sequence & Property Transition System | ✅ Selesai |
 | 9 | Element Binding/Grouping (Parent-Child) | ✅ Selesai |
+| 10 | Text, 3D, Current Time, dan Control Panel | ✅ Selesai |
+
+---
+
+## Fase 10 — Text, 3D, Current Time, dan Control Panel
+
+- **10.1 Text Drop Shadow** — ✅ Selesai.
+- **10.2 RotateX/Y/Z + Perspective** — ✅ Selesai.
+- **10.3 Current Time** — ✅ Selesai.
+- **10.4 Control Panel: Counter, Event State, Timer, Text** — ✅ Selesai. Halaman `/control`, endpoint `/api/control-state/*`, dan file `control-state.json` / `control-state.example.json`.
+- Perbaikan 1–4: mutasi control-state diserialkan dan dicache di memori, nama grup reserved diblokir dan dibatasi 64 karakter, file korup fallback ke state kosong, Restart/Resume timer diperbaiki, dan re-render tombol saat timer berjalan dihentikan.
 
 ---
 
@@ -31,7 +42,11 @@
 
 ### Automated Testing
 
-`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 25 assertion, simulasi browser via `jsdom` + GSAP asli. **Belum tercakup**: testing UI/DOM penuh (baru unit-level ke engine). Detail cakupan di `CHANGELOG.md`.
+`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 33 assertion, simulasi browser via `jsdom` + GSAP asli.
+
+`tests/control-state.test.mjs` — 4 tes untuk serialisasi mutasi, nama reserved, timer pause/resume/restart, dan persistence load/save.
+
+**Belum tercakup**: testing UI/DOM penuh dan integrasi browser end-to-end. Detail cakupan di `CHANGELOG.md`.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "liveoverlay",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -10,7 +10,7 @@
     "build:css": "tailwindcss -i src/styles/input.css -o public/styles.css --minify",
     "build": "bun run build:css",
     "start": "bun src/index.ts",
-    "test": "bun tests/animation-engine.test.mjs"
+    "test": "bun test tests/animation-engine.test.mjs && bun test tests/control-state.test.mjs"
   },
   "devDependencies": {
     "@types/bun": "latest",

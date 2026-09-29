@@ -1,6 +1,6 @@
 # 🎬 LiveOverlay Studio
 
-**Versi: v1.0.0** · lihat [`CHANGELOG.md`](./CHANGELOG.md) untuk riwayat lengkap pengembangan.
+**Versi: v1.1.0** · lihat [`CHANGELOG.md`](./CHANGELOG.md) untuk riwayat lengkap pengembangan.
 
 **LiveOverlay Studio** adalah editor kanvas visual (mirip Canva/Figma versi ringan) untuk merancang overlay live streaming, ditenagai oleh **Bun**, **ElysiaJS**, **Tailwind CSS**, dan animasi **GSAP**.
 
@@ -64,6 +64,17 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 Server akan aktif di: **`http://127.0.0.1:3000`**
 
+## Arsitektur Visual
+
+`DESIGN.md` adalah referensi desain lokal pribadi yang tidak disimpan di repo. Sumber kebenaran token desain untuk kontributor adalah `public/design.css`.
+
+- `public/styles.css`: output build Tailwind dari `src/styles/input.css`; jangan diedit manual.
+- `public/design.css`: design tokens bersama dan styling Control Panel dengan scope `.control-page`.
+- `public/editor.css`: styling editor utama dengan scope `.editor-page`.
+- Status tetap semantik: hijau untuk aktif/berhasil dan merah untuk error/stop.
+
+Perubahan visual sebaiknya dilakukan di stylesheet scoped tersebut agar tidak tertimpa oleh `bun run build:css`.
+
 ---
 
 ## 🎮 Panduan Penggunaan
@@ -108,11 +119,17 @@ Perubahan tersimpan otomatis / lewat tombol Save, dan langsung ter-refresh di ov
 | `bun run build` | Mengompilasi Tailwind CSS (`src/styles/input.css` ke `public/styles.css`) |
 | `bun run build:css` | Mengompilasi `src/styles/input.css` ke `public/styles.css` secara langsung |
 | `bun start` | Menjalankan server dalam mode produksi |
-| `bun run test` | Menjalankan regression test untuk Animation Sequence Engine (`tests/animation-engine.test.mjs`) |
+| `bun run test` | Menjalankan regression test Animation Sequence Engine dan Control State |
 
 ---
 
 ## 🔒 Konfigurasi & Keamanan
+
+### Fase 10 — Text, 3D, Current Time, dan Control Panel
+
+Fase 10 mencakup 10.1 Text Drop Shadow, 10.2 RotateX/Y/Z + Perspective, 10.3 Current Time, dan 10.4 Control Panel: Counter, Event State, Timer, Text. Control Panel tersedia di `/control`, endpoint baru berada di `/api/control-state/*`, dan state disimpan di `control-state.json` dengan template `control-state.example.json`.
+
+Perbaikannya mencakup serialisasi mutasi dan cache in-memory, validasi nama grup reserved, fallback file korup, Restart/Resume timer, serta pencegahan re-render tombol saat angka timer berubah.
 
 ### Data Scene
 
@@ -171,10 +188,8 @@ LiveOverlay/
 ├── tests/
 │   └── animation-engine.test.mjs  # Regression test untuk Animation Sequence Engine
 ├── scenes.example.json       # Template data scene
-├── scene.example.json        # Template satu scene tunggal
 ├── settings.example.json     # Template konfigurasi platform live stats
 ├── live-stats.example.json   # Template cache data live stats
-├── data-sources.example.json # (Legacy, fitur External Data Source sudah dihapus — lihat CHANGELOG.md)
 ├── f1-text-templates.example.json # Template format teks F1GStats (custom text templates)
 ├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)
 ├── issue.md                  # Backlog & technical debt aktif (selalu up-to-date)

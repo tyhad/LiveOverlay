@@ -80,6 +80,10 @@
     }
     let f1Data = { sessions: [], driverStandings: [], constructorStandings: [] }
     let lastF1DataHash = ''
+    // Infrastruktur Control Panel (fondasi #5/#6) — state Counter/Event State, dipoll terpisah
+    // (300-500ms) dari syncScene/syncLiveStats (2 detik) karena butuh terasa instan saat dipencet live.
+    let controlState = { counters: {}, eventStates: {}, timers: {}, texts: {} }
+    let lastControlStateHash = ''
     let displayedChat = { author: '', message: '' }
     let chatDisplayQueue = []
     let displayedChatIds = new Set()
@@ -181,6 +185,18 @@
       return track
     }
 
+    // Warna font per opsi Event State (diatur dari Control Panel). Kalau elemen teks di-bind ke
+    // eventState dan opsi aktif punya warna, warna itu menimpa style.color elemen.
+    function getEffectiveTextColor(el) {
+      const b = el?.textBinding
+      if (b?.enabled && b.source === 'eventState') {
+        const es = controlState.eventStates?.[b.group]
+        const c = es?.colors?.[es.value]
+        if (c) return c
+      }
+      return el?.style?.color || '#ffffff'
+    }
+
     function styleStaticText(textEl, el, text) {
       textEl.style.width = '100%'
       textEl.style.height = '100%'
@@ -189,7 +205,7 @@
       textEl.style.fontFamily = getFontStack(el.style?.fontFamily)
       textEl.style.fontSize = `${el.style?.fontSize || 18}px`
       textEl.style.fontWeight = el.style?.fontWeight || 'normal'
-      textEl.style.color = el.style?.color || '#ffffff'
+      textEl.style.color = getEffectiveTextColor(el)
       textEl.style.padding = `${el.style?.padding || 0}px`
       textEl.style.textAlign = el.style?.textAlign || 'left'
       textEl.style.textTransform = el.style?.textTransform || 'none'
@@ -197,6 +213,14 @@
       textEl.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
       textEl.style.whiteSpace = 'pre-wrap'
       textEl.style.tabSize = '4'
+      if (el.style?.textShadowColor) {
+        const tsX = el.style.textShadowOffsetX || 0
+        const tsY = el.style.textShadowOffsetY || 0
+        const tsBlur = el.style.textShadowBlur || 0
+        textEl.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${el.style.textShadowColor}`
+      } else {
+        textEl.style.textShadow = 'none'
+      }
       textEl.textContent = text
     }
 
@@ -208,7 +232,7 @@
       const textWidth = measureTextWidth(text, style)
 
       const record = renderedElements.get(el.id)
-      const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing].join('|')
+      const sig = [text, el.width, speed, gap, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur, getEffectiveTextColor(el)].join('|')
 
       if (record && record.scrollTween) {
         record.scrollTween.kill()
@@ -234,9 +258,17 @@
         span.style.fontFamily = getFontStack(style.fontFamily)
         span.style.fontSize = `${style.fontSize || 18}px`
         span.style.fontWeight = style.fontWeight || 'normal'
-        span.style.color = style.color || '#ffffff'
+        span.style.color = getEffectiveTextColor(el)
         span.style.letterSpacing = `${style.letterSpacing || 0}px`
         span.style.textTransform = style.textTransform || 'none'
+        if (style.textShadowColor) {
+          const tsX = style.textShadowOffsetX || 0
+          const tsY = style.textShadowOffsetY || 0
+          const tsBlur = style.textShadowBlur || 0
+          span.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${style.textShadowColor}`
+        } else {
+          span.style.textShadow = 'none'
+        }
         if (i > 0) span.setAttribute('aria-hidden', 'true')
         track.appendChild(span)
       }
@@ -280,7 +312,7 @@
       const style = el.style || {}
 
       const record = renderedElements.get(el.id)
-      const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform].join('|')
+      const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur, getEffectiveTextColor(el)].join('|')
 
       if (record && record.marqueeTween) {
         record.marqueeTween.kill()
@@ -300,7 +332,7 @@
         block.style.fontFamily = getFontStack(style.fontFamily)
         block.style.fontSize = `${style.fontSize || 18}px`
         block.style.fontWeight = style.fontWeight || 'normal'
-        block.style.color = style.color || '#ffffff'
+        block.style.color = getEffectiveTextColor(el)
         block.style.letterSpacing = `${style.letterSpacing || 0}px`
         block.style.textTransform = style.textTransform || 'none'
         block.style.textAlign = style.textAlign || 'left'
@@ -309,6 +341,14 @@
         block.style.wordBreak = 'break-word'
         block.style.lineHeight = '1.4'
         block.style.padding = `${style.padding || 0}px`
+        if (style.textShadowColor) {
+          const tsX = style.textShadowOffsetX || 0
+          const tsY = style.textShadowOffsetY || 0
+          const tsBlur = style.textShadowBlur || 0
+          block.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${style.textShadowColor}`
+        } else {
+          block.style.textShadow = 'none'
+        }
         block.textContent = content
         return block
       }
@@ -416,14 +456,154 @@
       }
     }
 
+    function formatClockTime(timezone, formatStr, prefix = '', suffix = '') {
+      const tz = timezone || 'Asia/Jakarta'
+      const fmt = formatStr || 'HH:mm:ss'
+      const now = new Date()
+
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          weekday: 'long',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })
+        const parts = formatter.formatToParts(now)
+        const p = {}
+        for (const part of parts) {
+          p[part.type] = part.value
+        }
+
+        let hour24 = parseInt(p.hour || '0', 10)
+        if (hour24 === 24) hour24 = 0
+        const hour12 = hour24 % 12 || 12
+        const ampm = hour24 >= 12 ? 'PM' : 'AM'
+
+        const monthNameFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' })
+        const monthShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'short' })
+        const weekdayShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
+
+        const monthName = monthNameFormatter.format(now)
+        const monthShort = monthShortFormatter.format(now)
+        const weekdayShort = weekdayShortFormatter.format(now)
+
+        const strHH = String(hour24).padStart(2, '0')
+        const strH = String(hour24)
+        const strhh = String(hour12).padStart(2, '0')
+        const strh = String(hour12)
+        const strmm = String(p.minute || '00').padStart(2, '0')
+        const strm = String(parseInt(p.minute || '0', 10))
+        const strss = String(p.second || '00').padStart(2, '0')
+        const strs = String(parseInt(p.second || '0', 10))
+        const strYYYY = p.year || '2026'
+        const strYY = strYYYY.slice(-2)
+        const strMM = p.month || '01'
+        const strM = String(parseInt(strMM, 10))
+        const strDD = p.day || '01'
+        const strD = String(parseInt(strDD, 10))
+        const strdddd = p.weekday || ''
+        const strddd = weekdayShort
+
+        const replacements = {
+          dddd: strdddd,
+          ddd: strddd,
+          YYYY: strYYYY,
+          yyyy: strYYYY,
+          YY: strYY,
+          yy: strYY,
+          MMMM: monthName,
+          MMM: monthShort,
+          MM: strMM,
+          M: strM,
+          DD: strDD,
+          dd: strDD,
+          D: strD,
+          d: strD,
+          HH: strHH,
+          H: strH,
+          hh: strhh,
+          h: strh,
+          mm: strmm,
+          m: strm,
+          ss: strss,
+          s: strs,
+          A: ampm,
+          a: ampm.toLowerCase(),
+        }
+
+        const regex = /dddd|ddd|YYYY|yyyy|YY|yy|MMMM|MMM|MM|M|DD|dd|D|d|HH|H|hh|h|mm|m|ss|s|A|a/g
+        const result = fmt.replace(regex, (match) => replacements[match] !== undefined ? replacements[match] : match)
+
+        return `${prefix}${result}${suffix}`
+      } catch (e) {
+        return `${prefix}${now.toLocaleTimeString()}${suffix}`
+      }
+    }
+
+    // Infrastruktur Control Panel — Timer (Countdown & Count Up). Server cuma nyimpen
+    // checkpoint (startedAtMs, pausedAccumMs, isRunning); elapsed dihitung live di sini
+    // (client-side) supaya tampilan bisa tick tiap detik tanpa perlu polling super cepat.
+    function computeTimerElapsedMs(timer) {
+      if (!timer) return 0
+      if (timer.isRunning && typeof timer.startedAtMs === 'number') {
+        return Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
+      }
+      return timer.pausedAccumMs || 0
+    }
+
+    function computeTimerDisplayMs(timer) {
+      const elapsed = computeTimerElapsedMs(timer)
+      if (timer?.mode === 'countdown') {
+        const remaining = (timer.durationMs || 0) - elapsed
+        if (remaining <= 0 && !timer.continueBelowZero) return 0
+        return remaining
+      }
+      return elapsed
+    }
+
+    function formatTimerMs(ms, format) {
+      const sign = ms < 0 ? '-' : ''
+      const abs = Math.abs(Math.round(ms / 1000)) // detik bulat
+      const hh = Math.floor(abs / 3600)
+      const mm = Math.floor((abs % 3600) / 60)
+      const ss = abs % 60
+      const pad = (n) => String(n).padStart(2, '0')
+
+      if (format === 'hh:mm:ss') {
+        return `${sign}${pad(hh)}:${pad(mm)}:${pad(ss)}`
+      }
+      if (format === 'seconds') {
+        return `${sign}${abs}`
+      }
+      // default 'mm:ss' — kalau lebih dari 1 jam, ikut meluap ke menit (tidak dipotong)
+      const totalMinutes = Math.floor(abs / 60)
+      return `${sign}${pad(totalMinutes)}:${pad(ss)}`
+    }
+
     function resolveElementText(el) {
       const binding = el?.textBinding
       const fallback = binding?.fallback || el?.style?.text || ''
       if (!binding?.enabled) return el?.style?.text || fallback
 
       let rawValue
-      if (binding.source === 'f1data') {
+      if (binding.source === 'clock') {
+        return formatClockTime(binding.timezone, binding.format, binding.prefix, binding.suffix)
+      } else if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
+      } else if (binding.source === 'counter') {
+        rawValue = controlState.counters?.[binding.group ?? binding.name]?.value
+      } else if (binding.source === 'eventState') {
+        rawValue = controlState.eventStates?.[binding.group]?.value
+      } else if (binding.source === 'text') {
+        rawValue = controlState.texts?.[binding.group]?.value
+      } else if (binding.source === 'timer') {
+        const timer = controlState.timers?.[binding.group]
+        return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
       } else if (binding.field === 'latestChatAuthor') {
         rawValue = displayedChat.author
       } else if (binding.field === 'latestChatMessage') {
@@ -461,6 +641,7 @@
       // melebihi bounding box parent tetap terlihat penuh (container murni pembungkus
       // transform, bukan viewport visual yang membatasi konten anaknya).
       node.style.overflow = hasChildren ? 'visible' : 'hidden'
+      node.style.transformStyle = hasChildren ? 'preserve-3d' : 'flat'
       node.style.borderRadius = `${el.style?.borderRadius || 0}px`
       node.style.borderWidth = `${el.style?.borderWidth || 0}px`
       node.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
@@ -491,11 +672,12 @@
       const s = el.style || {}
       const g = s.gradient || {}
       return [
-        el.x, el.y, el.width, el.height, el.zIndex, el.opacity, hasChildren ? 1 : 0,
+        el.x, el.y, el.width, el.height, el.zIndex, el.opacity, el.scale, el.rotation, el.rotationX, el.rotationY, el.perspective, hasChildren ? 1 : 0,
         s.borderRadius, s.borderWidth, s.borderStyle, s.borderColor,
         g.enabled ? 1 : 0, g.from, g.to, g.angle,
         s.backgroundColor,
         s.shadowColor, s.shadowOffsetX, s.shadowOffsetY, s.shadowBlur,
+        s.textShadowColor, s.textShadowOffsetX, s.textShadowOffsetY, s.textShadowBlur,
       ].join('|')
     }
 
@@ -508,7 +690,7 @@
           continue
         }
         const p = step.properties || {}
-        out += `[${step.type},${step.duration},${step.ease},${step.repeat},${step.yoyo ? 1 : 0},x:${p.x},y:${p.y},op:${p.opacity},sc:${p.scale},rot:${p.rotation}]`
+        out += `[${step.type},${step.duration},${step.ease},${step.repeat},${step.yoyo ? 1 : 0},x:${p.x},y:${p.y},op:${p.opacity},sc:${p.scale},rot:${p.rotation},rx:${p.rotationX},ry:${p.rotationY},pers:${p.perspective}]`
       }
       return out
     }
@@ -560,10 +742,37 @@
       applyElementContent(node, el)
     }
 
+    // Infrastruktur Control Panel (fondasi #5/#6) — visibilityBinding terpisah dari `hidden`
+    // (toggle manual di Editor). Kalau `hidden=true`, itu selalu menang (manual override final).
+    function isElementHidden(el) {
+      if (el.hidden) return true
+      const binding = el.visibilityBinding
+      if (!binding?.enabled) return false
+      if (binding.source === 'counter') {
+        const group = binding.group ?? binding.name
+        const current = Number(controlState.counters?.[group]?.value ?? 0)
+        const target = Number(binding.matchValue ?? binding.value)
+        switch (binding.comparator || 'eq') {
+          case 'neq': return current === target
+          case 'gt': return !(current > target)
+          case 'gte': return !(current >= target)
+          case 'lt': return !(current < target)
+          case 'lte': return !(current <= target)
+          default: return current !== target
+        }
+      }
+      if (binding.source === 'eventState') {
+        const group = binding.group ?? binding.name
+        const current = controlState.eventStates?.[group]?.value
+        return current !== (binding.matchValue ?? binding.value)
+      }
+      return false
+    }
+
     function renderScene(scene) {
       if (!scene || !scene.elements) return
       scaleViewport()
-      const visibleElements = scene.elements.filter(el => !el.hidden)
+      const visibleElements = scene.elements.filter(el => !isElementHidden(el))
       const visibleIds = new Set(visibleElements.map(el => el.id))
       const byId = new Map(scene.elements.map(el => [el.id, el]))
 
@@ -775,6 +984,23 @@
       }
     }
 
+    // Infrastruktur Control Panel (fondasi #5/#6) — payload kecil (cuma angka/string per
+    // grup), jadi polling 300-500ms murah dan cukup untuk v1 (tidak perlu WebSocket/SSE).
+    async function syncControlState(isInitial = false) {
+      try {
+        const res = await fetch('/api/control-state')
+        if (!res.ok) return
+        const text = await res.text()
+        if (text !== lastControlStateHash || isInitial) {
+          lastControlStateHash = text
+          controlState = JSON.parse(text)
+          if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
+        }
+      } catch (err) {
+        console.error('Failed to sync control state:', err)
+      }
+    }
+
     window.addEventListener('resize', scaleViewport)
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -782,6 +1008,7 @@
       syncLiveStats(true)
       syncF1Data(true)
       syncScene(true)
+      syncControlState(true)
       syncPlatformConnectorConfig()
       restartChatDisplayTimer()
 
@@ -793,6 +1020,27 @@
       setTimeout(() => setInterval(() => syncLiveStats(false), 2000), 300)
       setTimeout(() => setInterval(() => syncF1Data(false), 30000), 600)
       setTimeout(() => setInterval(syncPlatformConnectorConfig, 5000), 900)
+      // Mulai dari 500ms; turunkan ke 300ms kalau masih kerasa lag pas dites riil live.
+      setTimeout(() => setInterval(() => syncControlState(false), 500), 150)
+
+      // Tick per 1 detik khusus elemen jam (clock) & timer yang sedang running, tanpa
+      // re-render scene penuh — elapsed timer dihitung live di sini, tidak nunggu poll
+      // control-state (300-500ms) supaya angka tetap jalan mulus di antara dua poll.
+      setInterval(() => {
+        if (!currentScene || !currentScene.elements) return
+        currentScene.elements.forEach(el => {
+          const binding = el.textBinding
+          if (isElementHidden(el) || !binding?.enabled) return
+          const isClock = binding.source === 'clock'
+          const isRunningTimer = binding.source === 'timer' && controlState.timers?.[binding.group]?.isRunning
+          if (isClock || isRunningTimer) {
+            const record = renderedElements.get(el.id)
+            if (record && record.node) {
+              applyElementContent(record.node, el)
+            }
+          }
+        })
+      }, 1000)
     })
   </script>
 </body>

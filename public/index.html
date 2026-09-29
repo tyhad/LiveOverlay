@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiveOverlay Studio - Canvas Editor & Animation Engine</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/design.css">
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="/animation-engine.js"></script>
@@ -15,114 +16,20 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 
-  <style>
-    .canvas-workspace {
-      background-color: #080c14;
-      background-image:
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
-      background-size: 24px 24px;
-    }
-
-    .element-selected {
-      outline: 2px solid #6366f1 !important;
-      outline-offset: 2px;
-    }
-
-    .element-locked {
-      outline: 2px dashed #f59e0b !important;
-      cursor: not-allowed !important;
-    }
-
-    .resize-handle {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background-color: #ffffff;
-      border: 2px solid #4f46e5;
-      border-radius: 2px;
-      z-index: 9999;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-    }
-
-    .handle-nw {
-      top: -6px;
-      left: -6px;
-      cursor: nwse-resize;
-    }
-
-    .handle-n {
-      top: -6px;
-      left: calc(50% - 5px);
-      cursor: ns-resize;
-    }
-
-    .handle-ne {
-      top: -6px;
-      right: -6px;
-      cursor: nesw-resize;
-    }
-
-    .handle-e {
-      top: calc(50% - 5px);
-      right: -6px;
-      cursor: ew-resize;
-    }
-
-    .handle-se {
-      bottom: -6px;
-      right: -6px;
-      cursor: nwse-resize;
-    }
-
-    .handle-s {
-      bottom: -6px;
-      left: calc(50% - 5px);
-      cursor: ns-resize;
-    }
-
-    .handle-sw {
-      bottom: -6px;
-      left: -6px;
-      cursor: nesw-resize;
-    }
-
-    .handle-w {
-      top: calc(50% - 5px);
-      left: -6px;
-      cursor: ew-resize;
-    }
-
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #0b0f19;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 3px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #334155;
-    }
-  </style>
+  <link rel="stylesheet" href="/editor.css">
 </head>
 
 <body
-  class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
+  class="editor-page h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
 
   <!-- TOP HEADER -->
   <header
     class="min-h-[56px] bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between shrink-0 z-30 shadow-md flex-wrap gap-y-2">
     <div class="flex items-center space-x-3">
       <div
-        class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/20">
-        <img src="\KerasnG.png" alt="LiveOverlay Studio"
-          class="w-8 h-8 rounded-xl object-cover shadow-lg shadow-indigo-500/20" />
+        class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm">
+        <img src="/KerasnG.png" alt="LiveOverlay Studio"
+          class="w-8 h-8 rounded-xl object-cover" />
       </div>
       <div>
         <div class="flex items-center space-x-2">
@@ -153,7 +60,7 @@
     <div class="flex items-center space-x-2">
       <button id="play-all-animations-btn"
         class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition">
-        <span>✨</span>
+            <span class="sequence-mark" aria-hidden="true"></span>
         <span>Play All Animations</span>
       </button>
 
@@ -179,7 +86,7 @@
 
       <button id="save-scene-btn"
         class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
-        <span>💾</span>
+        <span class="save-mark" aria-hidden="true"></span>
         <span>Save Scene</span>
       </button>
 
@@ -187,6 +94,16 @@
         class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
         <span>Preview OBS</span>
         <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+
+      <a id="control-panel-link" href="/control" target="_blank"
+        class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5"
+        title="Buka Control Panel (Counter, Event State, Timer)">
+        <span class="control-mark" aria-hidden="true"></span><span>Control Panel</span>
+        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
@@ -252,7 +169,7 @@
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Assets</span>
           </span>
-          <span class="text-[10px] text-slate-500">Click to add</span>
+          <span id="assets-add-btn" class="text-[10px] text-slate-500">Click to add</span>
         </summary>
         <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
           <p class="col-span-3 text-[11px] text-slate-500">No uploaded assets yet.</p>
@@ -513,6 +430,63 @@
           </div>
         </details>
 
+        <!-- Visibility Binding (semua tipe elemen) — tampil/sembunyi berdasarkan Counter / Event State -->
+        <details id="visibility-binding-section" class="space-y-2 pt-2 border-t border-slate-800 group">
+          <summary
+            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            <span>Visibility Binding</span>
+          </summary>
+          <div class="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-600/10 p-3 mt-2">
+            <div class="flex items-center justify-between">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Tampil Kalau…</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
+                <input id="prop-vis-enabled" type="checkbox" class="accent-emerald-500">
+                <span>Enable</span>
+              </label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Source</label>
+                <select id="prop-vis-source"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="counter">Counter</option>
+                  <option value="eventState">Event State</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
+                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. killCount"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+                <datalist id="vis-group-names"></datalist>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div id="prop-vis-comparator-wrap">
+                <label class="block text-[11px] text-slate-400 mb-1">Kondisi</label>
+                <select id="prop-vis-comparator"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  <option value="eq">= sama dengan</option>
+                  <option value="neq">≠ tidak sama</option>
+                  <option value="gt">&gt; lebih dari</option>
+                  <option value="gte">≥ minimal</option>
+                  <option value="lt">&lt; kurang dari</option>
+                  <option value="lte">≤ maksimal</option>
+                </select>
+              </div>
+              <div id="prop-vis-value-wrap" class="col-span-1">
+                <label class="block text-[11px] text-slate-400 mb-1">Nilai</label>
+                <input type="text" id="prop-vis-value" list="vis-value-options" placeholder="mis. 10 / red"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+                <datalist id="vis-value-options"></datalist>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-500">Toggle 👁️ manual (hidden) tetap menang: kalau elemen di-hide manual,
+              binding ini diabaikan. Nilai live dikontrol dari <code>/control</code>.</p>
+          </div>
+        </details>
+
 
         <!-- Typography Section (Text Elements) -->
         <details id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
@@ -614,6 +588,38 @@
                   class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
                 <input type="text" id="prop-text-color"
                   class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+              </div>
+            </div>
+          </div>
+
+          <!-- Text Drop Shadow & Glow -->
+          <div class="pt-2 border-t border-slate-800/60 space-y-2">
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow & Glow</label>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
+              <div class="flex items-center gap-2">
+                <input type="color" id="prop-text-shadow-color-picker"
+                  class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-text-shadow-color" placeholder="rgba(0,0,0,0.5)"
+                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Blur (px)</label>
+                <input type="number" id="prop-text-shadow-blur" min="0" max="100"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Offset X</label>
+                <input type="number" id="prop-text-shadow-x" min="-100" max="100"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Offset Y</label>
+                <input type="number" id="prop-text-shadow-y" min="-100" max="100"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
               </div>
             </div>
           </div>
@@ -729,9 +735,21 @@
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                   <option value="platform">Platform Stats</option>
                   <option value="f1data">F1 Data (Local DB)</option>
+                  <option value="clock">Current Time (Clock)</option>
+                  <option value="control">Control Panel</option>
                 </select>
               </div>
-              <div>
+              <div id="control-type-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Format</label>
+                <select id="prop-control-type"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="counter">Counter</option>
+                  <option value="eventState">Event State</option>
+                  <option value="timer">Timer</option>
+                  <option value="text">Text</option>
+                </select>
+              </div>
+              <div id="standard-format-group">
                 <label class="block text-[11px] text-slate-400 mb-1">Format</label>
                 <select id="prop-text-binding-format"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
@@ -771,6 +789,84 @@
                 baris), <code>constructorStandingsText.fullMultiline</code> (WCC lengkap per baris),
                 <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code> (jadwal race berjalan).
               </p>
+            </div>
+
+            <div id="clock-binding-group" class="hidden space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Timezone</label>
+                  <select id="prop-text-binding-timezone"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
+                    <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
+                    <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">America/New_York (EST)</option>
+                    <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                    <option value="Europe/London">Europe/London (GMT)</option>
+                    <option value="Europe/Paris">Europe/Paris (CET)</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                    <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                    <option value="Australia/Sydney">Australia/Sydney (AEST)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Clock Format</label>
+                  <input type="text" id="prop-text-binding-clock-format" list="clock-format-presets"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    placeholder="HH:mm:ss">
+                  <datalist id="clock-format-presets">
+                    <option value="HH:mm:ss">14:30:00 (24h with Sec)</option>
+                    <option value="HH:mm">14:30 (24h)</option>
+                    <option value="hh:mm:ss A">02:30:00 PM (12h with Sec)</option>
+                    <option value="hh:mm A">02:30 PM (12h)</option>
+                    <option value="dddd, DD MMM YYYY HH:mm:ss">Friday, 25 Sep 2026 14:30:00</option>
+                    <option value="YYYY-MM-DD HH:mm:ss">2026-09-25 14:30:00</option>
+                  </datalist>
+                </div>
+              </div>
+            </div>
+
+            <!-- Control Panel bindings (Counter / Event State / Timer): nama grup = named registry,
+                 auto-create di server kalau belum ada. Datalist diisi dari /api/control-state. -->
+            <div id="control-binding-group" class="hidden space-y-2">
+              <div>
+                <label id="prop-control-group-label" class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
+                <input type="text" id="prop-control-group" list="control-group-names" placeholder="mis. killCount"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                <datalist id="control-group-names"></datalist>
+              </div>
+              <div id="eventstate-options-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Daftar Opsi (pisahkan koma)</label>
+                <div class="flex gap-2">
+                  <input type="text" id="prop-es-options" placeholder="green, yellow, red, vsc, sc, finish"
+                    class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                  <button id="prop-es-options-save" type="button"
+                    class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium">Simpan</button>
+                </div>
+                <p id="prop-es-options-status" class="text-[10px] text-slate-500 mt-1">Jadi tombol pill di /control. Opsi lama tidak dihapus.</p>
+              </div>
+              <div id="control-text-format-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Gaya Teks</label>
+                <select id="prop-control-text-format"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="raw">Raw</option>
+                  <option value="number">Number</option>
+                  <option value="uppercase">UPPERCASE</option>
+                  <option value="lowercase">lowercase</option>
+                </select>
+              </div>
+              <div id="timer-format-group" class="hidden">
+                <label class="block text-[11px] text-slate-400 mb-1">Timer Format</label>
+                <select id="prop-timer-format"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="mm:ss">mm:ss (10:00)</option>
+                  <option value="hh:mm:ss">hh:mm:ss (00:10:00)</option>
+                  <option value="seconds">Detik (600)</option>
+                </select>
+              </div>
+              <p class="text-[10px] text-slate-500">Nilai dikontrol dari halaman <code>/control</code>. Section di
+                Control Panel muncul otomatis setelah binding ini disimpan.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -848,15 +944,51 @@
             </div>
           </div>
 
-          <!-- Rotation & Opacity -->
+          <!-- Rotation & 3D Tilt -->
           <div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Rotation (Deg)</span>
+              <span>Rotation Z (Roll)</span>
               <span id="prop-rotation-val" class="font-mono text-white">0°</span>
             </div>
             <div class="flex items-center gap-2">
               <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
               <input type="number" id="prop-rotation-num" min="-180" max="180"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Tilt X (Pitch)</span>
+              <span id="prop-rotation-x-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-rotation-x" min="-60" max="60" value="0" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-rotation-x-num" min="-60" max="60"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Yaw Y (Tilt Y)</span>
+              <span id="prop-rotation-y-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-rotation-y" min="-60" max="60" value="0" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-rotation-y-num" min="-60" max="60"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+              <span>Perspective Distance</span>
+              <span id="prop-perspective-val" class="font-mono text-white">1000px</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="range" id="prop-perspective" min="300" max="2500" value="1000" step="10" class="flex-1 accent-indigo-500">
+              <input type="number" id="prop-perspective-num" min="300" max="2500" value="1000"
                 class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
             </div>
           </div>
@@ -901,7 +1033,7 @@
             </span>
             <button id="test-element-animation-btn"
               class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
-              <span>▶</span><span>Test</span>
+              <span class="play-mark" aria-hidden="true"></span><span>Test</span>
             </button>
           </summary>
 
@@ -1324,6 +1456,165 @@
       return el.textBinding
     }
 
+    function ensureVisibilityBinding(el) {
+      if (!el.visibilityBinding) {
+        el.visibilityBinding = {
+          enabled: false,
+          source: 'counter',
+          group: '',
+          comparator: 'eq',
+          matchValue: ''
+        }
+      }
+      return el.visibilityBinding
+    }
+
+    /** Sesuaikan tampilan form Visibility Binding: comparator cuma relevan untuk counter,
+     *  dan semua input di-disable selama binding belum di-Enable. */
+    function updateVisibilityControls() {
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const vb = el?.visibilityBinding
+      const isCounter = (vb?.source || 'counter') === 'counter'
+      const enabled = !!vb?.enabled
+      document.getElementById('prop-vis-comparator-wrap').classList.toggle('hidden', !isCounter)
+      document.getElementById('prop-vis-value-wrap').classList.toggle('col-span-2', !isCounter)
+      ;['prop-vis-source', 'prop-vis-name', 'prop-vis-comparator', 'prop-vis-value'].forEach(id => {
+        const input = document.getElementById(id)
+        if (input) input.disabled = !enabled
+      })
+      document.getElementById('prop-vis-value').placeholder = isCounter ? 'mis. 10' : 'mis. red'
+    }
+
+    // ── Control Panel state (Counter / Event State / Timer) untuk preview & autocomplete ──
+    let controlStateEditor = { counters: {}, eventStates: {}, timers: {}, texts: {} }
+    let lastControlStateEditorHash = ''
+
+    /** Warna font efektif: kalau teks di-bind ke Event State dan opsi aktif punya warna
+     *  (diatur di Control Panel), warna itu menimpa style.color. */
+    function getEffectiveTextColor(el) {
+      const b = el?.textBinding
+      if (b?.enabled && b.source === 'eventState') {
+        const es = controlStateEditor.eventStates?.[b.group]
+        const c = es?.colors?.[es.value]
+        if (c) return c
+      }
+      return el?.style?.color || '#ffffff'
+    }
+
+    function computeTimerDisplayMs(timer) {
+      if (!timer) return 0
+      const elapsed = (timer.isRunning && typeof timer.startedAtMs === 'number')
+        ? Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
+        : (timer.pausedAccumMs || 0)
+      if (timer.mode === 'countdown') {
+        const remaining = (timer.durationMs || 0) - elapsed
+        return remaining <= 0 && !timer.continueBelowZero ? 0 : remaining
+      }
+      return elapsed
+    }
+
+    function formatTimerMs(ms, format) {
+      const sign = ms < 0 ? '-' : ''
+      const abs = Math.abs(Math.round(ms / 1000))
+      const pad = (n) => String(n).padStart(2, '0')
+      if (format === 'hh:mm:ss') {
+        return `${sign}${pad(Math.floor(abs / 3600))}:${pad(Math.floor((abs % 3600) / 60))}:${pad(abs % 60)}`
+      }
+      if (format === 'seconds') return `${sign}${abs}`
+      return `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+    }
+
+    /** Kumpulkan nama grup yang sudah dikenal: dari control-state.json + binding di semua scene
+     *  yang sedang dimuat editor, supaya autocomplete konsisten dengan Control Panel. */
+    function getKnownControlGroups(kind) {
+      const names = new Set(Object.keys(controlStateEditor[kind] || {}))
+      const sourceKey = kind === 'counters' ? 'counter' : kind === 'eventStates' ? 'eventState' : kind === 'texts' ? 'text' : 'timer'
+      ;(scene?.elements || []).forEach(el => {
+        const tb = el.textBinding
+        if (tb?.source === sourceKey) {
+          const n = tb.group || tb.name
+          if (n) names.add(n)
+        }
+        const vb = el.visibilityBinding
+        if (vb?.source === sourceKey && (vb.group || vb.name)) names.add(vb.group || vb.name)
+      })
+      return [...names].sort()
+    }
+
+    function fillDatalist(id, values) {
+      const list = document.getElementById(id)
+      if (!list) return
+      list.innerHTML = values.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}"></option>`).join('')
+    }
+
+    function refreshControlDatalists() {
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const binding = el?.textBinding
+      if (binding?.source === 'counter') fillDatalist('control-group-names', getKnownControlGroups('counters'))
+      else if (binding?.source === 'eventState') fillDatalist('control-group-names', getKnownControlGroups('eventStates'))
+      else if (binding?.source === 'timer') fillDatalist('control-group-names', getKnownControlGroups('timers'))
+      else if (binding?.source === 'text') fillDatalist('control-group-names', getKnownControlGroups('texts'))
+
+      const vb = el?.visibilityBinding
+      const visKind = vb?.source === 'eventState' ? 'eventStates' : 'counters'
+      fillDatalist('vis-group-names', getKnownControlGroups(visKind))
+      if (vb?.source === 'eventState' && (vb.group || vb.name)) {
+        fillDatalist('vis-value-options', controlStateEditor.eventStates?.[vb.group || vb.name]?.options || [])
+      } else {
+        fillDatalist('vis-value-options', [])
+      }
+    }
+
+    /** Isi kolom "Daftar Opsi" dari server (kecuali sedang diketik) untuk grup eventState terpilih. */
+    function prefillEventStateOptions() {
+      const input = document.getElementById('prop-es-options')
+      if (!input || document.activeElement === input) return
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const b = el?.textBinding
+      if (b?.source !== 'eventState') return
+      input.value = (controlStateEditor.eventStates?.[b.group ?? b.name]?.options || []).join(', ')
+    }
+
+    async function saveEventStateOptions() {
+      const el = scene?.elements?.find(item => item.id === selectedElementId)
+      const b = el?.textBinding
+      const group = (b?.group ?? b?.name ?? '').trim()
+      const statusEl = document.getElementById('prop-es-options-status')
+      if (!group) { statusEl.textContent = 'Isi nama grup dulu.'; return }
+      const options = [...new Set(document.getElementById('prop-es-options').value.split(',').map(v => v.trim()).filter(Boolean))]
+      if (options.length === 0) { statusEl.textContent = 'Isi minimal satu opsi.'; return }
+      try {
+        for (const option of options) {
+          const res = await fetch(`/api/control-state/event-states/${encodeURIComponent(group)}/options/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ option })
+          })
+          if (!res.ok) throw new Error('gagal menyimpan opsi')
+        }
+        await loadControlStateForEditor()
+        statusEl.textContent = `Tersimpan ${options.length} opsi ke grup "${group}".`
+        refreshControlDatalists()
+      } catch (err) {
+        statusEl.textContent = 'Gagal menyimpan opsi: ' + err.message
+      }
+    }
+
+    async function loadControlStateForEditor() {
+      try {
+        const res = await fetch('/api/control-state')
+        if (!res.ok) return
+        const text = await res.text()
+        const changed = text !== lastControlStateEditorHash
+        lastControlStateEditorHash = text
+        controlStateEditor = JSON.parse(text)
+        if (changed) { refreshControlDatalists(); prefillEventStateOptions() }
+        return changed
+      } catch (err) {
+        console.error('Failed to load control state:', err)
+      }
+    }
+
     function ensureMarqueeConfig(el) {
       if (!el.marquee) {
         el.marquee = {
@@ -1371,6 +1662,23 @@
     }
 
     function formatBindingStatus(binding) {
+      if (binding?.source === 'clock') {
+        return `Source: Current Time (Clock) | Timezone: ${binding.timezone || 'Asia/Jakarta'}`
+      }
+      if (binding?.source === 'counter') {
+        return `Source: Counter "${binding.group || binding.name || '-'}" | Dikontrol dari /control`
+      }
+      if (binding?.source === 'text') {
+        return `Source: Text "${binding.group || '-'}" | Isi ditulis dari /control`
+      }
+      if (binding?.source === 'eventState') {
+        return `Source: Event State "${binding.group || '-'}" | Dikontrol dari /control`
+      }
+      if (binding?.source === 'timer') {
+        const t = controlStateEditor.timers?.[binding.group]
+        const state = t ? (t.isRunning ? 'running' : 'paused/stopped') : 'belum dibuat'
+        return `Source: Timer "${binding.group || '-'}" | Status: ${state} | Dikontrol dari /control`
+      }
       if (binding?.source === 'f1data') {
         if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
         const stamp = f1Data.lastFetchedAt ? new Date(f1Data.lastFetchedAt).toLocaleString() : 'never'
@@ -1385,20 +1693,42 @@
       const el = scene.elements.find(item => item.id === selectedElementId)
       const binding = el ? ensureTextBinding(el) : null
       const isF1Data = binding?.source === 'f1data'
-      const isPlatform = !isF1Data
+      const isClock = binding?.source === 'clock'
+      const isControl = ['counter', 'eventState', 'timer', 'text'].includes(binding?.source)
+      const isTimer = binding?.source === 'timer'
+      const isPlatform = !isF1Data && !isClock && !isControl
       const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
 
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
       document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
+      document.getElementById('clock-binding-group').classList.toggle('hidden', !isClock)
+      document.getElementById('control-binding-group').classList.toggle('hidden', !isControl)
+      document.getElementById('timer-format-group').classList.toggle('hidden', !isTimer)
+      document.getElementById('standard-format-group').classList.toggle('hidden', isClock || isControl)
+      document.getElementById('control-type-group').classList.toggle('hidden', !isControl)
+      document.getElementById('control-text-format-group').classList.toggle('hidden', !isControl || isTimer)
+      document.getElementById('eventstate-options-group').classList.toggle('hidden', binding?.source !== 'eventState')
+      if (isControl) {
+        document.getElementById('prop-control-group-label').textContent =
+          binding.source === 'counter' ? 'Nama Counter' : binding.source === 'eventState' ? 'Nama Event State' : binding.source === 'text' ? 'Nama Teks' : 'Nama Timer'
+      }
 
         ;[
+          'prop-control-group',
+          'prop-control-type',
+          'prop-control-text-format',
+          'prop-es-options',
+          'prop-es-options-save',
+          'prop-timer-format',
           'prop-text-binding-source',
           'prop-text-binding-field',
           'prop-text-binding-format',
           'prop-text-binding-prefix',
           'prop-text-binding-suffix',
           'prop-text-binding-fallback',
-          'prop-text-binding-f1-field-path'
+          'prop-text-binding-f1-field-path',
+          'prop-text-binding-timezone',
+          'prop-text-binding-clock-format'
         ].forEach(id => {
           const input = document.getElementById(id)
           if (input) input.disabled = !isEnabled
@@ -1418,14 +1748,116 @@
       return String(value)
     }
 
+    function formatClockTime(timezone, formatStr, prefix = '', suffix = '') {
+      const tz = timezone || 'Asia/Jakarta'
+      const fmt = formatStr || 'HH:mm:ss'
+      const now = new Date()
+
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          weekday: 'long',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })
+        const parts = formatter.formatToParts(now)
+        const p = {}
+        for (const part of parts) {
+          p[part.type] = part.value
+        }
+
+        let hour24 = parseInt(p.hour || '0', 10)
+        if (hour24 === 24) hour24 = 0
+        const hour12 = hour24 % 12 || 12
+        const ampm = hour24 >= 12 ? 'PM' : 'AM'
+
+        const monthNameFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' })
+        const monthShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'short' })
+        const weekdayShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
+
+        const monthName = monthNameFormatter.format(now)
+        const monthShort = monthShortFormatter.format(now)
+        const weekdayShort = weekdayShortFormatter.format(now)
+
+        const strHH = String(hour24).padStart(2, '0')
+        const strH = String(hour24)
+        const strhh = String(hour12).padStart(2, '0')
+        const strh = String(hour12)
+        const strmm = String(p.minute || '00').padStart(2, '0')
+        const strm = String(parseInt(p.minute || '0', 10))
+        const strss = String(p.second || '00').padStart(2, '0')
+        const strs = String(parseInt(p.second || '0', 10))
+        const strYYYY = p.year || '2026'
+        const strYY = strYYYY.slice(-2)
+        const strMM = p.month || '01'
+        const strM = String(parseInt(strMM, 10))
+        const strDD = p.day || '01'
+        const strD = String(parseInt(strDD, 10))
+        const strdddd = p.weekday || ''
+        const strddd = weekdayShort
+
+        const replacements = {
+          dddd: strdddd,
+          ddd: strddd,
+          YYYY: strYYYY,
+          yyyy: strYYYY,
+          YY: strYY,
+          yy: strYY,
+          MMMM: monthName,
+          MMM: monthShort,
+          MM: strMM,
+          M: strM,
+          DD: strDD,
+          dd: strDD,
+          D: strD,
+          d: strD,
+          HH: strHH,
+          H: strH,
+          hh: strhh,
+          h: strh,
+          mm: strmm,
+          m: strm,
+          ss: strss,
+          s: strs,
+          A: ampm,
+          a: ampm.toLowerCase(),
+        }
+
+        const regex = /dddd|ddd|YYYY|yyyy|YY|yy|MMMM|MMM|MM|M|DD|dd|D|d|HH|H|hh|h|mm|m|ss|s|A|a/g
+        const result = fmt.replace(regex, (match) => replacements[match] !== undefined ? replacements[match] : match)
+
+        return `${prefix}${result}${suffix}`
+      } catch (e) {
+        return `${prefix}${now.toLocaleTimeString()}${suffix}`
+      }
+    }
+
     function resolveElementText(el) {
       const binding = el?.textBinding
       const fallback = binding?.fallback || el?.style?.text || ''
       if (!binding?.enabled) return el?.style?.text || fallback
 
       let rawValue
-      if (binding.source === 'f1data') {
+      if (binding.source === 'clock') {
+        return formatClockTime(binding.timezone, binding.format, binding.prefix, binding.suffix)
+      } else if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
+      } else if (binding.source === 'counter') {
+        const counterGroup = binding.group ?? binding.name
+        rawValue = controlStateEditor.counters?.[counterGroup]?.value
+        if (rawValue === undefined && counterGroup) rawValue = 0
+      } else if (binding.source === 'eventState') {
+        rawValue = controlStateEditor.eventStates?.[binding.group]?.value
+      } else if (binding.source === 'text') {
+        rawValue = controlStateEditor.texts?.[binding.group]?.value
+      } else if (binding.source === 'timer') {
+        const timer = controlStateEditor.timers?.[binding.group]
+        return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
       } else {
         rawValue = liveStats?.[binding.field]
       }
@@ -1867,7 +2299,6 @@
         div.style.height = `${el.height}px`
         div.style.zIndex = el.zIndex || 1
         div.style.opacity = el.hidden ? 0.3 : (el.opacity !== undefined ? el.opacity : 1)
-        div.style.transform = `rotate(${el.rotation || 0}deg) scale(${el.scale !== undefined ? el.scale : 1})`
         div.style.borderRadius = `${el.style?.borderRadius || 0}px`
         div.style.borderWidth = `${el.style?.borderWidth || 0}px`
         div.style.borderStyle = el.style?.borderStyle || (el.style?.borderWidth ? 'solid' : 'none')
@@ -1876,6 +2307,16 @@
         // Elemen yang jadi parent (punya child) tidak di-clip, supaya child yang posisinya
         // melebihi bounding box parent tetap terlihat penuh di preview editor.
         div.style.overflow = parentIdsInUse.has(el.id) ? 'visible' : 'hidden'
+        div.style.transformStyle = parentIdsInUse.has(el.id) ? 'preserve-3d' : 'flat'
+        gsap.set(div, {
+          x: 0,
+          y: 0,
+          rotation: el.rotation || 0,
+          rotationX: el.rotationX || 0,
+          rotationY: el.rotationY || 0,
+          scale: el.scale !== undefined ? el.scale : 1,
+          transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
+        })
 
         if (el.style?.gradient?.enabled) {
           const from = el.style.gradient.from || '#0f172a'
@@ -1913,7 +2354,7 @@
           textP.style.fontFamily = getFontStack(el.style?.fontFamily)
           textP.style.fontSize = `${el.style?.fontSize || 18}px`
           textP.style.fontWeight = el.style?.fontWeight || 'normal'
-          textP.style.color = el.style?.color || '#ffffff'
+          textP.style.color = getEffectiveTextColor(el)
           textP.style.padding = `${el.style?.padding || 0}px`
           textP.style.textAlign = el.style?.textAlign || 'left'
           textP.style.textTransform = el.style?.textTransform || 'none'
@@ -1921,6 +2362,14 @@
           textP.style.justifyContent = el.style?.textAlign === 'center' ? 'center' : (el.style?.textAlign === 'right' ? 'flex-end' : 'flex-start')
           textP.style.whiteSpace = 'pre-wrap'
           textP.style.tabSize = '4'
+          if (el.style?.textShadowColor) {
+            const tsX = el.style.textShadowOffsetX || 0
+            const tsY = el.style.textShadowOffsetY || 0
+            const tsBlur = el.style.textShadowBlur || 0
+            textP.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${el.style.textShadowColor}`
+          } else {
+            textP.style.textShadow = 'none'
+          }
           textP.textContent = resolveElementText(el)
           div.appendChild(textP)
 
@@ -2002,6 +2451,50 @@
       }
 
       topLevel.sort(sortByZ).forEach(el => buildAndMount(el, artboard))
+    }
+
+    // Fast inspector preview: visual-only edits do not rebuild the whole artboard.
+    function renderSelectedElement() {
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      const div = selectedElementId ? document.getElementById(`el-node-${selectedElementId}`) : null
+      if (!el || !div) return renderCanvas()
+
+      const style = el.style || {}
+      div.style.background = 'none'
+      if (style.gradient?.enabled) {
+        div.style.background = `linear-gradient(${style.gradient.angle || 90}deg, ${style.gradient.from || '#0f172a'}, ${style.gradient.to || '#020617'})`
+      } else {
+        div.style.backgroundColor = style.backgroundColor || 'transparent'
+      }
+      div.style.borderRadius = `${style.borderRadius || 0}px`
+      div.style.borderWidth = `${style.borderWidth || 0}px`
+      div.style.borderStyle = style.borderStyle || (style.borderWidth ? 'solid' : 'none')
+      div.style.borderColor = style.borderColor || 'transparent'
+      div.style.boxShadow = style.shadowColor
+        ? `${style.shadowOffsetX || 0}px ${style.shadowOffsetY || 4}px ${style.shadowBlur || 16}px ${style.shadowColor}`
+        : 'none'
+      gsap.set(div, {
+        rotation: el.rotation || 0,
+        rotationX: el.rotationX || 0,
+        rotationY: el.rotationY || 0,
+        scale: el.scale !== undefined ? el.scale : 1,
+        transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
+      })
+
+      if (el.type === 'text' || style.text !== undefined) {
+        const content = [...div.children].find(child => !child.classList.contains('resize-handle'))
+        if (content) {
+          content.style.color = getEffectiveTextColor(el)
+          content.style.padding = `${style.padding || 0}px`
+          content.style.fontSize = `${style.fontSize || 18}px`
+          content.style.fontWeight = style.fontWeight || 'normal'
+          content.style.textAlign = style.textAlign || 'left'
+          content.style.justifyContent = style.textAlign === 'center' ? 'center' : (style.textAlign === 'right' ? 'flex-end' : 'flex-start')
+          content.style.textShadow = style.textShadowColor
+            ? `${style.textShadowOffsetX || 0}px ${style.textShadowOffsetY || 0}px ${style.textShadowBlur || 0}px ${style.textShadowColor}`
+            : 'none'
+        }
+      }
     }
 
     // Global Mouse Handlers
@@ -2157,6 +2650,21 @@
       document.getElementById('prop-rotation-num').value = rot
       document.getElementById('prop-rotation-val').textContent = `${rot}°`
 
+      const rotX = el.rotationX || 0
+      document.getElementById('prop-rotation-x').value = rotX
+      document.getElementById('prop-rotation-x-num').value = rotX
+      document.getElementById('prop-rotation-x-val').textContent = `${rotX}°`
+
+      const rotY = el.rotationY || 0
+      document.getElementById('prop-rotation-y').value = rotY
+      document.getElementById('prop-rotation-y-num').value = rotY
+      document.getElementById('prop-rotation-y-val').textContent = `${rotY}°`
+
+      const pers = el.perspective !== undefined ? el.perspective : 1000
+      document.getElementById('prop-perspective').value = pers
+      document.getElementById('prop-perspective-num').value = pers
+      document.getElementById('prop-perspective-val').textContent = `${pers}px`
+
       const scaleVal = el.scale !== undefined ? el.scale : 1
       document.getElementById('prop-scale').value = scaleVal
       document.getElementById('prop-scale-num').value = scaleVal
@@ -2169,6 +2677,17 @@
 
       document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
       document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
+
+      // Visibility Binding (semua tipe elemen)
+      const visBinding = ensureVisibilityBinding(el)
+      document.getElementById('prop-vis-enabled').checked = !!visBinding.enabled
+      document.getElementById('prop-vis-source').value = visBinding.source || 'counter'
+      document.getElementById('prop-vis-name').value = visBinding.group ?? visBinding.name ?? ''
+      document.getElementById('prop-vis-comparator').value = visBinding.comparator || 'eq'
+      document.getElementById('prop-vis-value').value = visBinding.matchValue ?? visBinding.value ?? ''
+      updateVisibilityControls()
+      // Buka otomatis kalau binding aktif supaya user sadar elemen ini punya kondisi tampil
+      if (visBinding.enabled) document.getElementById('visibility-binding-section').open = true
 
       // Animation Sequence Editor
       document.getElementById('anim-loop-toggle').checked = Boolean(el.animation?.loop)
@@ -2188,15 +2707,34 @@
         document.getElementById('prop-letter-spacing').value = el.style?.letterSpacing || 0
         document.getElementById('prop-text-color').value = el.style?.color || '#ffffff'
         document.getElementById('prop-text-color-picker').value = el.style?.color?.startsWith('#') ? el.style.color : '#ffffff'
+        document.getElementById('prop-text-shadow-color').value = el.style?.textShadowColor || ''
+        document.getElementById('prop-text-shadow-color-picker').value = el.style?.textShadowColor?.startsWith('#') ? el.style.textShadowColor : '#000000'
+        document.getElementById('prop-text-shadow-blur').value = el.style?.textShadowBlur ?? 0
+        document.getElementById('prop-text-shadow-x').value = el.style?.textShadowOffsetX ?? 0
+        document.getElementById('prop-text-shadow-y').value = el.style?.textShadowOffsetY ?? 0
         const binding = ensureTextBinding(el)
         document.getElementById('prop-text-binding-enabled').checked = !!binding.enabled
-        document.getElementById('prop-text-binding-source').value = binding.source || 'platform'
+        const isControlSource = ['counter', 'eventState', 'timer', 'text'].includes(binding.source)
+        // UI: satu opsi "Control Panel"; tipenya (Counter/Event State/Timer) di dropdown Format.
+        // Data model tetap: textBinding.source = 'counter' | 'eventState' | 'timer'.
+        document.getElementById('prop-text-binding-source').value = isControlSource ? 'control' : (binding.source || 'platform')
+        document.getElementById('prop-control-type').value = isControlSource ? binding.source : 'counter'
+        document.getElementById('prop-control-text-format').value =
+          ['raw', 'number', 'uppercase', 'lowercase'].includes(binding.format) ? binding.format : 'raw'
         document.getElementById('prop-text-binding-field').value = binding.field || 'username'
         document.getElementById('prop-text-binding-format').value = binding.format || 'raw'
+        document.getElementById('prop-text-binding-timezone').value = binding.timezone || 'Asia/Jakarta'
+        document.getElementById('prop-text-binding-clock-format').value = binding.source === 'clock' ? (binding.format || 'HH:mm:ss') : 'HH:mm:ss'
         document.getElementById('prop-text-binding-prefix').value = binding.prefix || ''
         document.getElementById('prop-text-binding-suffix').value = binding.suffix || ''
         document.getElementById('prop-text-binding-fallback').value = binding.fallback || el.style?.text || ''
         document.getElementById('prop-text-binding-f1-field-path').value = binding.source === 'f1data' ? (binding.fieldPath || '') : ''
+        document.getElementById('prop-control-group').value =
+          ['counter', 'eventState', 'timer', 'text'].includes(binding.source) ? (binding.group ?? binding.name ?? '') : ''
+        document.getElementById('prop-timer-format').value =
+          binding.source === 'timer' && ['mm:ss', 'hh:mm:ss', 'seconds'].includes(binding.format) ? binding.format : 'mm:ss'
+        refreshControlDatalists()
+        prefillEventStateOptions()
         updateBindingPreview()
 
         const marquee = ensureMarqueeConfig(el)
@@ -2395,7 +2933,7 @@
 
         // Target Properties: satu baris checkbox+angka per properti yang didukung engine.
         const propsContainer = card.querySelector('[data-role="properties"]')
-        const PROPERTY_DEFAULTS = { x: el.x, y: el.y, opacity: 1, scale: 1, rotation: 0 }
+        const PROPERTY_DEFAULTS = { x: el.x, y: el.y, opacity: 1, scale: 1, rotation: 0, rotationX: 0, rotationY: 0, perspective: 1000 }
         AnimationEngine.SUPPORTED_PROPERTIES.forEach(propName => {
           const row = propRowTemplate.content.firstElementChild.cloneNode(true)
           const toggle = row.querySelector('[data-role="prop-toggle"]')
@@ -2547,6 +3085,51 @@
       document.getElementById('prop-rotation').addEventListener('input', (e) => handleRotationChange(e.target.value))
       document.getElementById('prop-rotation-num').addEventListener('input', (e) => handleRotationChange(e.target.value))
 
+      // RotationX (Tilt)
+      const handleRotationXChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const deg = parseInt(val) || 0
+          el.rotationX = deg
+          document.getElementById('prop-rotation-x').value = deg
+          document.getElementById('prop-rotation-x-num').value = deg
+          document.getElementById('prop-rotation-x-val').textContent = `${deg}°`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-rotation-x').addEventListener('input', (e) => handleRotationXChange(e.target.value))
+      document.getElementById('prop-rotation-x-num').addEventListener('input', (e) => handleRotationXChange(e.target.value))
+
+      // RotationY (Yaw)
+      const handleRotationYChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const deg = parseInt(val) || 0
+          el.rotationY = deg
+          document.getElementById('prop-rotation-y').value = deg
+          document.getElementById('prop-rotation-y-num').value = deg
+          document.getElementById('prop-rotation-y-val').textContent = `${deg}°`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-rotation-y').addEventListener('input', (e) => handleRotationYChange(e.target.value))
+      document.getElementById('prop-rotation-y-num').addEventListener('input', (e) => handleRotationYChange(e.target.value))
+
+      // Perspective Distance
+      const handlePerspectiveChange = (val) => {
+        const el = getSelected()
+        if (el) {
+          const px = Math.max(300, Math.min(2500, parseInt(val) || 1000))
+          el.perspective = px
+          document.getElementById('prop-perspective').value = px
+          document.getElementById('prop-perspective-num').value = px
+          document.getElementById('prop-perspective-val').textContent = `${px}px`
+          renderCanvas()
+        }
+      }
+      document.getElementById('prop-perspective').addEventListener('input', (e) => handlePerspectiveChange(e.target.value))
+      document.getElementById('prop-perspective-num').addEventListener('input', (e) => handlePerspectiveChange(e.target.value))
+
       // Scale
       const handleScaleChange = (val) => {
         const el = getSelected()
@@ -2588,11 +3171,119 @@
         renderCanvas()
         updateBindingPreview()
       })
-      document.getElementById('prop-text-binding-source').addEventListener('change', (e) => {
+      // Ganti sumber binding. `newSource` = nilai data-model sebenarnya
+      // ('platform' | 'f1data' | 'clock' | 'counter' | 'eventState' | 'timer').
+      const applyBindingSource = (newSource) => {
         const el = getSelected()
         if (!el) return
         const binding = ensureTextBinding(el)
-        binding.source = e.target.value
+        const prevSource = binding.source
+        binding.source = newSource
+        const standardFormats = ['raw', 'number', 'uppercase', 'lowercase']
+        const timerFormats = ['mm:ss', 'hh:mm:ss', 'seconds']
+        if (newSource === 'clock') {
+          if (!binding.timezone) binding.timezone = 'Asia/Jakarta'
+          if (!binding.field) binding.field = 'currentTime'
+          if (standardFormats.includes(binding.format) || timerFormats.includes(binding.format)) {
+            binding.format = 'HH:mm:ss'
+          }
+        } else if (newSource === 'timer') {
+          if (!timerFormats.includes(binding.format)) binding.format = 'mm:ss'
+        } else if (prevSource === 'timer' || prevSource === 'clock') {
+          // keluar dari timer/clock: kembalikan format ke standar supaya select Format valid
+          binding.format = 'raw'
+        }
+        // Nama grup dibawa antar tipe Control Panel (counter pakai `name`, lainnya `group`)
+        if (['counter', 'eventState', 'timer', 'text'].includes(newSource)) {
+          const current = document.getElementById('prop-control-group').value.trim()
+          const carried = current || binding.group || binding.name || ''
+          binding.group = carried
+          delete binding.name
+          document.getElementById('prop-control-group').value = carried
+          document.getElementById('prop-control-type').value = newSource
+          refreshControlDatalists()
+        }
+        document.getElementById('prop-text-binding-format').value = standardFormats.includes(binding.format) ? binding.format : 'raw'
+        document.getElementById('prop-control-text-format').value = standardFormats.includes(binding.format) ? binding.format : 'raw'
+        renderCanvas()
+        updateBindingPreview()
+      }
+      document.getElementById('prop-text-binding-source').addEventListener('change', (e) => {
+        // Opsi tunggal "Control Panel" -> tipe diambil dari dropdown Format (default Counter)
+        applyBindingSource(e.target.value === 'control'
+          ? (document.getElementById('prop-control-type').value || 'counter')
+          : e.target.value)
+      })
+      document.getElementById('prop-control-type').addEventListener('change', (e) => { applyBindingSource(e.target.value); prefillEventStateOptions() })
+      document.getElementById('prop-es-options-save').addEventListener('click', saveEventStateOptions)
+      document.getElementById('prop-control-text-format').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).format = e.target.value
+        document.getElementById('prop-text-binding-format').value = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-control-group').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        const binding = ensureTextBinding(el)
+        const name = e.target.value.trim()
+        if (['counter', 'eventState', 'timer', 'text'].includes(binding.source)) { binding.group = name; delete binding.name }
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-timer-format').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).format = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+
+      // Visibility Binding controls
+      const getVis = () => { const el = getSelected(); return el ? ensureVisibilityBinding(el) : null }
+      document.getElementById('prop-vis-enabled').addEventListener('change', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.enabled = e.target.checked
+        updateVisibilityControls()
+      })
+      document.getElementById('prop-vis-source').addEventListener('change', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.source = e.target.value
+        if (vb.source === 'eventState') vb.comparator = 'eq'
+        updateVisibilityControls()
+        refreshControlDatalists()
+      })
+      document.getElementById('prop-vis-name').addEventListener('input', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.group = e.target.value.trim()
+        delete vb.name
+        refreshControlDatalists()
+      })
+      document.getElementById('prop-vis-comparator').addEventListener('change', (e) => {
+        const vb = getVis(); if (!vb) return
+        vb.comparator = e.target.value
+      })
+      document.getElementById('prop-vis-value').addEventListener('input', (e) => {
+        const vb = getVis(); if (!vb) return
+        // counter: simpan angka; eventState: simpan string apa adanya
+        vb.matchValue = vb.source === 'counter' && e.target.value.trim() !== '' && Number.isFinite(Number(e.target.value))
+          ? Number(e.target.value)
+          : e.target.value
+        delete vb.value
+      })
+      document.getElementById('prop-text-binding-timezone').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).timezone = e.target.value
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-text-binding-clock-format').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).format = e.target.value || 'HH:mm:ss'
         renderCanvas()
         updateBindingPreview()
       })
@@ -2717,8 +3408,14 @@
       document.getElementById('align-v-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'center'; renderCanvas(); } })
       document.getElementById('align-v-bottom').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'bottom'; renderCanvas(); } })
 
-      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderSelectedElement(); } })
+
+      document.getElementById('prop-text-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; document.getElementById('prop-text-shadow-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-text-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-text-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowBlur = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-text-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowOffsetX = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-text-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowOffsetY = parseInt(e.target.value) || 0; renderCanvas(); } })
 
       // Gradient Toggle & Fill
       document.getElementById('prop-gradient-toggle').addEventListener('change', (e) => {
@@ -2731,29 +3428,29 @@
         }
       })
 
-      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-bg-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-bg-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; renderSelectedElement(); } })
 
-      document.getElementById('prop-grad-from-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; document.getElementById('prop-grad-from').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-from').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-to-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; document.getElementById('prop-grad-to').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-to').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-angle').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.angle = parseInt(e.target.value) || 90; document.getElementById('prop-grad-angle-val').textContent = `${el.style.gradient.angle}°`; renderCanvas(); } })
-      document.getElementById('prop-padding').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.padding = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-grad-from-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; document.getElementById('prop-grad-from').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-from').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-to-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; document.getElementById('prop-grad-to').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-to').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-angle').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.angle = parseInt(e.target.value) || 90; document.getElementById('prop-grad-angle-val').textContent = `${el.style.gradient.angle}°`; renderSelectedElement(); } })
+      document.getElementById('prop-padding').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.padding = parseInt(e.target.value) || 0; renderSelectedElement(); } })
 
       // Borders
-      document.getElementById('prop-border-radius').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-border-width').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-border-style').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.borderStyle = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-border-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-border-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-border-radius').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-border-width').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-border-style').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.borderStyle = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-border-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-border-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; renderSelectedElement(); } })
 
       // Shadows
-      document.getElementById('prop-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; document.getElementById('prop-shadow-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowBlur = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetX = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetY = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; document.getElementById('prop-shadow-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowBlur = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetX = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetY = parseInt(e.target.value) || 0; renderSelectedElement(); } })
 
       // Delete & Duplicate
       document.getElementById('delete-element-btn').addEventListener('click', () => {
@@ -2833,7 +3530,7 @@
       })
     })
 
-    document.getElementById('upload-asset-btn').addEventListener('click', () => assetFileInput.click())
+    document.getElementById('assets-add-btn').addEventListener('click', () => assetFileInput.click())
     assetFileInput.addEventListener('change', async () => {
       const [file] = assetFileInput.files
       if (!file) return
@@ -2887,23 +3584,25 @@
       const newEl = {
         id: 'shp_' + Date.now().toString(36),
         type: 'shape',
-        name: 'Glow Card',
+        name: 'Studio Shape',
         x: 120,
         y: 120,
         width: 420,
         height: 140,
         rotation: 0,
-        opacity: 0.95,
+        opacity: 1,
         zIndex: scene.elements.length + 1,
         style: {
-          backgroundColor: '#0f172a',
-          borderRadius: 20,
-          borderWidth: 2,
+          backgroundColor: '#1e2124',
+          borderRadius: 16,
+          borderWidth: 1,
           borderStyle: 'solid',
-          borderColor: '#6366f1',
-          shadowColor: 'rgba(99,102,241,0.35)',
-          shadowBlur: 24,
-          gradient: { enabled: true, from: '#1e1b4b', to: '#0f172a', angle: 135 }
+          borderColor: '#7e848c',
+          shadowColor: 'rgba(20,22,24,0.82)',
+          shadowBlur: 16,
+          shadowOffsetX: 6,
+          shadowOffsetY: 6,
+          gradient: { enabled: true, from: '#282c30', to: '#1e2124', angle: 145 }
         },
         animation: {
           loop: false,
@@ -3124,6 +3823,22 @@
       setInterval(loadLiveStats, 2000)
       setInterval(loadF1Data, 30000)
       setInterval(loadPlatformConnectorStatus, 4000)
+      loadControlStateForEditor().then(() => { renderCanvas(); updateBindingPreview() })
+      setInterval(async () => {
+        const changed = await loadControlStateForEditor()
+        if (scene && scene.elements) {
+          const controlSources = ['counter', 'eventState', 'timer', 'text']
+          const hasControlBinding = scene.elements.some(el => !el.hidden && el.textBinding?.enabled && controlSources.includes(el.textBinding?.source))
+          const hasRunningTimer = scene.elements.some(el =>
+            !el.hidden && el.textBinding?.enabled && el.textBinding?.source === 'timer' &&
+            controlStateEditor.timers?.[el.textBinding.group]?.isRunning)
+          const hasClock = scene.elements.some(el => !el.hidden && el.textBinding?.enabled && el.textBinding?.source === 'clock')
+          if (hasClock || hasRunningTimer || (hasControlBinding && changed)) {
+            renderCanvas()
+            updateBindingPreview()
+          }
+        }
+      }, 1000)
     })
 
     // ── Platform Live Stats Connector UI ──────────────────────────────────────

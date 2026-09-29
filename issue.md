@@ -6,7 +6,7 @@
 
 ## Status Fase
 
-**v1.0 — Visi tercapai.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
+**v1.1.0 — Visi v1.0 tercapai.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
 
 | Fase | Nama | Status |
 |---|---|---|
@@ -42,7 +42,11 @@
 
 ### Automated Testing
 
-`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 25 assertion, simulasi browser via `jsdom` + GSAP asli. **Belum tercakup**: testing UI/DOM penuh (baru unit-level ke engine). Detail cakupan di `CHANGELOG.md`.
+`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 33 assertion, simulasi browser via `jsdom` + GSAP asli.
+
+`tests/control-state.test.mjs` — 4 tes untuk serialisasi mutasi, nama reserved, timer pause/resume/restart, dan persistence load/save.
+
+**Belum tercakup**: testing UI/DOM penuh dan integrasi browser end-to-end. Detail cakupan di `CHANGELOG.md`.
 
 ---
 

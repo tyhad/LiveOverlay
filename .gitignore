@@ -38,6 +38,9 @@ public/uploads/
 .cache
 *.tsbuildinfo
 
+# local design reference
+DESIGN.md
+
 # IntelliJ based IDEs
 .idea
 

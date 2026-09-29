@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased] - UI Refactor & Design System Cleanup
+
+- Menambahkan design tokens berbasis `DESIGN.md` untuk warna Studio Canvas, Sage Olive, typography Manrope, dan shadow neumorphic.
+- Memisahkan styling editor ke `public/editor.css` dengan scope `.editor-page`.
+- Memisahkan styling Control Panel ke scope `.control-page` di `public/design.css`.
+- Mengurangi rebuild canvas saat mengubah warna/properti visual dengan `renderSelectedElement()`.
+- Mengganti emoji UI utama dengan icon CSS mask pada Save Scene, Control Panel, duplicate, platform, dan kontrol editor.
+- Memperbarui logo editor menggunakan `public/KerasnG.png` dengan background Studio Canvas.
+- Menghapus tampilan Social Badge dan Banner dari UI, serta memindahkan akses upload asset ke baris Assets.
+- Memperbarui preset Shape Box mengikuti palette dan surface baru.
+- Menjaga indikator status Control Panel tetap hijau/merah agar tetap informatif.
+- Regression check terakhir: 33 animation tests dan 4 control-state tests lulus.
+
+Catatan stylesheet: `design.css` berisi token bersama dan styling Control Panel; `editor.css` berisi styling khusus editor; `styles.css` adalah hasil build Tailwind.
+
 Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi terkini & backlog, lihat [`issue.md`](./issue.md). Untuk visi produk & prinsip desain, lihat [`Vision.md`](./Vision.md).
 
 ---

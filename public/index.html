@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiveOverlay Studio - Canvas Editor & Animation Engine</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/design.css">
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="/animation-engine.js"></script>
@@ -15,114 +16,20 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 
-  <style>
-    .canvas-workspace {
-      background-color: #080c14;
-      background-image:
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
-      background-size: 24px 24px;
-    }
-
-    .element-selected {
-      outline: 2px solid #6366f1 !important;
-      outline-offset: 2px;
-    }
-
-    .element-locked {
-      outline: 2px dashed #f59e0b !important;
-      cursor: not-allowed !important;
-    }
-
-    .resize-handle {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background-color: #ffffff;
-      border: 2px solid #4f46e5;
-      border-radius: 2px;
-      z-index: 9999;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-    }
-
-    .handle-nw {
-      top: -6px;
-      left: -6px;
-      cursor: nwse-resize;
-    }
-
-    .handle-n {
-      top: -6px;
-      left: calc(50% - 5px);
-      cursor: ns-resize;
-    }
-
-    .handle-ne {
-      top: -6px;
-      right: -6px;
-      cursor: nesw-resize;
-    }
-
-    .handle-e {
-      top: calc(50% - 5px);
-      right: -6px;
-      cursor: ew-resize;
-    }
-
-    .handle-se {
-      bottom: -6px;
-      right: -6px;
-      cursor: nwse-resize;
-    }
-
-    .handle-s {
-      bottom: -6px;
-      left: calc(50% - 5px);
-      cursor: ns-resize;
-    }
-
-    .handle-sw {
-      bottom: -6px;
-      left: -6px;
-      cursor: nesw-resize;
-    }
-
-    .handle-w {
-      top: calc(50% - 5px);
-      left: -6px;
-      cursor: ew-resize;
-    }
-
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #0b0f19;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 3px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #334155;
-    }
-  </style>
+  <link rel="stylesheet" href="/editor.css">
 </head>
 
 <body
-  class="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
+  class="editor-page h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
 
   <!-- TOP HEADER -->
   <header
     class="min-h-[56px] bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between shrink-0 z-30 shadow-md flex-wrap gap-y-2">
     <div class="flex items-center space-x-3">
       <div
-        class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/20">
-        <img src="\KerasnG.png" alt="LiveOverlay Studio"
-          class="w-8 h-8 rounded-xl object-cover shadow-lg shadow-indigo-500/20" />
+        class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm">
+        <img src="/KerasnG.png" alt="LiveOverlay Studio"
+          class="w-8 h-8 rounded-xl object-cover" />
       </div>
       <div>
         <div class="flex items-center space-x-2">
@@ -153,7 +60,7 @@
     <div class="flex items-center space-x-2">
       <button id="play-all-animations-btn"
         class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition">
-        <span>✨</span>
+            <span class="sequence-mark" aria-hidden="true"></span>
         <span>Play All Animations</span>
       </button>
 
@@ -179,7 +86,7 @@
 
       <button id="save-scene-btn"
         class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
-        <span>💾</span>
+        <span class="save-mark" aria-hidden="true"></span>
         <span>Save Scene</span>
       </button>
 
@@ -195,7 +102,7 @@
       <a id="control-panel-link" href="/control" target="_blank"
         class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5"
         title="Buka Control Panel (Counter, Event State, Timer)">
-        <span>🎛️ Control Panel</span>
+        <span class="control-mark" aria-hidden="true"></span><span>Control Panel</span>
         <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -262,7 +169,7 @@
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
             <span>Assets</span>
           </span>
-          <span class="text-[10px] text-slate-500">Click to add</span>
+          <span id="assets-add-btn" class="text-[10px] text-slate-500">Click to add</span>
         </summary>
         <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
           <p class="col-span-3 text-[11px] text-slate-500">No uploaded assets yet.</p>
@@ -1126,7 +1033,7 @@
             </span>
             <button id="test-element-animation-btn"
               class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
-              <span>▶</span><span>Test</span>
+              <span class="play-mark" aria-hidden="true"></span><span>Test</span>
             </button>
           </summary>
 
@@ -2546,6 +2453,50 @@
       topLevel.sort(sortByZ).forEach(el => buildAndMount(el, artboard))
     }
 
+    // Fast inspector preview: visual-only edits do not rebuild the whole artboard.
+    function renderSelectedElement() {
+      const el = scene.elements.find(item => item.id === selectedElementId)
+      const div = selectedElementId ? document.getElementById(`el-node-${selectedElementId}`) : null
+      if (!el || !div) return renderCanvas()
+
+      const style = el.style || {}
+      div.style.background = 'none'
+      if (style.gradient?.enabled) {
+        div.style.background = `linear-gradient(${style.gradient.angle || 90}deg, ${style.gradient.from || '#0f172a'}, ${style.gradient.to || '#020617'})`
+      } else {
+        div.style.backgroundColor = style.backgroundColor || 'transparent'
+      }
+      div.style.borderRadius = `${style.borderRadius || 0}px`
+      div.style.borderWidth = `${style.borderWidth || 0}px`
+      div.style.borderStyle = style.borderStyle || (style.borderWidth ? 'solid' : 'none')
+      div.style.borderColor = style.borderColor || 'transparent'
+      div.style.boxShadow = style.shadowColor
+        ? `${style.shadowOffsetX || 0}px ${style.shadowOffsetY || 4}px ${style.shadowBlur || 16}px ${style.shadowColor}`
+        : 'none'
+      gsap.set(div, {
+        rotation: el.rotation || 0,
+        rotationX: el.rotationX || 0,
+        rotationY: el.rotationY || 0,
+        scale: el.scale !== undefined ? el.scale : 1,
+        transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
+      })
+
+      if (el.type === 'text' || style.text !== undefined) {
+        const content = [...div.children].find(child => !child.classList.contains('resize-handle'))
+        if (content) {
+          content.style.color = getEffectiveTextColor(el)
+          content.style.padding = `${style.padding || 0}px`
+          content.style.fontSize = `${style.fontSize || 18}px`
+          content.style.fontWeight = style.fontWeight || 'normal'
+          content.style.textAlign = style.textAlign || 'left'
+          content.style.justifyContent = style.textAlign === 'center' ? 'center' : (style.textAlign === 'right' ? 'flex-end' : 'flex-start')
+          content.style.textShadow = style.textShadowColor
+            ? `${style.textShadowOffsetX || 0}px ${style.textShadowOffsetY || 0}px ${style.textShadowBlur || 0}px ${style.textShadowColor}`
+            : 'none'
+        }
+      }
+    }
+
     // Global Mouse Handlers
     window.addEventListener('mousemove', (e) => {
       if (!selectedElementId) return
@@ -3457,11 +3408,11 @@
       document.getElementById('align-v-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'center'; renderCanvas(); } })
       document.getElementById('align-v-bottom').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'bottom'; renderCanvas(); } })
 
-      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderSelectedElement(); } })
 
-      document.getElementById('prop-text-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; document.getElementById('prop-text-shadow-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-text-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-text-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; document.getElementById('prop-text-shadow-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-text-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; renderSelectedElement(); } })
       document.getElementById('prop-text-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowBlur = parseInt(e.target.value) || 0; renderCanvas(); } })
       document.getElementById('prop-text-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowOffsetX = parseInt(e.target.value) || 0; renderCanvas(); } })
       document.getElementById('prop-text-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowOffsetY = parseInt(e.target.value) || 0; renderCanvas(); } })
@@ -3477,29 +3428,29 @@
         }
       })
 
-      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-bg-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-bg-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; renderSelectedElement(); } })
 
-      document.getElementById('prop-grad-from-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; document.getElementById('prop-grad-from').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-from').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-to-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; document.getElementById('prop-grad-to').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-to').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-grad-angle').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.angle = parseInt(e.target.value) || 90; document.getElementById('prop-grad-angle-val').textContent = `${el.style.gradient.angle}°`; renderCanvas(); } })
-      document.getElementById('prop-padding').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.padding = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-grad-from-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; document.getElementById('prop-grad-from').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-from').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-to-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; document.getElementById('prop-grad-to').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-to').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.to = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-grad-angle').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.angle = parseInt(e.target.value) || 90; document.getElementById('prop-grad-angle-val').textContent = `${el.style.gradient.angle}°`; renderSelectedElement(); } })
+      document.getElementById('prop-padding').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.padding = parseInt(e.target.value) || 0; renderSelectedElement(); } })
 
       // Borders
-      document.getElementById('prop-border-radius').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-border-width').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-border-style').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.borderStyle = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-border-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-border-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; renderCanvas(); } })
+      document.getElementById('prop-border-radius').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderRadius = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-border-width').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderWidth = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-border-style').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.borderStyle = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-border-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; document.getElementById('prop-border-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-border-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.borderColor = e.target.value; renderSelectedElement(); } })
 
       // Shadows
-      document.getElementById('prop-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; document.getElementById('prop-shadow-color').value = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; renderCanvas(); } })
-      document.getElementById('prop-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowBlur = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetX = parseInt(e.target.value) || 0; renderCanvas(); } })
-      document.getElementById('prop-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetY = parseInt(e.target.value) || 0; renderCanvas(); } })
+      document.getElementById('prop-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; document.getElementById('prop-shadow-color').value = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowColor = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-blur').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowBlur = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetX = parseInt(e.target.value) || 0; renderSelectedElement(); } })
+      document.getElementById('prop-shadow-y').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.shadowOffsetY = parseInt(e.target.value) || 0; renderSelectedElement(); } })
 
       // Delete & Duplicate
       document.getElementById('delete-element-btn').addEventListener('click', () => {
@@ -3580,6 +3531,7 @@
     })
 
     document.getElementById('upload-asset-btn').addEventListener('click', () => assetFileInput.click())
+    document.getElementById('assets-add-btn').addEventListener('click', () => assetFileInput.click())
     assetFileInput.addEventListener('change', async () => {
       const [file] = assetFileInput.files
       if (!file) return
@@ -3633,23 +3585,25 @@
       const newEl = {
         id: 'shp_' + Date.now().toString(36),
         type: 'shape',
-        name: 'Glow Card',
+        name: 'Studio Shape',
         x: 120,
         y: 120,
         width: 420,
         height: 140,
         rotation: 0,
-        opacity: 0.95,
+        opacity: 1,
         zIndex: scene.elements.length + 1,
         style: {
-          backgroundColor: '#0f172a',
-          borderRadius: 20,
-          borderWidth: 2,
+          backgroundColor: '#1e2124',
+          borderRadius: 16,
+          borderWidth: 1,
           borderStyle: 'solid',
-          borderColor: '#6366f1',
-          shadowColor: 'rgba(99,102,241,0.35)',
-          shadowBlur: 24,
-          gradient: { enabled: true, from: '#1e1b4b', to: '#0f172a', angle: 135 }
+          borderColor: '#7e848c',
+          shadowColor: 'rgba(20,22,24,0.82)',
+          shadowBlur: 16,
+          shadowOffsetX: 6,
+          shadowOffsetY: 6,
+          gradient: { enabled: true, from: '#282c30', to: '#1e2124', angle: 145 }
         },
         animation: {
           loop: false,

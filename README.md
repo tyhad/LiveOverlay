@@ -64,6 +64,17 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 Server akan aktif di: **`http://127.0.0.1:3000`**
 
+## Arsitektur Visual
+
+`DESIGN.md` adalah referensi desain lokal dan diabaikan oleh git.
+
+- `public/styles.css`: output build Tailwind dari `src/styles/input.css`; jangan diedit manual.
+- `public/design.css`: design tokens bersama dan styling Control Panel dengan scope `.control-page`.
+- `public/editor.css`: styling editor utama dengan scope `.editor-page`.
+- Status tetap semantik: hijau untuk aktif/berhasil dan merah untuk error/stop.
+
+Perubahan visual sebaiknya dilakukan di stylesheet scoped tersebut agar tidak tertimpa oleh `bun run build:css`.
+
 ---
 
 ## 🎮 Panduan Penggunaan

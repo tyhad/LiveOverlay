@@ -66,7 +66,7 @@ Server akan aktif di: **`http://127.0.0.1:3000`**
 
 ## Arsitektur Visual
 
-`DESIGN.md` adalah referensi desain lokal dan diabaikan oleh git.
+`DESIGN.md` adalah referensi desain lokal pribadi yang tidak disimpan di repo. Sumber kebenaran token desain untuk kontributor adalah `public/design.css`.
 
 - `public/styles.css`: output build Tailwind dari `src/styles/input.css`; jangan diedit manual.
 - `public/design.css`: design tokens bersama dan styling Control Panel dengan scope `.control-page`.

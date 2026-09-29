@@ -213,6 +213,19 @@ interface TimerTextBinding {
   fallback?: string
 }
 
+/** Teks berbasis jam lokal. `format`: token dddd, ddd, YYYY, YY, MMMM, MMM, MM, M,
+ *  DD, D, HH, H, hh, h, mm, m, ss, s, A, atau a. Default timezone `Asia/Jakarta`
+ *  dan format `HH:mm:ss`. */
+interface ClockTextBinding {
+  enabled?: boolean
+  source: 'clock'
+  timezone?: string
+  format?: string
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
 /** Control Panel — teks bebas (single/multiline) yang ditulis di /control dan bisa di-bind ke
  *  banyak elemen teks sekaligus lewat nama grup yang sama. `group` = nama grup teks. */
 interface TextControlBinding {
@@ -225,7 +238,7 @@ interface TextControlBinding {
   fallback?: string
 }
 
-type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | CounterTextBinding | EventStateTextBinding | TimerTextBinding
+type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | CounterTextBinding | EventStateTextBinding | TimerTextBinding | ClockTextBinding
 
 /** Infrastruktur Control Panel (fondasi #5/#6) — kontrol visibility elemen berdasarkan
  *  nilai Counter (dibanding dengan `matchValue` pakai `comparator`) atau Event State (elemen

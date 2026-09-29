@@ -2341,11 +2341,13 @@
           div.style.backgroundColor = el.style?.backgroundColor || 'transparent'
         }
 
-        if (el.style?.shadowColor) {
+        if (el.style?.shadowColor && el.type !== 'image') {
           const sx = el.style.shadowOffsetX || 0
           const sy = el.style.shadowOffsetY || 4
           const sb = el.style.shadowBlur || 16
           div.style.boxShadow = `${sx}px ${sy}px ${sb}px ${el.style.shadowColor}`
+        } else if (el.type === 'image') {
+          div.style.boxShadow = 'none'
         }
 
         if (el.type === 'image' && el.src) {
@@ -2358,6 +2360,9 @@
           image.style.display = 'block'
           image.style.objectFit = el.objectFit || 'contain'
           image.style.pointerEvents = 'none'
+          image.style.filter = el.style?.shadowColor
+            ? `drop-shadow(${el.style.shadowOffsetX || 0}px ${el.style.shadowOffsetY || 4}px ${el.style.shadowBlur || 16}px ${el.style.shadowColor})`
+            : 'none'
           div.appendChild(image)
         } else if (el.type === 'text' || el.style?.text !== undefined) {
           const textP = document.createElement('div')
@@ -2484,7 +2489,7 @@
       div.style.borderWidth = `${style.borderWidth || 0}px`
       div.style.borderStyle = style.borderStyle || (style.borderWidth ? 'solid' : 'none')
       div.style.borderColor = style.borderColor || 'transparent'
-      div.style.boxShadow = style.shadowColor
+      div.style.boxShadow = el.type !== 'image' && style.shadowColor
         ? `${style.shadowOffsetX || 0}px ${style.shadowOffsetY || 4}px ${style.shadowBlur || 16}px ${style.shadowColor}`
         : 'none'
       gsap.set(div, {
@@ -2506,6 +2511,13 @@
           content.style.justifyContent = style.textAlign === 'center' ? 'center' : (style.textAlign === 'right' ? 'flex-end' : 'flex-start')
           content.style.textShadow = style.textShadowColor
             ? `${style.textShadowOffsetX || 0}px ${style.textShadowOffsetY || 0}px ${style.textShadowBlur || 0}px ${style.textShadowColor}`
+            : 'none'
+        }
+      } else if (el.type === 'image') {
+        const image = div.querySelector('img[data-asset-image]')
+        if (image) {
+          image.style.filter = style.shadowColor
+            ? `drop-shadow(${style.shadowOffsetX || 0}px ${style.shadowOffsetY || 4}px ${style.shadowBlur || 16}px ${style.shadowColor})`
             : 'none'
         }
       }

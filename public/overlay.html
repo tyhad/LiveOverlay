@@ -656,7 +656,7 @@
         node.style.backgroundColor = el.style?.backgroundColor || 'transparent'
       }
 
-      if (el.style?.shadowColor) {
+      if (el.style?.shadowColor && el.type !== 'image') {
         node.style.boxShadow = `${el.style.shadowOffsetX || 0}px ${el.style.shadowOffsetY || 4}px ${el.style.shadowBlur || 16}px ${el.style.shadowColor}`
       } else {
         node.style.boxShadow = 'none'
@@ -711,6 +711,9 @@
         image.style.height = '100%'
         image.style.display = 'block'
         image.style.objectFit = el.objectFit || 'contain'
+        image.style.filter = el.style?.shadowColor
+          ? `drop-shadow(${el.style.shadowOffsetX || 0}px ${el.style.shadowOffsetY || 4}px ${el.style.shadowBlur || 16}px ${el.style.shadowColor})`
+          : 'none'
       } else if (el.type === 'text' || el.style?.text !== undefined) {
         const text = resolveElementText(el)
         const record = renderedElements.get(el.id)

@@ -61,7 +61,22 @@
    */
   function normalizeAnimationConfig(rawAnimationConfig) {
     if (!rawAnimationConfig || typeof rawAnimationConfig !== 'object') {
-      return { sequence: [], exitSequence: [], loop: false };
+      return { enter: { sequence: [], loop: false }, transition: { sequence: [] } };
+    }
+
+    if (rawAnimationConfig.enter || rawAnimationConfig.transition) {
+      const enter = rawAnimationConfig.enter || {};
+      const transition = rawAnimationConfig.transition || {};
+      const enterSequence = Array.isArray(enter.sequence)
+        ? splitLegacyPerStepDelay(enter.sequence).map(normalizeStep).filter(Boolean)
+        : [];
+      const transitionSequence = Array.isArray(transition.sequence)
+        ? transition.sequence.map(normalizeTransitionStep).filter(Boolean)
+        : [];
+      return {
+        enter: { sequence: enterSequence, loop: Boolean(enter.loop) },
+        transition: { sequence: transitionSequence },
+      };
     }
 
     if (Array.isArray(rawAnimationConfig.sequence)) {
@@ -74,12 +89,13 @@
             return step;
           });
       };
+      const sequence = normalizeSequence(rawAnimationConfig.sequence);
       return {
-        sequence: normalizeSequence(rawAnimationConfig.sequence),
-        exitSequence: Array.isArray(rawAnimationConfig.exitSequence)
-          ? normalizeSequence(rawAnimationConfig.exitSequence, false)
-          : [],
+        enter: { sequence, loop: Boolean(rawAnimationConfig.loop) },
+        transition: { sequence: [] },
+        sequence,
         loop: Boolean(rawAnimationConfig.loop),
+        legacy: true,
       };
     }
 
@@ -90,7 +106,26 @@
       );
     }
 
-    return { sequence: [], exitSequence: [], loop: false };
+    return { enter: { sequence: [], loop: false }, transition: { sequence: [] }, sequence: [], loop: false };
+  }
+
+  function normalizeTransitionStep(rawStep) {
+    if (!rawStep || typeof rawStep !== 'object') return null;
+    const duration = Number(rawStep.duration);
+    if (!Number.isFinite(duration) || duration < 0) return null;
+    if (rawStep.type === 'delay') return { id: rawStep.id || null, type: 'delay', duration };
+    if (rawStep.type !== 'to') return null;
+    const properties = Array.isArray(rawStep.properties)
+      ? rawStep.properties.filter((key) => SUPPORTED_PROPERTIES.includes(key))
+      : SUPPORTED_PROPERTIES.slice();
+    if (properties.length === 0) return null;
+    return {
+      id: rawStep.id || null,
+      type: 'to',
+      properties,
+      duration,
+      ease: typeof rawStep.ease === 'string' ? rawStep.ease : 'power2.out',
+    };
   }
 
   /**
@@ -208,6 +243,54 @@
       rotationY: el.rotationY || 0,
       transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
     });
+  }
+
+  /** Set baseline transform plus the canonical visual target for a state. */
+  function setStateBaseline(node, el, target) {
+    if (!node || typeof gsap === 'undefined') return;
+    const state = target || {};
+    gsap.set(node, {
+      left: el.x,
+      top: el.y,
+      x: (state.x ?? el.x) - el.x,
+      y: (state.y ?? el.y) - el.y,
+      opacity: state.opacity ?? el.opacity ?? 1,
+      scale: state.scale ?? el.scale ?? 1,
+      rotation: state.rotation ?? el.rotation ?? 0,
+      rotationX: state.rotationX ?? el.rotationX ?? 0,
+      rotationY: state.rotationY ?? el.rotationY ?? 0,
+      transformPerspective: state.perspective ?? el.perspective ?? 1000,
+    });
+  }
+
+  function buildEnterTimeline(elementId, node, normalizedConfig, element, target) {
+    const config = normalizedConfig?.enter || { sequence: [], loop: false };
+    const state = target || {};
+    const baseX = element.x;
+    const baseY = element.y;
+    const sequence = (config.sequence || []).map((step) => {
+      if (normalizedConfig?.legacy) return step;
+      if (step.type === 'delay') return step;
+      const properties = { ...(step.properties || {}) };
+      if (Object.prototype.hasOwnProperty.call(properties, 'x')) properties.x = (state.x ?? baseX) + properties.x;
+      if (Object.prototype.hasOwnProperty.call(properties, 'y')) properties.y = (state.y ?? baseY) + properties.y;
+      return { ...step, properties };
+    });
+    return buildTimelineFromSequence(elementId, node, { sequence, loop: config.loop });
+  }
+
+  function buildTransitionTimeline(elementId, node, normalizedConfig, element, target) {
+    const steps = normalizedConfig?.transition?.sequence || [];
+    const state = target || {};
+    const sequence = steps.map((step) => {
+      if (step.type === 'delay') return step;
+      const properties = {};
+      for (const key of step.properties || SUPPORTED_PROPERTIES) {
+        if (state[key] !== undefined) properties[key] = state[key];
+      }
+      return { ...step, properties };
+    }).filter((step) => step.type === 'delay' || Object.keys(step.properties).length > 0);
+    return buildTimelineFromSequence(elementId, node, { sequence, loop: false });
   }
 
   /**
@@ -335,7 +418,10 @@
     normalizeStep,
     splitLegacyPerStepDelay,
     setBaselineState,
+    setStateBaseline,
     buildTimelineFromSequence,
+    buildEnterTimeline,
+    buildTransitionTimeline,
     killTimeline,
     killAllTimelines,
     _timelineRegistry: timelineRegistry, // exposed untuk debugging/testing manual di console

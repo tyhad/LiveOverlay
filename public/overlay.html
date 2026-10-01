@@ -133,8 +133,8 @@
       }
     }
 
-    // Animasi elemen (entrance/loop/exit lama) sekarang ditangani oleh
-    // AnimationEngine (public/animation-engine.js) via animation.sequence.
+    // Animasi state elemen ditangani oleh AnimationEngine
+    // (public/animation-engine.js) via animation.enter/transition.
     // Lihat renderScene() di bawah untuk titik integrasinya.
 
     function formatBoundValue(value, format) {
@@ -681,21 +681,30 @@
       ].join('|')
     }
 
-    function computeAnimationSignature(config) {
-      if (!config || !Array.isArray(config.sequence)) return 'loop:0|seq:'
-      const signature = (sequence) => {
-        let out = ''
-        for (const step of sequence || []) {
-        if (step.type === 'delay') {
-          out += `[delay,${step.duration}]`
-          continue
-        }
-        const p = step.properties || {}
-        out += `[${step.type},${step.duration},${step.ease},${step.repeat},${step.yoyo ? 1 : 0},x:${p.x},y:${p.y},op:${p.opacity},sc:${p.scale},rot:${p.rotation},rx:${p.rotationX},ry:${p.rotationY},pers:${p.perspective}]`
-        }
-        return out
+    function computeAnimationSignature(config, state, target) {
+      const enter = config?.enter || { sequence: [], loop: false }
+      const transition = config?.transition || { sequence: [] }
+      return JSON.stringify({ enter, transition, state, target })
+    }
+
+    function getElementActiveState(el) {
+      const binding = el?.stateBinding
+      if (!binding?.enabled || !binding.group) return binding?.fallbackState || 'default'
+      const raw = binding.source === 'counter'
+        ? controlState.counters?.[binding.group]?.value
+        : controlState.eventStates?.[binding.group]?.value
+      return String(raw ?? binding.fallbackState ?? 'default')
+    }
+
+    function getElementStateTarget(el, state) {
+      const baseline = {
+        x: el.x, y: el.y, opacity: el.opacity ?? 1, scale: el.scale ?? 1,
+        rotation: el.rotation ?? 0, rotationX: el.rotationX ?? 0,
+        rotationY: el.rotationY ?? 0, perspective: el.perspective ?? 1000,
       }
-      return `loop:${config.loop ? 1 : 0}|seq:${signature(config.sequence)}|exit:${signature(config.exitSequence)}`
+      const target = { ...baseline, ...(el.stateTargets?.[state] || el.stateTargets?.[el.stateBinding?.fallbackState || 'default'] || {}) }
+      if (el.hidden) target.opacity = 0
+      return target
     }
 
     function removeRenderedElement(id, record) {
@@ -705,41 +714,6 @@
       AnimationEngine.killTimeline(id)
       renderedElements.delete(id)
       record.node.remove()
-    }
-
-    function startExitAnimation(el, record) {
-      const config = AnimationEngine.normalizeAnimationConfig(el.animation)
-      if (!config.exitSequence.length) {
-        removeRenderedElement(el.id, record)
-        return
-      }
-      if (record.marqueeTween) { record.marqueeTween.kill(); record.marqueeTween = null }
-      if (record.scrollTween) { record.scrollTween.kill(); record.scrollTween = null }
-      record.exiting = true
-      const timeline = AnimationEngine.buildTimelineFromSequence(el.id, record.node, {
-        sequence: config.exitSequence,
-        loop: false,
-      })
-      if (!timeline) {
-        removeRenderedElement(el.id, record)
-        return
-      }
-      timeline.eventCallback('onComplete', () => {
-        const current = renderedElements.get(el.id)
-        if (current === record && record.exiting) removeRenderedElement(el.id, record)
-      })
-    }
-
-    function cancelExitAnimation(el, record) {
-      if (!record?.exiting) return
-      record.exiting = false
-      AnimationEngine.killTimeline(el.id)
-      applyElementBox(record.node, el, false)
-      AnimationEngine.setBaselineState(record.node, el)
-      const config = AnimationEngine.normalizeAnimationConfig(el.animation)
-      AnimationEngine.buildTimelineFromSequence(el.id, record.node, config)
-      record.animationSignature = computeAnimationSignature(config)
-      record.boxSignature = computeBoxSignature(el, false)
     }
 
     function applyElementContent(node, el) {
@@ -792,45 +766,16 @@
       applyElementContent(node, el)
     }
 
-    // Infrastruktur Control Panel (fondasi #5/#6) — visibilityBinding terpisah dari `hidden`
-    // (toggle manual di Editor). Kalau `hidden=true`, itu selalu menang (manual override final).
-    function isElementHidden(el) {
-      if (el.hidden) return true
-      const binding = el.visibilityBinding
-      if (!binding?.enabled) return false
-      if (binding.source === 'counter') {
-        const group = binding.group ?? binding.name
-        const current = Number(controlState.counters?.[group]?.value ?? 0)
-        const target = Number(binding.matchValue ?? binding.value)
-        switch (binding.comparator || 'eq') {
-          case 'neq': return current === target
-          case 'gt': return !(current > target)
-          case 'gte': return !(current >= target)
-          case 'lt': return !(current < target)
-          case 'lte': return !(current <= target)
-          default: return current !== target
-        }
-      }
-      if (binding.source === 'eventState') {
-        const group = binding.group ?? binding.name
-        const current = controlState.eventStates?.[group]?.value
-        return current !== (binding.matchValue ?? binding.value)
-      }
-      return false
-    }
-
     function renderScene(scene) {
       if (!scene || !scene.elements) return
       scaleViewport()
-      const visibleElements = scene.elements.filter(el => !isElementHidden(el))
+      const visibleElements = scene.elements
       const visibleIds = new Set(visibleElements.map(el => el.id))
       const byId = new Map(scene.elements.map(el => [el.id, el]))
 
       renderedElements.forEach((record, id) => {
         if (visibleIds.has(id)) return
-        const el = byId.get(id)
-        if (el && !record.exiting) startExitAnimation(el, record)
-        else if (!el) removeRenderedElement(id, record)
+        if (!byId.has(id)) removeRenderedElement(id, record)
       })
 
       // Pisahkan elemen top-level vs child (Fase 9 — Parent-Child Transform) supaya
@@ -853,8 +798,10 @@
       function mountOrUpdate(el, container) {
         const existing = renderedElements.get(el.id)
         const nextAnimConfig = AnimationEngine.normalizeAnimationConfig(el.animation)
-        const nextAnimSignature = computeAnimationSignature(nextAnimConfig)
-        const hasActiveSequence = nextAnimConfig.sequence.length > 0
+        const activeState = getElementActiveState(el)
+        const target = getElementStateTarget(el, activeState)
+        const nextAnimSignature = computeAnimationSignature(nextAnimConfig, activeState, target)
+        const hasActiveSequence = nextAnimConfig.enter.sequence.length > 0
         const hasChildren = parentIdsInUse.has(el.id)
         // PERF: signature box/posisi elemen -> guard supaya applyElementBox/setBaselineState
         // (yang menulis banyak inline style sekaligus) tidak dipanggil ulang tiap poll 2 detik
@@ -862,7 +809,6 @@
         const nextBoxSignature = computeBoxSignature(el, hasChildren)
 
         if (existing) {
-          cancelExitAnimation(el, existing)
           // Pastikan node berada di container yang benar (mis. parentId baru diubah,
           // atau parent sebelumnya sempat dihapus lalu node ter-detach dari dokumen).
           if (existing.node.parentElement !== container) container.appendChild(existing.node)
@@ -870,12 +816,16 @@
           // Data binding/teks harus tetap live-update meski elemen sedang dianimasikan.
           applyElementContent(existing.node, el)
 
-          if (existing.animationSignature !== nextAnimSignature) {
-            // Definisi animasi berubah (mis. disunting ulang) -> reset ke baseline kanonis dulu,
-            // baru bangun ulang timeline dari awal.
+          if (existing.currentState !== activeState) {
+            const transition = AnimationEngine.buildTransitionTimeline(el.id, existing.node, nextAnimConfig, el, target)
+            if (!transition) AnimationEngine.setStateBaseline(existing.node, el, target)
+            existing.currentState = activeState
+            existing.animationSignature = nextAnimSignature
+            existing.boxSignature = nextBoxSignature
+          } else if (existing.animationSignature !== nextAnimSignature) {
             applyElementBox(existing.node, el, hasChildren)
-            AnimationEngine.setBaselineState(existing.node, el)
-            AnimationEngine.buildTimelineFromSequence(el.id, existing.node, nextAnimConfig)
+            AnimationEngine.setStateBaseline(existing.node, el, target)
+            AnimationEngine.buildEnterTimeline(el.id, existing.node, nextAnimConfig, el, target)
             existing.animationSignature = nextAnimSignature
             existing.boxSignature = nextBoxSignature
           } else if (!hasActiveSequence) {
@@ -883,7 +833,7 @@
             // cuma kalau datanya benar-benar berubah dari render sebelumnya.
             if (existing.boxSignature !== nextBoxSignature) {
               applyElementBox(existing.node, el, hasChildren)
-              AnimationEngine.setBaselineState(existing.node, el)
+              AnimationEngine.setStateBaseline(existing.node, el, target)
               existing.boxSignature = nextBoxSignature
             }
           } else {
@@ -903,8 +853,14 @@
         container.appendChild(div)
         renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature, boxSignature: nextBoxSignature })
         applyElementContent(div, el)
-        AnimationEngine.setBaselineState(div, el)
-        AnimationEngine.buildTimelineFromSequence(el.id, div, nextAnimConfig)
+        const state = getElementActiveState(el)
+        const initialTarget = getElementStateTarget(el, state)
+        const signature = computeAnimationSignature(nextAnimConfig, state, initialTarget)
+        AnimationEngine.setStateBaseline(div, el, initialTarget)
+        AnimationEngine.buildEnterTimeline(el.id, div, nextAnimConfig, el, initialTarget)
+        const record = renderedElements.get(el.id)
+        record.currentState = state
+        record.animationSignature = signature
       }
 
       topLevel.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)).forEach(el => mountOrUpdate(el, viewport))
@@ -1079,7 +1035,7 @@
         if (!currentScene || !currentScene.elements) return
         currentScene.elements.forEach(el => {
           const binding = el.textBinding
-          if (isElementHidden(el) || !binding?.enabled) return
+          if (!binding?.enabled) return
           const isClock = binding.source === 'clock'
           const isRunningTimer = binding.source === 'timer' && controlState.timers?.[binding.group]?.isRunning
           if (isClock || isRunningTimer) {

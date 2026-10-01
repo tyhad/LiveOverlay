@@ -430,17 +430,17 @@
           </div>
         </details>
 
-        <!-- Visibility Binding (semua tipe elemen) — tampil/sembunyi berdasarkan Counter / Event State -->
-        <details id="visibility-binding-section" class="space-y-2 pt-2 border-t border-slate-800 group">
+        <!-- State Binding: state memilih target visual elemen -->
+        <details id="state-binding-section" class="space-y-2 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
-            <span>Visibility Binding</span>
+            <span>State Binding</span>
           </summary>
           <div class="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-600/10 p-3 mt-2">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Tampil Kalau…</label>
+              <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Active State</label>
               <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
                 <input id="prop-vis-enabled" type="checkbox" class="accent-emerald-500">
                 <span>Enable</span>
@@ -457,7 +457,7 @@
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
-                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. killCount"
+                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. raceStatus"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
                 <datalist id="vis-group-names"></datalist>
               </div>
@@ -476,12 +476,16 @@
                 </select>
               </div>
               <div id="prop-vis-value-wrap" class="col-span-1">
-                <label class="block text-[11px] text-slate-400 mb-1">Nilai</label>
-                <input type="text" id="prop-vis-value" list="vis-value-options" placeholder="mis. 10 / red"
+                <label class="block text-[11px] text-slate-400 mb-1">Fallback State</label>
+                <input type="text" id="prop-vis-value" placeholder="default"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
                 <datalist id="vis-value-options"></datalist>
               </div>
             </div>
+            <label class="block text-[11px] text-slate-400 mb-1">State Targets (JSON)</label>
+            <textarea id="prop-state-targets" rows="5" spellcheck="false"
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-white font-mono focus:outline-none focus:border-emerald-500"
+              placeholder='{"default":{"x":100,"y":100,"opacity":1},"hidden":{"opacity":0}}'></textarea>
             <p class="text-[10px] text-slate-500">Toggle 👁️ manual (hidden) tetap menang: kalau elemen di-hide manual,
               binding ini diabaikan. Nilai live dikontrol dari <code>/control</code>.</p>
           </div>
@@ -1046,10 +1050,10 @@
           <div class="grid grid-cols-2 gap-1 mt-3">
             <button id="anim-enter-tab" type="button" data-animation-mode="enter"
               class="py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Enter</button>
-            <button id="anim-exit-tab" type="button" data-animation-mode="exit"
-              class="py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">Exit</button>
+            <button id="anim-transition-tab" type="button" data-animation-mode="transition"
+              class="py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">Transition</button>
           </div>
-          <p id="anim-mode-help" class="text-[10px] text-slate-500">Dimainkan saat elemen menjadi visible.</p>
+          <p id="anim-mode-help" class="text-[10px] text-slate-500">Dimainkan saat elemen pertama kali muncul.</p>
 
           <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
           <div id="anim-step-list" class="space-y-2"></div>
@@ -1478,33 +1482,43 @@
       return el.textBinding
     }
 
-    function ensureVisibilityBinding(el) {
-      if (!el.visibilityBinding) {
-        el.visibilityBinding = {
-          enabled: false,
-          source: 'counter',
-          group: '',
-          comparator: 'eq',
-          matchValue: ''
-        }
-      }
-      return el.visibilityBinding
+    function ensureStateBinding(el) {
+      if (!el.stateBinding) el.stateBinding = { enabled: false, source: 'eventState', group: '', fallbackState: 'default' }
+      if (!el.stateTargets || typeof el.stateTargets !== 'object') el.stateTargets = {}
+      return el.stateBinding
     }
 
-    /** Sesuaikan tampilan form Visibility Binding: comparator cuma relevan untuk counter,
-     *  dan semua input di-disable selama binding belum di-Enable. */
-    function updateVisibilityControls() {
+    function updateStateBindingControls() {
       const el = scene?.elements?.find(item => item.id === selectedElementId)
-      const vb = el?.visibilityBinding
-      const isCounter = (vb?.source || 'counter') === 'counter'
-      const enabled = !!vb?.enabled
-      document.getElementById('prop-vis-comparator-wrap').classList.toggle('hidden', !isCounter)
-      document.getElementById('prop-vis-value-wrap').classList.toggle('col-span-2', !isCounter)
-      ;['prop-vis-source', 'prop-vis-name', 'prop-vis-comparator', 'prop-vis-value'].forEach(id => {
+      const binding = el?.stateBinding
+      const enabled = !!binding?.enabled
+      document.getElementById('prop-vis-comparator-wrap')?.classList.add('hidden')
+      ;['prop-vis-source', 'prop-vis-name', 'prop-vis-value'].forEach(id => {
         const input = document.getElementById(id)
         if (input) input.disabled = !enabled
       })
-      document.getElementById('prop-vis-value').placeholder = isCounter ? 'mis. 10' : 'mis. red'
+      const targets = document.getElementById('prop-state-targets')
+      if (targets && el) targets.value = JSON.stringify(el.stateTargets || {}, null, 2)
+    }
+
+    function getElementActiveState(el) {
+      const binding = el?.stateBinding
+      if (!binding?.enabled || !binding.group) return binding?.fallbackState || 'default'
+      const raw = binding.source === 'counter'
+        ? controlStateEditor.counters?.[binding.group]?.value
+        : controlStateEditor.eventStates?.[binding.group]?.value
+      return String(raw ?? binding.fallbackState ?? 'default')
+    }
+
+    function getElementStateTarget(el, state) {
+      const baseline = {
+        x: el.x, y: el.y, opacity: el.opacity ?? 1, scale: el.scale ?? 1,
+        rotation: el.rotation ?? 0, rotationX: el.rotationX ?? 0,
+        rotationY: el.rotationY ?? 0, perspective: el.perspective ?? 1000,
+      }
+      const target = { ...baseline, ...(el.stateTargets?.[state] || el.stateTargets?.[el.stateBinding?.fallbackState || 'default'] || {}) }
+      if (el.hidden) target.opacity = 0
+      return target
     }
 
     // ── Control Panel state (Counter / Event State / Timer) untuk preview & autocomplete ──
@@ -1557,8 +1571,8 @@
           const n = tb.group || tb.name
           if (n) names.add(n)
         }
-        const vb = el.visibilityBinding
-        if (vb?.source === sourceKey && (vb.group || vb.name)) names.add(vb.group || vb.name)
+        const sb = el.stateBinding
+        if (sb?.source === sourceKey && sb.group) names.add(sb.group)
       })
       return [...names].sort()
     }
@@ -1577,14 +1591,9 @@
       else if (binding?.source === 'timer') fillDatalist('control-group-names', getKnownControlGroups('timers'))
       else if (binding?.source === 'text') fillDatalist('control-group-names', getKnownControlGroups('texts'))
 
-      const vb = el?.visibilityBinding
-      const visKind = vb?.source === 'eventState' ? 'eventStates' : 'counters'
-      fillDatalist('vis-group-names', getKnownControlGroups(visKind))
-      if (vb?.source === 'eventState' && (vb.group || vb.name)) {
-        fillDatalist('vis-value-options', controlStateEditor.eventStates?.[vb.group || vb.name]?.options || [])
-      } else {
-        fillDatalist('vis-value-options', [])
-      }
+      const sb = el?.stateBinding
+      const stateKind = sb?.source === 'counter' ? 'counters' : 'eventStates'
+      fillDatalist('vis-group-names', getKnownControlGroups(stateKind))
     }
 
     /** Isi kolom "Daftar Opsi" dari server (kecuali sedang diketik) untuk grup eventState terpilih. */
@@ -2135,11 +2144,15 @@
           borderColor: 'transparent',
         },
         animation: {
-          loop: false,
-          sequence: [
-            { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out' },
-          ],
+          enter: {
+            loop: false,
+            sequence: [
+              { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out' },
+            ],
+          },
+          transition: { sequence: [] },
         },
+        stateTargets: { default: { opacity: 1 } },
       }
       scene.elements.push(newEl)
       selectElement(newEl.id)
@@ -2256,8 +2269,7 @@
       }
     }
 
-    // Animasi elemen (entrance/loop/exit lama) sekarang ditangani oleh
-    // AnimationEngine (public/animation-engine.js). Lihat tombol "Test" di
+    // Animasi state elemen ditangani oleh AnimationEngine. Lihat tombol "Test" di
     // attachPropertyListeners() untuk titik pemanggilannya di editor.
 
     // Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
@@ -2338,6 +2350,17 @@
           rotationY: el.rotationY || 0,
           scale: el.scale !== undefined ? el.scale : 1,
           transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
+        })
+        const previewState = getElementStateTarget(el, getElementActiveState(el))
+        gsap.set(div, {
+          x: previewState.x - el.x,
+          y: previewState.y - el.y,
+          opacity: el.hidden ? 0.3 : previewState.opacity,
+          scale: previewState.scale,
+          rotation: previewState.rotation,
+          rotationX: previewState.rotationX,
+          rotationY: previewState.rotationY,
+          transformPerspective: previewState.perspective,
         })
 
         if (el.style?.gradient?.enabled) {
@@ -2593,7 +2616,7 @@
           : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
           }`
 
-        const hasAnim = Array.isArray(el.animation?.sequence) && el.animation.sequence.length > 0
+        const hasAnim = Array.isArray(el.animation?.enter?.sequence) && el.animation.enter.sequence.length > 0
         // Fase 9 — tandai child (parentId valid & bukan multi-level) dengan indent + ikon.
         const parentId = getEffectiveParentId(el, byId)
         const parentEl = parentId ? byId.get(parentId) : null
@@ -2712,19 +2735,18 @@
       document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
       document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
 
-      // Visibility Binding (semua tipe elemen)
-      const visBinding = ensureVisibilityBinding(el)
-      document.getElementById('prop-vis-enabled').checked = !!visBinding.enabled
-      document.getElementById('prop-vis-source').value = visBinding.source || 'counter'
-      document.getElementById('prop-vis-name').value = visBinding.group ?? visBinding.name ?? ''
-      document.getElementById('prop-vis-comparator').value = visBinding.comparator || 'eq'
-      document.getElementById('prop-vis-value').value = visBinding.matchValue ?? visBinding.value ?? ''
-      updateVisibilityControls()
-      // Buka otomatis kalau binding aktif supaya user sadar elemen ini punya kondisi tampil
-      if (visBinding.enabled) document.getElementById('visibility-binding-section').open = true
+      // State Binding (semua tipe elemen)
+      const stateBinding = ensureStateBinding(el)
+      document.getElementById('prop-vis-enabled').checked = !!stateBinding.enabled
+      document.getElementById('prop-vis-source').value = stateBinding.source || 'eventState'
+      document.getElementById('prop-vis-name').value = stateBinding.group || ''
+      document.getElementById('prop-vis-value').value = stateBinding.fallbackState || 'default'
+      updateStateBindingControls()
+      if (stateBinding.enabled) document.getElementById('state-binding-section').open = true
 
       // Animation Sequence Editor
-      document.getElementById('anim-loop-toggle').checked = Boolean(el.animation?.loop)
+      const animation = ensureAnimation(el)
+      document.getElementById('anim-loop-toggle').checked = Boolean(animation.enter.loop)
       updateAnimationEditorMode()
       renderAnimationSequenceEditor(el)
 
@@ -2837,16 +2859,24 @@
     // ---------------------------------------------------------------------
 
     function ensureAnimation(el) {
-      if (!el.animation || typeof el.animation !== 'object' || !Array.isArray(el.animation.sequence)) {
-        el.animation = { loop: false, sequence: [], exitSequence: [] }
+      if (!el.animation || typeof el.animation !== 'object') {
+        el.animation = { enter: { loop: false, sequence: [] }, transition: { sequence: [] } }
       }
-      if (!Array.isArray(el.animation.exitSequence)) el.animation.exitSequence = []
+      if (!el.animation.enter) {
+        el.animation = {
+          enter: { loop: Boolean(el.animation.loop), sequence: Array.isArray(el.animation.sequence) ? el.animation.sequence : [] },
+          transition: { sequence: [] },
+        }
+      }
+      if (!Array.isArray(el.animation.enter.sequence)) el.animation.enter.sequence = []
+      if (!el.animation.transition) el.animation.transition = { sequence: [] }
+      if (!Array.isArray(el.animation.transition.sequence)) el.animation.transition.sequence = []
       // Migrasi sekali & sticky: kalau masih ada step lama yang bawa field `delay`,
       // pecah jadi step 'delay' tersendiri langsung di data (bukan cuma saat playback),
       // supaya kelihatan & bisa diedit di Sequence Editor.
-      const migrated = AnimationEngine.splitLegacyPerStepDelay(el.animation.sequence)
-      if (migrated.length !== el.animation.sequence.length) {
-        el.animation.sequence = migrated
+      const migrated = AnimationEngine.splitLegacyPerStepDelay(el.animation.enter.sequence)
+      if (migrated.length !== el.animation.enter.sequence.length) {
+        el.animation.enter.sequence = migrated
       }
       return el.animation
     }
@@ -2854,17 +2884,17 @@
     let animationEditorMode = 'enter'
 
     function activeAnimationSequence(anim) {
-      return animationEditorMode === 'exit' ? anim.exitSequence : anim.sequence
+      return animationEditorMode === 'transition' ? anim.transition.sequence : anim.enter.sequence
     }
 
     function updateAnimationEditorMode() {
-      const isExit = animationEditorMode === 'exit'
+      const isTransition = animationEditorMode === 'transition'
       const loopToggle = document.getElementById('anim-loop-toggle')
-      loopToggle.disabled = isExit
-      loopToggle.closest('label').classList.toggle('opacity-50', isExit)
-      document.getElementById('anim-mode-help').textContent = isExit
-        ? 'Dimainkan sekali sebelum elemen dihapus oleh visibility binding.'
-        : 'Dimainkan saat elemen menjadi visible.'
+      loopToggle.disabled = isTransition
+      loopToggle.closest('label').classList.toggle('opacity-50', isTransition)
+      document.getElementById('anim-mode-help').textContent = isTransition
+        ? 'Template timing untuk perpindahan menuju target state baru.'
+        : 'Dimainkan saat elemen pertama kali muncul.'
       document.querySelectorAll('[data-animation-mode]').forEach(button => {
         const active = button.dataset.animationMode === animationEditorMode
         button.classList.toggle('bg-indigo-600', active)
@@ -2878,11 +2908,54 @@
     const ANIMATION_PRESETS = {
       'Fade In': { type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out', repeat: 0, yoyo: false },
       'Fade Out': { type: 'to', properties: { opacity: 0 }, duration: 0.4, ease: 'power2.in', repeat: 0, yoyo: false },
-      'Slide Up In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 60 }, duration: 0.8, ease: 'power3.out', repeat: 0, yoyo: false },
-      'Bounce In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out', repeat: 0, yoyo: false },
+      'Slide Up In': { type: 'from', properties: { opacity: 0, y: 60 }, duration: 0.8, ease: 'power3.out', repeat: 0, yoyo: false },
+      'Bounce In': { type: 'from', properties: { opacity: 0, y: 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out', repeat: 0, yoyo: false },
       'Zoom In': { type: 'from', properties: { opacity: 0, scale: 0.3 }, duration: 0.7, ease: 'back.out(1.7)', repeat: 0, yoyo: false },
       'Pulse (loop)': { type: 'to', properties: { scale: 1.04 }, duration: 1.5, ease: 'power1.inOut', repeat: -1, yoyo: true },
-      'Float (loop)': { type: 'to', properties: { y: (el) => el.y - 10 }, duration: 1.3, ease: 'sine.inOut', repeat: -1, yoyo: true },
+      'Float (loop)': { type: 'to', properties: { y: -10 }, duration: 1.3, ease: 'sine.inOut', repeat: -1, yoyo: true },
+    }
+
+    const TRANSITION_PROPERTIES = ['x', 'y', 'opacity', 'scale', 'rotation', 'rotationX', 'rotationY', 'perspective']
+
+    function renderTransitionSequenceEditor(el, anim) {
+      const listEl = document.getElementById('anim-step-list')
+      listEl.innerHTML = ''
+      anim.transition.sequence.forEach((step, index) => {
+        const card = document.createElement('div')
+        card.className = 'anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5'
+        card.innerHTML = `<div class="flex items-center justify-between"><span class="text-[11px] font-bold text-indigo-300 font-mono">T${index}</span><button type="button" data-delete class="text-red-400">✕</button></div>`
+        card.querySelector('[data-delete]').onclick = () => { anim.transition.sequence.splice(index, 1); renderAnimationSequenceEditor(el) }
+        if (step.type === 'delay') {
+          card.innerHTML += '<label class="text-[10px] text-slate-400">Delay (detik)<input data-duration type="number" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"></label>'
+          card.querySelector('[data-duration]').value = step.duration
+          card.querySelector('[data-duration]').oninput = e => { step.duration = Number(e.target.value) || 0 }
+        } else {
+          card.innerHTML += '<div class="grid grid-cols-2 gap-1.5"><label class="text-[10px] text-slate-400">Duration<input data-duration type="number" min="0" step="0.1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"></label><label class="text-[10px] text-slate-400">Ease<input data-ease class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"></label></div><div data-properties class="grid grid-cols-2 gap-1"></div>'
+          card.querySelector('[data-duration]').value = step.duration
+          card.querySelector('[data-ease]').value = step.ease || 'power2.out'
+          card.querySelector('[data-duration]').oninput = e => { step.duration = Number(e.target.value) || 0 }
+          card.querySelector('[data-ease]').onchange = e => { step.ease = e.target.value }
+          const properties = step.properties || TRANSITION_PROPERTIES
+          TRANSITION_PROPERTIES.forEach(name => {
+            const label = document.createElement('label')
+            label.className = 'text-[10px] text-slate-400 flex items-center gap-1'
+            label.innerHTML = `<input type="checkbox" ${properties.includes(name) ? 'checked' : ''}> ${name}`
+            label.firstElementChild.onchange = e => {
+              step.properties = step.properties || []
+              if (e.target.checked && !step.properties.includes(name)) step.properties.push(name)
+              if (!e.target.checked) step.properties = step.properties.filter(item => item !== name)
+            }
+            card.querySelector('[data-properties]').appendChild(label)
+          })
+        }
+        listEl.appendChild(card)
+      })
+      if (anim.transition.sequence.length === 0) {
+        const empty = document.createElement('p')
+        empty.className = 'text-[11px] text-slate-500 italic text-center py-2'
+        empty.textContent = 'Belum ada transition step. State akan berpindah langsung.'
+        listEl.appendChild(empty)
+      }
     }
 
     function renderAnimationPresetButtons() {
@@ -2896,6 +2969,7 @@
         btn.addEventListener('click', () => {
           const el = scene.elements.find(item => item.id === selectedElementId)
           if (!el) return
+          if (animationEditorMode === 'transition') return
           const preset = ANIMATION_PRESETS[label]
           const properties = {}
           for (const key of Object.keys(preset.properties)) {
@@ -2910,7 +2984,7 @@
             properties,
             duration: preset.duration,
             ease: preset.ease,
-            repeat: animationEditorMode === 'exit' && preset.repeat < 0 ? 0 : preset.repeat,
+            repeat: preset.repeat,
             yoyo: preset.yoyo,
           })
           renderAnimationSequenceEditor(el)
@@ -2922,6 +2996,10 @@
 
     function renderAnimationSequenceEditor(el) {
       const anim = ensureAnimation(el)
+      if (animationEditorMode === 'transition') {
+        renderTransitionSequenceEditor(el, anim)
+        return
+      }
       const sequence = activeAnimationSequence(anim)
       const listEl = document.getElementById('anim-step-list')
       const stepTemplate = document.getElementById('anim-step-template')
@@ -3003,7 +3081,9 @@
           const isActive = Object.prototype.hasOwnProperty.call(step.properties || {}, propName)
           const fallback = el[propName] !== undefined ? el[propName] : PROPERTY_DEFAULTS[propName]
 
-          nameEl.textContent = propName
+          nameEl.textContent = animationEditorMode === 'enter' && (propName === 'x' || propName === 'y')
+            ? `${propName} offset`
+            : propName
           toggle.checked = isActive
           valueInput.disabled = !isActive
           valueInput.value = isActive ? step.properties[propName] : fallback
@@ -3052,17 +3132,20 @@
         if (el) {
           const node = document.getElementById(`el-node-${el.id}`)
           const normalized = AnimationEngine.normalizeAnimationConfig(el.animation)
-          AnimationEngine.setBaselineState(node, el)
-          AnimationEngine.buildTimelineFromSequence(el.id, node, animationEditorMode === 'exit'
-            ? { sequence: normalized.exitSequence, loop: false }
-            : normalized)
+          const target = getElementStateTarget(el, getElementActiveState(el))
+          AnimationEngine.setStateBaseline(node, el, target)
+          if (animationEditorMode === 'transition') {
+            AnimationEngine.buildTransitionTimeline(el.id, node, normalized, el, target)
+          } else {
+            AnimationEngine.buildEnterTimeline(el.id, node, normalized, el, target)
+          }
         }
       })
 
       document.getElementById('anim-loop-toggle').addEventListener('change', (e) => {
         const el = getSelected()
         if (el) {
-          ensureAnimation(el).loop = e.target.checked
+          ensureAnimation(el).enter.loop = e.target.checked
         }
       })
 
@@ -3079,6 +3162,11 @@
         const el = getSelected()
         if (!el) return
         const anim = ensureAnimation(el)
+        if (animationEditorMode === 'transition') {
+          anim.transition.sequence.push({ id: `t${anim.transition.sequence.length}`, type: 'to', properties: TRANSITION_PROPERTIES.slice(), duration: 0.5, ease: 'power2.out' })
+          renderAnimationSequenceEditor(el)
+          return
+        }
         const sequence = activeAnimationSequence(anim)
         sequence.push({
           id: `q${sequence.length}`,
@@ -3097,6 +3185,11 @@
         const el = getSelected()
         if (!el) return
         const anim = ensureAnimation(el)
+        if (animationEditorMode === 'transition') {
+          anim.transition.sequence.push({ id: `delay${anim.transition.sequence.length}`, type: 'delay', duration: 0.5 })
+          renderAnimationSequenceEditor(el)
+          return
+        }
         const sequence = activeAnimationSequence(anim)
         sequence.push({
           id: `delay${sequence.length}`,
@@ -3315,37 +3408,38 @@
         updateBindingPreview()
       })
 
-      // Visibility Binding controls
-      const getVis = () => { const el = getSelected(); return el ? ensureVisibilityBinding(el) : null }
+      // State Binding controls
+      const getStateBinding = () => { const el = getSelected(); return el ? ensureStateBinding(el) : null }
       document.getElementById('prop-vis-enabled').addEventListener('change', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.enabled = e.target.checked
-        updateVisibilityControls()
+        const binding = getStateBinding(); if (!binding) return
+        binding.enabled = e.target.checked
+        updateStateBindingControls()
       })
       document.getElementById('prop-vis-source').addEventListener('change', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.source = e.target.value
-        if (vb.source === 'eventState') vb.comparator = 'eq'
-        updateVisibilityControls()
+        const binding = getStateBinding(); if (!binding) return
+        binding.source = e.target.value
+        updateStateBindingControls()
         refreshControlDatalists()
       })
       document.getElementById('prop-vis-name').addEventListener('input', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.group = e.target.value.trim()
-        delete vb.name
+        const binding = getStateBinding(); if (!binding) return
+        binding.group = e.target.value.trim()
         refreshControlDatalists()
       })
-      document.getElementById('prop-vis-comparator').addEventListener('change', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.comparator = e.target.value
-      })
       document.getElementById('prop-vis-value').addEventListener('input', (e) => {
-        const vb = getVis(); if (!vb) return
-        // counter: simpan angka; eventState: simpan string apa adanya
-        vb.matchValue = vb.source === 'counter' && e.target.value.trim() !== '' && Number.isFinite(Number(e.target.value))
-          ? Number(e.target.value)
-          : e.target.value
-        delete vb.value
+        const binding = getStateBinding(); if (!binding) return
+        binding.fallbackState = e.target.value.trim() || 'default'
+      })
+      document.getElementById('prop-state-targets').addEventListener('change', (e) => {
+        const el = getSelected(); if (!el) return
+        try {
+          const parsed = JSON.parse(e.target.value || '{}')
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('object required')
+          el.stateTargets = parsed
+          renderCanvas()
+        } catch {
+          updateStateBindingControls()
+        }
       })
       document.getElementById('prop-text-binding-timezone').addEventListener('change', (e) => {
         const el = getSelected()
@@ -3598,8 +3692,10 @@
         const node = document.getElementById(`el-node-${el.id}`)
         if (node && !el.hidden) {
           const normalized = AnimationEngine.normalizeAnimationConfig(el.animation)
-          AnimationEngine.setBaselineState(node, el)
-          AnimationEngine.buildTimelineFromSequence(el.id, node, normalized)
+          const state = getElementActiveState(el)
+          const target = getElementStateTarget(el, state)
+          AnimationEngine.setStateBaseline(node, el, target)
+          AnimationEngine.buildEnterTimeline(el.id, node, normalized, el, target)
         }
       })
     })
@@ -3643,11 +3739,11 @@
           borderWidth: 0
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.2 },
             { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.7, ease: 'power2.out' },
-          ]
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)
@@ -3679,12 +3775,12 @@
           gradient: { enabled: true, from: '#282c30', to: '#1e2124', angle: 145 }
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.1 },
             { id: 'q0', type: 'from', properties: { opacity: 0, y: 180 }, duration: 0.8, ease: 'power3.out' },
             { id: 'q1', type: 'to', properties: { scale: 1.04 }, duration: 1.5, repeat: -1, yoyo: true, ease: 'power1.inOut' },
-          ]
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)
@@ -3720,12 +3816,12 @@
           gradient: { enabled: true, from: '#27272a', to: '#09090b', angle: 90 }
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.2 },
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 960, scale: 0.8 }, duration: 0.9, ease: 'bounce.out' },
-            { id: 'q1', type: 'to', properties: { y: 850 }, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' },
-          ]
+            { id: 'q0', type: 'from', properties: { opacity: 0, y: 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out' },
+            { id: 'q1', type: 'to', properties: { y: -10 }, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' },
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)
@@ -3761,12 +3857,12 @@
           gradient: { enabled: true, from: '#0f172a', to: '#020617', angle: 135 }
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.3 },
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 995 }, duration: 0.8, ease: 'power3.out' },
+            { id: 'q0', type: 'from', properties: { opacity: 0, y: 60 }, duration: 0.8, ease: 'power3.out' },
             { id: 'q1', type: 'to', properties: { scale: 1.04 }, duration: 1.6, repeat: -1, yoyo: true, ease: 'power1.inOut' },
-          ]
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)

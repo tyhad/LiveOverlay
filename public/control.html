@@ -357,7 +357,7 @@
       dot.classList.add(ok ? 'live' : 'err')
     }
 
-    /** Scan semua scene, kumpulkan nama grup unik dari textBinding/visibilityBinding
+    /** Scan semua scene, kumpulkan nama grup unik dari textBinding/stateBinding
      *  dengan source 'counter' atau 'eventState' — supaya section muncul otomatis di
      *  Control Panel begitu ada binding baru dibuat di Editor, tanpa setup ganda. */
     async function scanUsedGroups() {
@@ -377,9 +377,9 @@
             if (tb?.source === 'eventState' && tb.group) eventStates.add(tb.group)
             if (tb?.source === 'timer' && tb.group) timers.add(tb.group)
             if (tb?.source === 'text' && tb.group) texts.add(tb.group)
-            const vb = el.visibilityBinding
-            if (vb?.source === 'counter' && (vb.group || vb.name)) counters.add(vb.group || vb.name)
-            if (vb?.source === 'eventState' && (vb.group || vb.name)) eventStates.add(vb.group || vb.name)
+            const sb = el.stateBinding
+            if (sb?.source === 'counter' && sb.group) counters.add(sb.group)
+            if (sb?.source === 'eventState' && sb.group) eventStates.add(sb.group)
           })
         })
       } catch (err) {

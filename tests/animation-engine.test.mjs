@@ -312,20 +312,30 @@ section('12. 3D Transforms (rotationX, rotationY, perspective baseline & animati
 });
 
 // ============================================================
-section('13. Exit sequence untuk visibility binding', () => {
+section('13. State target, relative enter, dan transition', () => {
   const cfg = AnimationEngine.normalizeAnimationConfig({
-    loop: true,
-    sequence: [{ id: 'enter', type: 'from', properties: { opacity: 0 }, duration: 0.4 }],
-    exitSequence: [{ id: 'exit', type: 'to', properties: { opacity: 0 }, duration: 0.3, repeat: -1 }],
+    enter: {
+      sequence: [{ id: 'q0', type: 'from', properties: { x: 0, y: 50, opacity: 0 }, duration: 0.5 }],
+      loop: false,
+    },
+    transition: {
+      sequence: [{ id: 't0', type: 'to', properties: ['x', 'y', 'opacity'], duration: 0.4 }],
+    },
   });
-  check('exitSequence dinormalisasi terpisah dari sequence', cfg.exitSequence.length === 1 && cfg.sequence.length === 1);
-  check('exitSequence infinite repeat dipaksa finite', cfg.exitSequence[0].repeat === 0);
-  const tl = AnimationEngine.buildTimelineFromSequence('exit-el', box, {
-    sequence: cfg.exitSequence,
-    loop: false,
-  });
-  check('exit timeline tidak looping', tl.repeat() === 0 && Math.abs(tl.duration() - 0.3) < 0.01);
-  AnimationEngine.killTimeline('exit-el');
+  const el = { x: 100, y: 200, opacity: 1, scale: 1, rotation: 0 };
+  const target = { x: 400, y: 300, opacity: 0.5, scale: 1, rotation: 0 };
+  AnimationEngine.setStateBaseline(box, el, target);
+  const enter = AnimationEngine.buildEnterTimeline('state-enter-el', box, cfg, el, target);
+  enter.progress(0);
+  check('enter x/y memakai offset relatif terhadap target state', gsap.getProperty(box, 'x') === 300 && gsap.getProperty(box, 'y') === 150);
+  enter.progress(1);
+  check('enter selesai di target state', gsap.getProperty(box, 'x') === 300 && gsap.getProperty(box, 'y') === 100 && gsap.getProperty(box, 'opacity') === 0.5);
+  const transition = AnimationEngine.buildTransitionTimeline('state-transition-el', box, cfg, el, target);
+  transition.progress(1);
+  check('transition resolve target x/y absolut ke transform relatif baseline', gsap.getProperty(box, 'x') === 300 && gsap.getProperty(box, 'y') === 100);
+  check('transition resolve opacity target state', gsap.getProperty(box, 'opacity') === 0.5);
+  AnimationEngine.killTimeline('state-enter-el');
+  AnimationEngine.killTimeline('state-transition-el');
 });
 
 // ============================================================

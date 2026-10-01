@@ -683,16 +683,63 @@
 
     function computeAnimationSignature(config) {
       if (!config || !Array.isArray(config.sequence)) return 'loop:0|seq:'
-      let out = `loop:${config.loop ? 1 : 0}|seq:`
-      for (const step of config.sequence) {
+      const signature = (sequence) => {
+        let out = ''
+        for (const step of sequence || []) {
         if (step.type === 'delay') {
           out += `[delay,${step.duration}]`
           continue
         }
         const p = step.properties || {}
         out += `[${step.type},${step.duration},${step.ease},${step.repeat},${step.yoyo ? 1 : 0},x:${p.x},y:${p.y},op:${p.opacity},sc:${p.scale},rot:${p.rotation},rx:${p.rotationX},ry:${p.rotationY},pers:${p.perspective}]`
+        }
+        return out
       }
-      return out
+      return `loop:${config.loop ? 1 : 0}|seq:${signature(config.sequence)}|exit:${signature(config.exitSequence)}`
+    }
+
+    function removeRenderedElement(id, record) {
+      if (!record) return
+      if (record.marqueeTween) record.marqueeTween.kill()
+      if (record.scrollTween) record.scrollTween.kill()
+      AnimationEngine.killTimeline(id)
+      renderedElements.delete(id)
+      record.node.remove()
+    }
+
+    function startExitAnimation(el, record) {
+      const config = AnimationEngine.normalizeAnimationConfig(el.animation)
+      if (!config.exitSequence.length) {
+        removeRenderedElement(el.id, record)
+        return
+      }
+      if (record.marqueeTween) { record.marqueeTween.kill(); record.marqueeTween = null }
+      if (record.scrollTween) { record.scrollTween.kill(); record.scrollTween = null }
+      record.exiting = true
+      const timeline = AnimationEngine.buildTimelineFromSequence(el.id, record.node, {
+        sequence: config.exitSequence,
+        loop: false,
+      })
+      if (!timeline) {
+        removeRenderedElement(el.id, record)
+        return
+      }
+      timeline.eventCallback('onComplete', () => {
+        const current = renderedElements.get(el.id)
+        if (current === record && record.exiting) removeRenderedElement(el.id, record)
+      })
+    }
+
+    function cancelExitAnimation(el, record) {
+      if (!record?.exiting) return
+      record.exiting = false
+      AnimationEngine.killTimeline(el.id)
+      applyElementBox(record.node, el, false)
+      AnimationEngine.setBaselineState(record.node, el)
+      const config = AnimationEngine.normalizeAnimationConfig(el.animation)
+      AnimationEngine.buildTimelineFromSequence(el.id, record.node, config)
+      record.animationSignature = computeAnimationSignature(config)
+      record.boxSignature = computeBoxSignature(el, false)
     }
 
     function applyElementContent(node, el) {
@@ -779,13 +826,11 @@
       const visibleIds = new Set(visibleElements.map(el => el.id))
       const byId = new Map(scene.elements.map(el => [el.id, el]))
 
-      renderedElements.forEach(({ node, marqueeTween, scrollTween }, id) => {
+      renderedElements.forEach((record, id) => {
         if (visibleIds.has(id)) return
-        if (marqueeTween) marqueeTween.kill()
-        if (scrollTween) scrollTween.kill()
-        AnimationEngine.killTimeline(id)
-        renderedElements.delete(id)
-        node.remove()
+        const el = byId.get(id)
+        if (el && !record.exiting) startExitAnimation(el, record)
+        else if (!el) removeRenderedElement(id, record)
       })
 
       // Pisahkan elemen top-level vs child (Fase 9 — Parent-Child Transform) supaya
@@ -817,6 +862,7 @@
         const nextBoxSignature = computeBoxSignature(el, hasChildren)
 
         if (existing) {
+          cancelExitAnimation(el, existing)
           // Pastikan node berada di container yang benar (mis. parentId baru diubah,
           // atau parent sebelumnya sempat dihapus lalu node ter-detach dari dokumen).
           if (existing.node.parentElement !== container) container.appendChild(existing.node)

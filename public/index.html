@@ -1043,6 +1043,14 @@
             <span>🔁 Ulangi dari Q0 setelah step terakhir selesai</span>
           </label>
 
+          <div class="grid grid-cols-2 gap-1 mt-3">
+            <button id="anim-enter-tab" type="button" data-animation-mode="enter"
+              class="py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Enter</button>
+            <button id="anim-exit-tab" type="button" data-animation-mode="exit"
+              class="py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">Exit</button>
+          </div>
+          <p id="anim-mode-help" class="text-[10px] text-slate-500">Dimainkan saat elemen menjadi visible.</p>
+
           <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
           <div id="anim-step-list" class="space-y-2"></div>
 
@@ -2717,6 +2725,7 @@
 
       // Animation Sequence Editor
       document.getElementById('anim-loop-toggle').checked = Boolean(el.animation?.loop)
+      updateAnimationEditorMode()
       renderAnimationSequenceEditor(el)
 
       // Typography
@@ -2829,8 +2838,9 @@
 
     function ensureAnimation(el) {
       if (!el.animation || typeof el.animation !== 'object' || !Array.isArray(el.animation.sequence)) {
-        el.animation = { loop: false, sequence: [] }
+        el.animation = { loop: false, sequence: [], exitSequence: [] }
       }
+      if (!Array.isArray(el.animation.exitSequence)) el.animation.exitSequence = []
       // Migrasi sekali & sticky: kalau masih ada step lama yang bawa field `delay`,
       // pecah jadi step 'delay' tersendiri langsung di data (bukan cuma saat playback),
       // supaya kelihatan & bisa diedit di Sequence Editor.
@@ -2839,6 +2849,29 @@
         el.animation.sequence = migrated
       }
       return el.animation
+    }
+
+    let animationEditorMode = 'enter'
+
+    function activeAnimationSequence(anim) {
+      return animationEditorMode === 'exit' ? anim.exitSequence : anim.sequence
+    }
+
+    function updateAnimationEditorMode() {
+      const isExit = animationEditorMode === 'exit'
+      const loopToggle = document.getElementById('anim-loop-toggle')
+      loopToggle.disabled = isExit
+      loopToggle.closest('label').classList.toggle('opacity-50', isExit)
+      document.getElementById('anim-mode-help').textContent = isExit
+        ? 'Dimainkan sekali sebelum elemen dihapus oleh visibility binding.'
+        : 'Dimainkan saat elemen menjadi visible.'
+      document.querySelectorAll('[data-animation-mode]').forEach(button => {
+        const active = button.dataset.animationMode === animationEditorMode
+        button.classList.toggle('bg-indigo-600', active)
+        button.classList.toggle('text-white', active)
+        button.classList.toggle('bg-slate-800', !active)
+        button.classList.toggle('text-slate-300', !active)
+      })
     }
 
     /** Preset quick-insert: label -> step generik siap pakai (murni helper UI). */
@@ -2870,13 +2903,14 @@
             properties[key] = typeof value === 'function' ? value(el) : value
           }
           const anim = ensureAnimation(el)
-          anim.sequence.push({
-            id: `q${anim.sequence.length}`,
+          const sequence = activeAnimationSequence(anim)
+          sequence.push({
+            id: `q${sequence.length}`,
             type: preset.type,
             properties,
             duration: preset.duration,
             ease: preset.ease,
-            repeat: preset.repeat,
+            repeat: animationEditorMode === 'exit' && preset.repeat < 0 ? 0 : preset.repeat,
             yoyo: preset.yoyo,
           })
           renderAnimationSequenceEditor(el)
@@ -2888,13 +2922,14 @@
 
     function renderAnimationSequenceEditor(el) {
       const anim = ensureAnimation(el)
+      const sequence = activeAnimationSequence(anim)
       const listEl = document.getElementById('anim-step-list')
       const stepTemplate = document.getElementById('anim-step-template')
       const delayTemplate = document.getElementById('anim-delay-step-template')
       const propRowTemplate = document.getElementById('anim-property-row-template')
       listEl.innerHTML = ''
 
-      if (anim.sequence.length === 0) {
+      if (sequence.length === 0) {
         const empty = document.createElement('p')
         empty.className = 'text-[11px] text-slate-500 italic text-center py-2'
         empty.textContent = 'Belum ada step. Tambah manual atau pakai Quick Insert Preset di bawah.'
@@ -2902,7 +2937,7 @@
         return
       }
 
-      anim.sequence.forEach((step, index) => {
+      sequence.forEach((step, index) => {
         const isDelay = step.type === 'delay'
         const card = (isDelay ? delayTemplate : stepTemplate).content.firstElementChild.cloneNode(true)
         card.querySelector('.anim-step-label').textContent = `Q${index}`
@@ -2910,22 +2945,22 @@
         // Aksi reorder/duplikat/hapus — sama persis buat step delay maupun step animasi.
         card.querySelector('[data-action="move-up"]').addEventListener('click', () => {
           if (index === 0) return
-            ;[anim.sequence[index - 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index - 1]]
+            ;[sequence[index - 1], sequence[index]] = [sequence[index], sequence[index - 1]]
           renderAnimationSequenceEditor(el)
         })
         card.querySelector('[data-action="move-down"]').addEventListener('click', () => {
-          if (index === anim.sequence.length - 1) return
-            ;[anim.sequence[index + 1], anim.sequence[index]] = [anim.sequence[index], anim.sequence[index + 1]]
+          if (index === sequence.length - 1) return
+            ;[sequence[index + 1], sequence[index]] = [sequence[index], sequence[index + 1]]
           renderAnimationSequenceEditor(el)
         })
         card.querySelector('[data-action="duplicate"]').addEventListener('click', () => {
           const clone = JSON.parse(JSON.stringify(step))
-          clone.id = `q${anim.sequence.length}`
-          anim.sequence.splice(index + 1, 0, clone)
+          clone.id = `q${sequence.length}`
+          sequence.splice(index + 1, 0, clone)
           renderAnimationSequenceEditor(el)
         })
         card.querySelector('[data-action="delete"]').addEventListener('click', () => {
-          anim.sequence.splice(index, 1)
+          sequence.splice(index, 1)
           renderAnimationSequenceEditor(el)
           renderLayers()
         })
@@ -3018,7 +3053,9 @@
           const node = document.getElementById(`el-node-${el.id}`)
           const normalized = AnimationEngine.normalizeAnimationConfig(el.animation)
           AnimationEngine.setBaselineState(node, el)
-          AnimationEngine.buildTimelineFromSequence(el.id, node, normalized)
+          AnimationEngine.buildTimelineFromSequence(el.id, node, animationEditorMode === 'exit'
+            ? { sequence: normalized.exitSequence, loop: false }
+            : normalized)
         }
       })
 
@@ -3029,12 +3066,22 @@
         }
       })
 
+      document.querySelectorAll('[data-animation-mode]').forEach(button => {
+        button.addEventListener('click', () => {
+          animationEditorMode = button.dataset.animationMode
+          updateAnimationEditorMode()
+          const el = getSelected()
+          if (el) renderAnimationSequenceEditor(el)
+        })
+      })
+
       document.getElementById('anim-add-step-btn').addEventListener('click', () => {
         const el = getSelected()
         if (!el) return
         const anim = ensureAnimation(el)
-        anim.sequence.push({
-          id: `q${anim.sequence.length}`,
+        const sequence = activeAnimationSequence(anim)
+        sequence.push({
+          id: `q${sequence.length}`,
           type: 'to',
           properties: { opacity: 1 },
           duration: 0.6,
@@ -3050,8 +3097,9 @@
         const el = getSelected()
         if (!el) return
         const anim = ensureAnimation(el)
-        anim.sequence.push({
-          id: `delay${anim.sequence.length}`,
+        const sequence = activeAnimationSequence(anim)
+        sequence.push({
+          id: `delay${sequence.length}`,
           type: 'delay',
           duration: 0.5,
         })

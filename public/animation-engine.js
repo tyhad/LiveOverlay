@@ -61,14 +61,26 @@
    */
   function normalizeAnimationConfig(rawAnimationConfig) {
     if (!rawAnimationConfig || typeof rawAnimationConfig !== 'object') {
-      return { sequence: [] };
+      return { sequence: [], exitSequence: [], loop: false };
     }
 
     if (Array.isArray(rawAnimationConfig.sequence)) {
-      const cleaned = splitLegacyPerStepDelay(rawAnimationConfig.sequence)
-        .map(normalizeStep)
-        .filter(Boolean);
-      return { sequence: cleaned, loop: Boolean(rawAnimationConfig.loop) };
+      const normalizeSequence = (rawSequence, allowInfiniteRepeat = true) => {
+        return splitLegacyPerStepDelay(rawSequence)
+          .map(normalizeStep)
+          .filter(Boolean)
+          .map((step) => {
+            if (!allowInfiniteRepeat && step.repeat < 0) return { ...step, repeat: 0 };
+            return step;
+          });
+      };
+      return {
+        sequence: normalizeSequence(rawAnimationConfig.sequence),
+        exitSequence: Array.isArray(rawAnimationConfig.exitSequence)
+          ? normalizeSequence(rawAnimationConfig.exitSequence, false)
+          : [],
+        loop: Boolean(rawAnimationConfig.loop),
+      };
     }
 
     if (rawAnimationConfig.entrance || rawAnimationConfig.loop || rawAnimationConfig.exit) {
@@ -78,7 +90,7 @@
       );
     }
 
-    return { sequence: [], loop: false };
+    return { sequence: [], exitSequence: [], loop: false };
   }
 
   /**

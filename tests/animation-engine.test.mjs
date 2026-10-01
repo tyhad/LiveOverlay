@@ -312,6 +312,23 @@ section('12. 3D Transforms (rotationX, rotationY, perspective baseline & animati
 });
 
 // ============================================================
+section('13. Exit sequence untuk visibility binding', () => {
+  const cfg = AnimationEngine.normalizeAnimationConfig({
+    loop: true,
+    sequence: [{ id: 'enter', type: 'from', properties: { opacity: 0 }, duration: 0.4 }],
+    exitSequence: [{ id: 'exit', type: 'to', properties: { opacity: 0 }, duration: 0.3, repeat: -1 }],
+  });
+  check('exitSequence dinormalisasi terpisah dari sequence', cfg.exitSequence.length === 1 && cfg.sequence.length === 1);
+  check('exitSequence infinite repeat dipaksa finite', cfg.exitSequence[0].repeat === 0);
+  const tl = AnimationEngine.buildTimelineFromSequence('exit-el', box, {
+    sequence: cfg.exitSequence,
+    loop: false,
+  });
+  check('exit timeline tidak looping', tl.repeat() === 0 && Math.abs(tl.duration() - 0.3) < 0.01);
+  AnimationEngine.killTimeline('exit-el');
+});
+
+// ============================================================
 console.log(`\n${'='.repeat(50)}`);
 console.log(`HASIL: ${pass} lolos, ${fail} gagal (total ${pass + fail})`);
 console.log('='.repeat(50));

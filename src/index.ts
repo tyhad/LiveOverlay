@@ -139,6 +139,8 @@ interface AnimationConfig {
    *  Kalau false/tidak diisi, sequence main sekali lalu bertahan di state step terakhir. */
   loop?: boolean
   sequence: AnimationStep[]
+  /** Sequence yang dimainkan sekali sebelum elemen visibility binding dihapus. */
+  exitSequence?: AnimationStep[]
 }
 
 type PlatformTextBindingField =

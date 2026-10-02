@@ -288,9 +288,17 @@
    */
   function buildLoopTimeline(elementId, node, normalizedConfig, element, target) {
     const enter = normalizedConfig?.enter || { sequence: [], loop: false };
-    if (enter.loop) return buildEnterTimeline(elementId, node, normalizedConfig, element, target);
     const loopSteps = (enter.sequence || []).filter((step) => step.type !== 'delay' && step.repeat < 0);
-    if (loopSteps.length === 0) return null;
+    if (!enter.loop && loopSteps.length === 0) return null;
+
+    // PENTING: transition membunuh timeline enter, jadi x/opacity/scale/dll elemen membeku di
+    // nilai sesaat itu (mis. x=-100, opacity=0 kalau transition terjadi di fase exit/delay).
+    // Step 'from' GSAP memakai nilai DOM saat itu sebagai tujuan akhirnya, jadi tanpa reset
+    // ini loop baru akan beranimasi dari nilai beku ke nilai beku (elemen tak pernah tampil).
+    // Kembalikan ke baseline state target (x/y relatif tetap menuju target) sebelum membangun ulang.
+    setStateBaseline(node, element, target);
+
+    if (enter.loop) return buildEnterTimeline(elementId, node, normalizedConfig, element, target);
     return buildEnterTimeline(
       elementId, node,
       { ...normalizedConfig, enter: { sequence: loopSteps, loop: false } },

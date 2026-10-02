@@ -279,8 +279,39 @@
     return buildTimelineFromSequence(elementId, node, { sequence, loop: config.loop });
   }
 
-  function buildTransitionTimeline(elementId, node, normalizedConfig, element, target) {
-    const steps = normalizedConfig?.transition?.sequence || [];
+  /**
+   * Lanjutkan loop elemen SETELAH pindah state. Transition membunuh timeline enter
+   * (satu elemen = satu timeline di registry), jadi loop utama perlu dibangun ulang
+   * menuju target state baru. Kalau enter.loop aktif -> seluruh sequence di-loop lagi;
+   * kalau tidak, hanya step dengan repeat tak hingga (-1) yang dilanjutkan, supaya
+   * animasi masuk (entrance) tidak diputar ulang tiap pindah state.
+   */
+  function buildLoopTimeline(elementId, node, normalizedConfig, element, target) {
+    const enter = normalizedConfig?.enter || { sequence: [], loop: false };
+    if (enter.loop) return buildEnterTimeline(elementId, node, normalizedConfig, element, target);
+    const loopSteps = (enter.sequence || []).filter((step) => step.type !== 'delay' && step.repeat < 0);
+    if (loopSteps.length === 0) return null;
+    return buildEnterTimeline(
+      elementId, node,
+      { ...normalizedConfig, enter: { sequence: loopSteps, loop: false } },
+      element, target,
+    );
+  }
+
+  function buildTransitionTimeline(elementId, node, normalizedConfig, element, target, options = {}) {
+    const transition = normalizedConfig?.transition || { sequence: [] };
+    let steps = transition.sequence || [];
+    if (steps.length === 0) return null;
+
+    // Arah urutan step diatur PER STATE TARGET (target._direction = 'forward' | 'reverse')
+    // dan berlaku saat elemen berpindah MASUK ke state itu: forward = T0 -> T1 -> ... ,
+    // reverse = Tn -> ... -> T0. options.direction hanya override (mis. test/preview).
+    const isReverse = (options?.direction || target?._direction) === 'reverse';
+
+    if (isReverse) {
+      steps = steps.slice().reverse();
+    }
+
     const state = target || {};
     const sequence = steps.map((step) => {
       if (step.type === 'delay') return step;
@@ -421,6 +452,7 @@
     setStateBaseline,
     buildTimelineFromSequence,
     buildEnterTimeline,
+    buildLoopTimeline,
     buildTransitionTimeline,
     killTimeline,
     killAllTimelines,

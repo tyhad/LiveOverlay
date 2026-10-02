@@ -689,11 +689,15 @@
 
     function getElementActiveState(el) {
       const binding = el?.stateBinding
-      if (!binding?.enabled || !binding.group) return binding?.fallbackState || 'default'
+      if (!binding?.enabled || !binding.group) return null
       const raw = binding.source === 'counter'
         ? controlState.counters?.[binding.group]?.value
         : controlState.eventStates?.[binding.group]?.value
-      return String(raw ?? binding.fallbackState ?? 'default')
+      const fallback = binding.fallbackState || 'default'
+      const key = String(raw ?? fallback)
+      // State yang tidak punya target dianggap fallback (kunci dinormalisasi), jadi perpindahan
+      // antar state yang sama-sama tidak diatur tidak memicu transition/loop ulang yang sia-sia.
+      return Object.prototype.hasOwnProperty.call(el.stateTargets || {}, key) ? key : fallback
     }
 
     function getElementStateTarget(el, state) {
@@ -702,9 +706,23 @@
         rotation: el.rotation ?? 0, rotationX: el.rotationX ?? 0,
         rotationY: el.rotationY ?? 0, perspective: el.perspective ?? 1000,
       }
-      const target = { ...baseline, ...(el.stateTargets?.[state] || el.stateTargets?.[el.stateBinding?.fallbackState || 'default'] || {}) }
+      if (!el?.stateBinding?.enabled) {
+        if (el?.hidden) baseline.opacity = 0
+        return baseline
+      }
+      const activeState = state || el?.stateBinding?.fallbackState || 'default'
+      const stateObj = el.stateTargets?.[activeState] || el.stateTargets?.[el.stateBinding?.fallbackState || 'default'] || {}
+      const target = { ...baseline, ...stateObj }
+      if (stateObj._direction) target._direction = stateObj._direction
+      if (stateObj._visible === false) target._visible = false
       if (el.hidden) target.opacity = 0
       return target
+    }
+
+    // Visibilitas elemen = hidden manual (editor) ATAU state target bertanda invisible.
+    // Dipisah dari opacity: opacity untuk tampilan/animasi, visible untuk benar-benar menyembunyikan.
+    function applyRecordVisibility(record, el) {
+      record.node.style.visibility = (el.hidden || record.stateVisible === false) ? 'hidden' : ''
     }
 
     function removeRenderedElement(id, record) {
@@ -815,17 +833,36 @@
 
           // Data binding/teks harus tetap live-update meski elemen sedang dianimasikan.
           applyElementContent(existing.node, el)
+          // Hidden manual / state invisible selalu menang & tidak bisa dibuka lagi oleh animasi opacity.
+          applyRecordVisibility(existing, el)
+          const nextVisible = target._visible !== false
 
           if (existing.currentState !== activeState) {
-            const transition = AnimationEngine.buildTransitionTimeline(el.id, existing.node, nextAnimConfig, el, target)
-            if (!transition) AnimationEngine.setStateBaseline(existing.node, el, target)
+            // Update dulu: finishTransition() memakai currentState untuk mendeteksi transition yang sudah digantikan,
+            // dan pada jalur tanpa transition callback ini dipanggil sinkron.
             existing.currentState = activeState
             existing.animationSignature = nextAnimSignature
             existing.boxSignature = nextBoxSignature
+            // Arah urutan step transition dibaca dari target._direction (diatur per state target).
+            const transition = AnimationEngine.buildTransitionTimeline(el.id, existing.node, nextAnimConfig, el, target)
+            // Transition membunuh timeline enter/loop -> lanjutkan loop menuju target baru.
+            // Masuk state visible -> tampilkan DULU supaya fade-in terlihat. Masuk state invisible ->
+            // sembunyikan SETELAH transition selesai supaya fade-out sempat terlihat.
+            if (nextVisible) { existing.stateVisible = true; applyRecordVisibility(existing, el) }
+            const finishTransition = () => {
+              const current = renderedElements.get(el.id)
+              if (current !== existing || existing.currentState !== activeState) return
+              if (!nextVisible) { existing.stateVisible = false; applyRecordVisibility(existing, el) }
+              AnimationEngine.buildLoopTimeline(el.id, existing.node, nextAnimConfig, el, target)
+            }
+            if (transition) transition.eventCallback('onComplete', finishTransition)
+            else { AnimationEngine.setStateBaseline(existing.node, el, target); finishTransition() }
           } else if (existing.animationSignature !== nextAnimSignature) {
             applyElementBox(existing.node, el, hasChildren)
             AnimationEngine.setStateBaseline(existing.node, el, target)
             AnimationEngine.buildEnterTimeline(el.id, existing.node, nextAnimConfig, el, target)
+            existing.stateVisible = nextVisible
+            applyRecordVisibility(existing, el)
             existing.animationSignature = nextAnimSignature
             existing.boxSignature = nextBoxSignature
           } else if (!hasActiveSequence) {
@@ -851,6 +888,7 @@
         div.dataset.elementId = el.id
         applyElementBox(div, el, hasChildren)
         container.appendChild(div)
+        div.style.visibility = el.hidden ? 'hidden' : ''
         renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature, boxSignature: nextBoxSignature })
         applyElementContent(div, el)
         const state = getElementActiveState(el)
@@ -861,6 +899,8 @@
         const record = renderedElements.get(el.id)
         record.currentState = state
         record.animationSignature = signature
+        record.stateVisible = initialTarget._visible !== false
+        applyRecordVisibility(record, el)
       }
 
       topLevel.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)).forEach(el => mountOrUpdate(el, viewport))
@@ -1035,7 +1075,7 @@
         if (!currentScene || !currentScene.elements) return
         currentScene.elements.forEach(el => {
           const binding = el.textBinding
-          if (!binding?.enabled) return
+          if (el.hidden || !binding?.enabled) return
           const isClock = binding.source === 'clock'
           const isRunningTimer = binding.source === 'timer' && controlState.timers?.[binding.group]?.isRunning
           if (isClock || isRunningTimer) {

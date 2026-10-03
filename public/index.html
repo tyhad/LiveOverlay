@@ -430,22 +430,25 @@
           </div>
         </details>
 
-        <!-- Visibility Binding (semua tipe elemen) — tampil/sembunyi berdasarkan Counter / Event State -->
-        <details id="visibility-binding-section" class="space-y-2 pt-2 border-t border-slate-800 group">
+        <!-- State Binding: state memilih target visual elemen -->
+        <details id="state-binding-section" class="space-y-2 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
-            <span>Visibility Binding</span>
+            <span>State Binding</span>
           </summary>
           <div class="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-600/10 p-3 mt-2">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Tampil Kalau…</label>
+              <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Active State</label>
               <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
                 <input id="prop-vis-enabled" type="checkbox" class="accent-emerald-500">
                 <span>Enable</span>
               </label>
             </div>
+            <p id="state-binding-disabled-note" class="hidden text-[10px] text-amber-400 font-medium bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1">
+              ⚠️ State Binding nonaktif — State Targets tidak diterapkan pada elemen ini.
+            </p>
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Source</label>
@@ -457,7 +460,7 @@
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
-                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. killCount"
+                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. raceStatus"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
                 <datalist id="vis-group-names"></datalist>
               </div>
@@ -476,14 +479,40 @@
                 </select>
               </div>
               <div id="prop-vis-value-wrap" class="col-span-1">
-                <label class="block text-[11px] text-slate-400 mb-1">Nilai</label>
-                <input type="text" id="prop-vis-value" list="vis-value-options" placeholder="mis. 10 / red"
+                <label class="block text-[11px] text-slate-400 mb-1">Fallback State</label>
+                <input type="text" id="prop-vis-value" placeholder="default"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
                 <datalist id="vis-value-options"></datalist>
               </div>
             </div>
-            <p class="text-[10px] text-slate-500">Toggle 👁️ manual (hidden) tetap menang: kalau elemen di-hide manual,
-              binding ini diabaikan. Nilai live dikontrol dari <code>/control</code>.</p>
+            <!-- State Target Cards header -->
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-[11px] text-slate-400 font-semibold">State Targets</label>
+              <button id="state-target-add-btn" type="button"
+                class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-0.5 px-2 py-0.5 rounded border border-emerald-500/30 hover:border-emerald-400/60 bg-emerald-500/10 transition cursor-pointer">
+                + Tambah State
+              </button>
+            </div>
+            <!-- Inline add-state form (hidden by default) -->
+            <div id="state-target-add-form" class="hidden mb-2 flex gap-1.5 items-center">
+              <input id="state-target-new-name" type="text" list="state-target-name-suggestions"
+                placeholder="nama state (mis. MAIN)"
+                class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-emerald-500" />
+              <datalist id="state-target-name-suggestions"></datalist>
+              <button id="state-target-add-confirm" type="button"
+                class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer">
+                OK
+              </button>
+              <button id="state-target-add-cancel" type="button"
+                class="px-2 py-1 rounded border border-slate-700 text-slate-400 hover:text-white text-xs transition cursor-pointer">
+                Batal
+              </button>
+            </div>
+            <!-- Cards per state -->
+            <div id="state-targets-container" class="space-y-1.5"></div>
+            <p class="text-[10px] text-slate-500 mt-1.5">
+              Toggle 👁️ manual (hidden) tetap menang. Live dari <code>/control</code>.
+            </p>
           </div>
         </details>
 
@@ -1046,11 +1075,10 @@
           <div class="grid grid-cols-2 gap-1 mt-3">
             <button id="anim-enter-tab" type="button" data-animation-mode="enter"
               class="py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Enter</button>
-            <button id="anim-exit-tab" type="button" data-animation-mode="exit"
-              class="py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">Exit</button>
+            <button id="anim-transition-tab" type="button" data-animation-mode="transition"
+              class="py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">Transition</button>
           </div>
-          <p id="anim-mode-help" class="text-[10px] text-slate-500">Dimainkan saat elemen menjadi visible.</p>
-
+          <p id="anim-mode-help" class="text-[10px] text-slate-500">Dimainkan saat elemen pertama kali muncul.</p>
           <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
           <div id="anim-step-list" class="space-y-2"></div>
 
@@ -1114,7 +1142,7 @@
               </div>
               <div>
                 <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
-                <input type="number" data-field="duration" step="0.1" min="0"
+                <input type="number" data-field="duration" step="0.01" min="0"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
               <div>
@@ -1155,7 +1183,7 @@
             <span class="text-slate-500 text-sm shrink-0">⏱</span>
             <div class="flex-1 flex items-center gap-1.5">
               <label class="text-[10px] text-slate-400 shrink-0">Wait</label>
-              <input type="number" data-field="duration" step="0.1" min="0"
+              <input type="number" data-field="duration" step="0.01" min="0"
                 class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               <span class="text-[10px] text-slate-500 shrink-0">detik</span>
             </div>
@@ -1478,33 +1506,209 @@
       return el.textBinding
     }
 
-    function ensureVisibilityBinding(el) {
-      if (!el.visibilityBinding) {
-        el.visibilityBinding = {
-          enabled: false,
-          source: 'counter',
-          group: '',
-          comparator: 'eq',
-          matchValue: ''
-        }
-      }
-      return el.visibilityBinding
+    function ensureStateBinding(el) {
+      if (!el.stateBinding) el.stateBinding = { enabled: false, source: 'eventState', group: '', fallbackState: 'default' }
+      if (!el.stateTargets || typeof el.stateTargets !== 'object') el.stateTargets = {}
+      return el.stateBinding
     }
 
-    /** Sesuaikan tampilan form Visibility Binding: comparator cuma relevan untuk counter,
-     *  dan semua input di-disable selama binding belum di-Enable. */
-    function updateVisibilityControls() {
+    /** Properti visual yang bisa dioverride per state. Harus sama dengan
+     *  SUPPORTED_PROPERTIES di animation-engine.js plus posisi x/y. */
+    const STATE_TARGET_PROPS = [
+      { key: 'x',          label: 'x',           step: 1,    min: -9999, max: 9999 },
+      { key: 'y',          label: 'y',           step: 1,    min: -9999, max: 9999 },
+      { key: 'opacity',    label: 'opacity',     step: 0.05, min: 0,     max: 1    },
+      { key: 'scale',      label: 'scale',       step: 0.05, min: 0,     max: 10   },
+      { key: 'rotation',   label: 'rotation',    step: 1,    min: -360,  max: 360  },
+      { key: 'rotationX',  label: 'rotationX',   step: 1,    min: -360,  max: 360  },
+      { key: 'rotationY',  label: 'rotationY',   step: 1,    min: -360,  max: 360  },
+      { key: 'perspective',label: 'perspective', step: 10,   min: 0,     max: 9999 },
+    ]
+
+    const editorStatePreview = {} // { [elementId]: stateName } — override preview sementara
+
+    function escHtml(v) {
+      return String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    function updateStateBindingControls() {
       const el = scene?.elements?.find(item => item.id === selectedElementId)
-      const vb = el?.visibilityBinding
-      const isCounter = (vb?.source || 'counter') === 'counter'
-      const enabled = !!vb?.enabled
-      document.getElementById('prop-vis-comparator-wrap').classList.toggle('hidden', !isCounter)
-      document.getElementById('prop-vis-value-wrap').classList.toggle('col-span-2', !isCounter)
-      ;['prop-vis-source', 'prop-vis-name', 'prop-vis-comparator', 'prop-vis-value'].forEach(id => {
+      const binding = el?.stateBinding
+      const enabled = !!binding?.enabled
+      document.getElementById('prop-vis-comparator-wrap')?.classList.add('hidden')
+      ;['prop-vis-source', 'prop-vis-name', 'prop-vis-value'].forEach(id => {
         const input = document.getElementById(id)
         if (input) input.disabled = !enabled
       })
-      document.getElementById('prop-vis-value').placeholder = isCounter ? 'mis. 10' : 'mis. red'
+      const noteEl = document.getElementById('state-binding-disabled-note')
+      if (noteEl) noteEl.classList.toggle('hidden', enabled)
+      renderStateTargetsEditor(el || null)
+    }
+
+    function getElementActiveState(el) {
+      if (!el) return null
+      if (editorStatePreview[el.id]) return editorStatePreview[el.id]
+      const binding = el?.stateBinding
+      if (!binding?.enabled || !binding.group) return null
+      const raw = binding.source === 'counter'
+        ? controlStateEditor.counters?.[binding.group]?.value
+        : controlStateEditor.eventStates?.[binding.group]?.value
+      return String(raw ?? binding.fallbackState ?? 'default')
+    }
+
+    // Urutan tampil state di editor. Disimpan di el.stateOrder (array nama) karena key objek berupa angka
+    // ("1","2","3") SELALU diurutkan naik oleh JavaScript, jadi urutan key objek tidak bisa dipakai.
+    // Hanya memengaruhi tampilan editor, bukan perilaku runtime.
+    function getStateOrder(el) {
+      const keys = Object.keys(el?.stateTargets || {})
+      const saved = Array.isArray(el?.stateOrder) ? el.stateOrder.filter(name => keys.includes(name)) : []
+      return [...new Set([...saved, ...keys])]
+    }
+
+    function renderStateTargetsEditor(el) {
+      const container = document.getElementById('state-targets-container')
+      if (!container) return
+      if (!el) { container.innerHTML = ''; return }
+
+      const targets = el.stateTargets || {}
+      const fallback = el.stateBinding?.fallbackState || 'default'
+      const stateNames = getStateOrder(el)
+
+      if (stateNames.length === 0) {
+        container.innerHTML = `
+          <p class="text-[10px] text-slate-500 italic py-1">
+            Belum ada state. Klik "+ Tambah State" untuk membuat state target baru.
+          </p>`
+        return
+      }
+
+      container.innerHTML = ''
+      stateNames.forEach((name, index) => {
+        container.appendChild(buildStateCard(el, name, targets[name] || {}, name === fallback, index, stateNames.length))
+      })
+    }
+
+    function buildStateCard(el, stateName, props, isFallback, index = 0, total = 1) {
+      const card = document.createElement('div')
+      card.className = 'anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5'
+
+      const activeState = getElementActiveState(el)
+      const isCurrentlyPreviewed = activeState === stateName
+
+      const header = document.createElement('div')
+      header.className = 'flex items-center justify-between pb-1 border-b border-slate-800'
+      header.innerHTML = `
+        <span class="anim-step-label text-[11px] font-bold text-emerald-400 font-mono flex items-center gap-1.5">
+          ${isCurrentlyPreviewed ? '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" title="State Aktif Preview"></span>' : ''}
+          ${escHtml(stateName)}
+          ${isFallback ? '<span class="text-[9px] font-normal text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.2">fallback</span>' : ''}
+          ${props._visible === false ? '<span class="text-[9px] font-normal text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.2" title="Elemen disembunyikan di state ini">invisible</span>' : ''}
+        </span>
+        <div class="flex items-center gap-1">
+          <button type="button" data-st-move="up" data-state="${escHtml(stateName)}" ${index === 0 ? 'disabled' : ''}
+            class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Pindah ke atas">▲</button>
+          <button type="button" data-st-move="down" data-state="${escHtml(stateName)}" ${index === total - 1 ? 'disabled' : ''}
+            class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Pindah ke bawah">▼</button>
+          <button type="button" data-st-preview data-state="${escHtml(stateName)}"
+            class="px-1.5 py-0.5 rounded ${isCurrentlyPreviewed ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'} text-[10px] font-semibold transition cursor-pointer"
+            title="Tampilkan preview state ini di canvas">
+            ${isCurrentlyPreviewed ? '✓ Active' : '▶ Preview'}
+          </button>
+          <button type="button" data-st-delete data-state="${escHtml(stateName)}"
+            class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px] font-bold transition cursor-pointer"
+            title="Hapus state">✕</button>
+        </div>`
+      card.appendChild(header)
+
+      const propsSection = document.createElement('div')
+      propsSection.className = 'pt-1'
+      propsSection.innerHTML = `<label class="block text-[10px] text-slate-400 mb-1.5 font-semibold">Target Properties</label>`
+
+      const grid = document.createElement('div')
+      grid.className = 'grid grid-cols-2 gap-1.5'
+
+      for (const p of STATE_TARGET_PROPS) {
+        const hasVal = Object.prototype.hasOwnProperty.call(props, p.key)
+        const fallbackVal = getBaselineProp(el, p.key)
+        const cell = document.createElement('label')
+        cell.className = 'flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer select-none'
+        cell.innerHTML = `
+          <input type="checkbox" data-st-toggle data-state="${escHtml(stateName)}" data-prop="${p.key}"
+            ${hasVal ? 'checked' : ''}
+            class="rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500 shrink-0">
+          <span class="w-14 shrink-0 font-mono text-[10px] ${hasVal ? 'text-slate-200 font-bold' : 'text-slate-400'}">${p.label}</span>
+          <input type="number" step="${p.step}" min="${p.min ?? ''}" max="${p.max ?? ''}"
+            data-st-input data-state="${escHtml(stateName)}" data-prop="${p.key}"
+            value="${hasVal ? props[p.key] : ''}"
+            placeholder="${fallbackVal}"
+            ${hasVal ? '' : 'disabled'}
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40 font-mono focus:outline-none focus:border-emerald-500">`
+        grid.appendChild(cell)
+      }
+      propsSection.appendChild(grid)
+      card.appendChild(propsSection)
+
+      const visibility = document.createElement('div')
+      visibility.className = 'flex items-center justify-between pt-1.5 border-t border-slate-800 text-[10px]'
+      visibility.innerHTML = `
+        <label class="text-slate-400 font-semibold flex items-center gap-1 select-none">
+          <span title="Visible = elemen tampil di state ini. Invisible = elemen disembunyikan (setelah transition selesai), terpisah dari opacity.">Visibilitas:</span>
+        </label>
+        <select data-st-visible data-state="${escHtml(stateName)}"
+          class="bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-emerald-300 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer">
+          <option value="visible" ${props._visible === false ? '' : 'selected'}>Visible (tampil)</option>
+          <option value="invisible" ${props._visible === false ? 'selected' : ''}>Invisible (sembunyi)</option>
+        </select>`
+      card.appendChild(visibility)
+
+      const footer = document.createElement('div')
+      footer.className = 'flex items-center justify-between pt-1.5 border-t border-slate-800 text-[10px]'
+      footer.innerHTML = `
+        <label class="text-slate-400 font-semibold flex items-center gap-1 cursor-pointer select-none">
+          <span title="Urutan step di tab Transition saat elemen berpindah MASUK ke state ini">Arah transisi masuk:</span>
+        </label>
+        <select data-st-direction data-state="${escHtml(stateName)}"
+          class="bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-emerald-300 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer">
+          <option value="forward" ${props._direction === 'reverse' ? '' : 'selected'}>Forward (T0 → T1)</option>
+          <option value="reverse" ${props._direction === 'reverse' ? 'selected' : ''}>Reverse (T1 → T0)</option>
+        </select>`
+      card.appendChild(footer)
+
+      return card
+    }
+
+    function getBaselineProp(el, key) {
+      if (key === 'x') return el.x
+      if (key === 'y') return el.y
+      if (key === 'opacity') return el.opacity ?? 1
+      if (key === 'scale') return el.scale ?? 1
+      if (key === 'rotation') return el.rotation ?? 0
+      if (key === 'rotationX') return el.rotationX ?? 0
+      if (key === 'rotationY') return el.rotationY ?? 0
+      return 0
+    }
+
+    function getElementStateTarget(el, state) {
+      const baseline = {
+        x: el.x, y: el.y, opacity: el.opacity ?? 1, scale: el.scale ?? 1,
+        rotation: el.rotation ?? 0, rotationX: el.rotationX ?? 0,
+        rotationY: el.rotationY ?? 0, perspective: el.perspective ?? 1000,
+      }
+      const hasPreview = Boolean(editorStatePreview[el?.id])
+      const activeState = state || (hasPreview ? editorStatePreview[el.id] : null)
+      if (!hasPreview && !el?.stateBinding?.enabled) {
+        if (el?.hidden) baseline.opacity = 0
+        return baseline
+      }
+      const effectiveState = activeState || el?.stateBinding?.fallbackState || 'default'
+      const stateObj = el?.stateTargets?.[effectiveState] || (el?.stateBinding?.enabled ? el?.stateTargets?.[el?.stateBinding?.fallbackState || 'default'] : {}) || {}
+      const target = { ...baseline, ...stateObj }
+      if (stateObj._direction) target._direction = stateObj._direction
+      if (stateObj._visible === false) target._visible = false
+      if (el?.hidden) target.opacity = 0
+      return target
     }
 
     // ── Control Panel state (Counter / Event State / Timer) untuk preview & autocomplete ──
@@ -1557,8 +1761,8 @@
           const n = tb.group || tb.name
           if (n) names.add(n)
         }
-        const vb = el.visibilityBinding
-        if (vb?.source === sourceKey && (vb.group || vb.name)) names.add(vb.group || vb.name)
+        const sb = el.stateBinding
+        if (sb?.source === sourceKey && sb.group) names.add(sb.group)
       })
       return [...names].sort()
     }
@@ -1577,14 +1781,9 @@
       else if (binding?.source === 'timer') fillDatalist('control-group-names', getKnownControlGroups('timers'))
       else if (binding?.source === 'text') fillDatalist('control-group-names', getKnownControlGroups('texts'))
 
-      const vb = el?.visibilityBinding
-      const visKind = vb?.source === 'eventState' ? 'eventStates' : 'counters'
-      fillDatalist('vis-group-names', getKnownControlGroups(visKind))
-      if (vb?.source === 'eventState' && (vb.group || vb.name)) {
-        fillDatalist('vis-value-options', controlStateEditor.eventStates?.[vb.group || vb.name]?.options || [])
-      } else {
-        fillDatalist('vis-value-options', [])
-      }
+      const sb = el?.stateBinding
+      const stateKind = sb?.source === 'counter' ? 'counters' : 'eventStates'
+      fillDatalist('vis-group-names', getKnownControlGroups(stateKind))
     }
 
     /** Isi kolom "Daftar Opsi" dari server (kecuali sedang diketik) untuk grup eventState terpilih. */
@@ -2135,11 +2334,15 @@
           borderColor: 'transparent',
         },
         animation: {
-          loop: false,
-          sequence: [
-            { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out' },
-          ],
+          enter: {
+            loop: false,
+            sequence: [
+              { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out' },
+            ],
+          },
+          transition: { sequence: [] },
         },
+        stateTargets: { default: { opacity: 1 } },
       }
       scene.elements.push(newEl)
       selectElement(newEl.id)
@@ -2256,8 +2459,7 @@
       }
     }
 
-    // Animasi elemen (entrance/loop/exit lama) sekarang ditangani oleh
-    // AnimationEngine (public/animation-engine.js). Lihat tombol "Test" di
+    // Animasi state elemen ditangani oleh AnimationEngine. Lihat tombol "Test" di
     // attachPropertyListeners() untuk titik pemanggilannya di editor.
 
     // Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
@@ -2338,6 +2540,17 @@
           rotationY: el.rotationY || 0,
           scale: el.scale !== undefined ? el.scale : 1,
           transformPerspective: el.perspective !== undefined ? el.perspective : 1000,
+        })
+        const previewState = getElementStateTarget(el, getElementActiveState(el))
+        gsap.set(div, {
+          x: previewState.x - el.x,
+          y: previewState.y - el.y,
+          opacity: (el.hidden || previewState._visible === false) ? 0.3 : previewState.opacity,
+          scale: previewState.scale,
+          rotation: previewState.rotation,
+          rotationX: previewState.rotationX,
+          rotationY: previewState.rotationY,
+          transformPerspective: previewState.perspective,
         })
 
         if (el.style?.gradient?.enabled) {
@@ -2593,7 +2806,7 @@
           : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
           }`
 
-        const hasAnim = Array.isArray(el.animation?.sequence) && el.animation.sequence.length > 0
+        const hasAnim = Array.isArray(el.animation?.enter?.sequence) && el.animation.enter.sequence.length > 0
         // Fase 9 — tandai child (parentId valid & bukan multi-level) dengan indent + ikon.
         const parentId = getEffectiveParentId(el, byId)
         const parentEl = parentId ? byId.get(parentId) : null
@@ -2712,19 +2925,18 @@
       document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
       document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
 
-      // Visibility Binding (semua tipe elemen)
-      const visBinding = ensureVisibilityBinding(el)
-      document.getElementById('prop-vis-enabled').checked = !!visBinding.enabled
-      document.getElementById('prop-vis-source').value = visBinding.source || 'counter'
-      document.getElementById('prop-vis-name').value = visBinding.group ?? visBinding.name ?? ''
-      document.getElementById('prop-vis-comparator').value = visBinding.comparator || 'eq'
-      document.getElementById('prop-vis-value').value = visBinding.matchValue ?? visBinding.value ?? ''
-      updateVisibilityControls()
-      // Buka otomatis kalau binding aktif supaya user sadar elemen ini punya kondisi tampil
-      if (visBinding.enabled) document.getElementById('visibility-binding-section').open = true
+      // State Binding (semua tipe elemen)
+      const stateBinding = ensureStateBinding(el)
+      document.getElementById('prop-vis-enabled').checked = !!stateBinding.enabled
+      document.getElementById('prop-vis-source').value = stateBinding.source || 'eventState'
+      document.getElementById('prop-vis-name').value = stateBinding.group || ''
+      document.getElementById('prop-vis-value').value = stateBinding.fallbackState || 'default'
+      updateStateBindingControls()
+      if (stateBinding.enabled) document.getElementById('state-binding-section').open = true
 
       // Animation Sequence Editor
-      document.getElementById('anim-loop-toggle').checked = Boolean(el.animation?.loop)
+      const animation = ensureAnimation(el)
+      document.getElementById('anim-loop-toggle').checked = Boolean(animation.enter.loop)
       updateAnimationEditorMode()
       renderAnimationSequenceEditor(el)
 
@@ -2837,16 +3049,24 @@
     // ---------------------------------------------------------------------
 
     function ensureAnimation(el) {
-      if (!el.animation || typeof el.animation !== 'object' || !Array.isArray(el.animation.sequence)) {
-        el.animation = { loop: false, sequence: [], exitSequence: [] }
+      if (!el.animation || typeof el.animation !== 'object') {
+        el.animation = { enter: { loop: false, sequence: [] }, transition: { sequence: [] } }
       }
-      if (!Array.isArray(el.animation.exitSequence)) el.animation.exitSequence = []
+      if (!el.animation.enter) {
+        el.animation = {
+          enter: { loop: Boolean(el.animation.loop), sequence: Array.isArray(el.animation.sequence) ? el.animation.sequence : [] },
+          transition: { sequence: [] },
+        }
+      }
+      if (!Array.isArray(el.animation.enter.sequence)) el.animation.enter.sequence = []
+      if (!el.animation.transition) el.animation.transition = { sequence: [] }
+      if (!Array.isArray(el.animation.transition.sequence)) el.animation.transition.sequence = []
       // Migrasi sekali & sticky: kalau masih ada step lama yang bawa field `delay`,
       // pecah jadi step 'delay' tersendiri langsung di data (bukan cuma saat playback),
       // supaya kelihatan & bisa diedit di Sequence Editor.
-      const migrated = AnimationEngine.splitLegacyPerStepDelay(el.animation.sequence)
-      if (migrated.length !== el.animation.sequence.length) {
-        el.animation.sequence = migrated
+      const migrated = AnimationEngine.splitLegacyPerStepDelay(el.animation.enter.sequence)
+      if (migrated.length !== el.animation.enter.sequence.length) {
+        el.animation.enter.sequence = migrated
       }
       return el.animation
     }
@@ -2854,17 +3074,18 @@
     let animationEditorMode = 'enter'
 
     function activeAnimationSequence(anim) {
-      return animationEditorMode === 'exit' ? anim.exitSequence : anim.sequence
+      return animationEditorMode === 'transition' ? anim.transition.sequence : anim.enter.sequence
     }
 
     function updateAnimationEditorMode() {
-      const isExit = animationEditorMode === 'exit'
+      const isTransition = animationEditorMode === 'transition'
       const loopToggle = document.getElementById('anim-loop-toggle')
-      loopToggle.disabled = isExit
-      loopToggle.closest('label').classList.toggle('opacity-50', isExit)
-      document.getElementById('anim-mode-help').textContent = isExit
-        ? 'Dimainkan sekali sebelum elemen dihapus oleh visibility binding.'
-        : 'Dimainkan saat elemen menjadi visible.'
+      loopToggle.disabled = isTransition
+      loopToggle.closest('label').classList.toggle('opacity-50', isTransition)
+      document.getElementById('anim-mode-help').textContent = isTransition
+        ? 'Template timing untuk perpindahan menuju target state baru.'
+        : 'Dimainkan saat elemen pertama kali muncul.'
+      
       document.querySelectorAll('[data-animation-mode]').forEach(button => {
         const active = button.dataset.animationMode === animationEditorMode
         button.classList.toggle('bg-indigo-600', active)
@@ -2872,17 +3093,114 @@
         button.classList.toggle('bg-slate-800', !active)
         button.classList.toggle('text-slate-300', !active)
       })
+
     }
 
     /** Preset quick-insert: label -> step generik siap pakai (murni helper UI). */
     const ANIMATION_PRESETS = {
       'Fade In': { type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out', repeat: 0, yoyo: false },
       'Fade Out': { type: 'to', properties: { opacity: 0 }, duration: 0.4, ease: 'power2.in', repeat: 0, yoyo: false },
-      'Slide Up In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 60 }, duration: 0.8, ease: 'power3.out', repeat: 0, yoyo: false },
-      'Bounce In': { type: 'from', properties: { opacity: 0, y: (el) => el.y + 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out', repeat: 0, yoyo: false },
+      'Slide Up In': { type: 'from', properties: { opacity: 0, y: 60 }, duration: 0.8, ease: 'power3.out', repeat: 0, yoyo: false },
+      'Bounce In': { type: 'from', properties: { opacity: 0, y: 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out', repeat: 0, yoyo: false },
       'Zoom In': { type: 'from', properties: { opacity: 0, scale: 0.3 }, duration: 0.7, ease: 'back.out(1.7)', repeat: 0, yoyo: false },
       'Pulse (loop)': { type: 'to', properties: { scale: 1.04 }, duration: 1.5, ease: 'power1.inOut', repeat: -1, yoyo: true },
-      'Float (loop)': { type: 'to', properties: { y: (el) => el.y - 10 }, duration: 1.3, ease: 'sine.inOut', repeat: -1, yoyo: true },
+      'Float (loop)': { type: 'to', properties: { y: -10 }, duration: 1.3, ease: 'sine.inOut', repeat: -1, yoyo: true },
+    }
+
+    const TRANSITION_PROPERTIES = ['x', 'y', 'opacity', 'scale', 'rotation', 'rotationX', 'rotationY', 'perspective']
+
+    // Durasi animasi (detik): maksimal 2 angka di belakang koma (mis. 0,15 dt), tidak boleh negatif.
+    // Dibulatkan agar tidak muncul artefak floating point seperti 0.15000000000000002.
+    function parseDurationSeconds(raw) {
+      const value = parseFloat(String(raw).replace(',', '.')) // toleran terhadap koma desimal (0,15)
+      return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : 0
+    }
+
+    const TRANSITION_EASES = [
+      ['power2.out', 'Power2 Out'], ['power3.out', 'Power3 Out'], ['power1.inOut', 'Power1 InOut'],
+      ['back.out(1.7)', 'Back Out'], ['bounce.out', 'Bounce Out'], ['elastic.out(1, 0.4)', 'Elastic Out'],
+      ['sine.inOut', 'Sine InOut'], ['none', 'Linear'],
+    ]
+
+    function renderTransitionSequenceEditor(el, anim) {
+      const listEl = document.getElementById('anim-step-list')
+      listEl.innerHTML = ''
+      const inputCls = 'w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500'
+      anim.transition.sequence.forEach((step, index) => {
+        const isDelay = step.type === 'delay'
+        const card = document.createElement('div')
+        card.className = 'anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5'
+        // Seluruh isi kartu dibangun SEKALI lewat satu innerHTML, baru handler dipasang.
+        // (Jangan pakai `innerHTML +=` setelah pasang handler: itu membuat ulang elemen anak
+        // dan handler yang sudah terpasang -- mis. tombol X -- hilang.)
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-indigo-300 font-mono">T${index}${isDelay ? ' · delay' : ''}</span>
+            <button type="button" data-delete class="text-red-400 hover:text-red-300 px-1" title="Hapus step">✕</button>
+          </div>
+          ${isDelay ? `
+            <label class="block text-[10px] text-slate-400">Delay (detik)
+              <input data-duration type="number" min="0" step="0.01" class="${inputCls}">
+            </label>` : `
+            <div class="grid grid-cols-2 gap-1.5">
+              <label class="text-[10px] text-slate-400">Duration (s)
+                <input data-duration type="number" min="0" step="0.01" class="${inputCls}">
+              </label>
+              <label class="text-[10px] text-slate-400">Ease
+                <select data-ease class="${inputCls}"></select>
+              </label>
+            </div>
+            <div data-properties class="grid grid-cols-2 gap-1"></div>`}`
+
+        card.querySelector('[data-delete]').onclick = () => {
+          anim.transition.sequence.splice(index, 1)
+          renderAnimationSequenceEditor(el)
+        }
+        const durationInput = card.querySelector('[data-duration]')
+        durationInput.value = step.duration
+        durationInput.oninput = e => { step.duration = parseDurationSeconds(e.target.value) }
+
+        if (!isDelay) {
+          const easeSelect = card.querySelector('[data-ease]')
+          const eases = TRANSITION_EASES.slice()
+          const current = step.ease || 'power2.out'
+          if (!eases.some(([value]) => value === current)) eases.push([current, current]) // ease kustom tetap tampil
+          eases.forEach(([value, label]) => {
+            const opt = document.createElement('option')
+            opt.value = value
+            opt.textContent = label
+            easeSelect.appendChild(opt)
+          })
+          easeSelect.value = current
+          easeSelect.onchange = e => { step.ease = e.target.value }
+
+          // step.properties kosong/undefined berarti "semua properti" -> materialisasi dulu
+          // supaya uncheck satu properti tidak diam-diam menghapus semua yang lain.
+          if (!Array.isArray(step.properties)) step.properties = TRANSITION_PROPERTIES.slice()
+          const propsEl = card.querySelector('[data-properties]')
+          TRANSITION_PROPERTIES.forEach(name => {
+            const label = document.createElement('label')
+            label.className = 'text-[10px] text-slate-400 flex items-center gap-1 cursor-pointer'
+            const checkbox = document.createElement('input')
+            checkbox.type = 'checkbox'
+            checkbox.checked = step.properties.includes(name)
+            checkbox.onchange = e => {
+              if (e.target.checked && !step.properties.includes(name)) step.properties.push(name)
+              if (!e.target.checked) step.properties = step.properties.filter(item => item !== name)
+            }
+            label.appendChild(checkbox)
+            label.appendChild(document.createTextNode(' ' + name))
+            propsEl.appendChild(label)
+          })
+        }
+        listEl.appendChild(card)
+      })
+      if (anim.transition.sequence.length === 0) {
+        const empty = document.createElement('p')
+        empty.className = 'text-[11px] text-slate-500 italic text-center py-2'
+        empty.textContent = 'Belum ada transition step. State akan berpindah langsung.'
+        listEl.appendChild(empty)
+      }
     }
 
     function renderAnimationPresetButtons() {
@@ -2896,6 +3214,7 @@
         btn.addEventListener('click', () => {
           const el = scene.elements.find(item => item.id === selectedElementId)
           if (!el) return
+          if (animationEditorMode === 'transition') return
           const preset = ANIMATION_PRESETS[label]
           const properties = {}
           for (const key of Object.keys(preset.properties)) {
@@ -2910,7 +3229,7 @@
             properties,
             duration: preset.duration,
             ease: preset.ease,
-            repeat: animationEditorMode === 'exit' && preset.repeat < 0 ? 0 : preset.repeat,
+            repeat: preset.repeat,
             yoyo: preset.yoyo,
           })
           renderAnimationSequenceEditor(el)
@@ -2922,6 +3241,10 @@
 
     function renderAnimationSequenceEditor(el) {
       const anim = ensureAnimation(el)
+      if (animationEditorMode === 'transition') {
+        renderTransitionSequenceEditor(el, anim)
+        return
+      }
       const sequence = activeAnimationSequence(anim)
       const listEl = document.getElementById('anim-step-list')
       const stepTemplate = document.getElementById('anim-step-template')
@@ -2969,7 +3292,7 @@
           // Kartu Delay: cuma field duration, tanpa Type/Ease/Repeat/Yoyo/Properties.
           const durationInput = card.querySelector('[data-field="duration"]')
           durationInput.value = step.duration ?? 0.5
-          durationInput.addEventListener('input', (e) => { step.duration = parseFloat(e.target.value) || 0 })
+          durationInput.addEventListener('input', (e) => { step.duration = parseDurationSeconds(e.target.value) })
           listEl.appendChild(card)
           return
         }
@@ -2988,7 +3311,7 @@
 
         typeInput.addEventListener('change', (e) => { step.type = e.target.value })
         easeInput.addEventListener('change', (e) => { step.ease = e.target.value })
-        durationInput.addEventListener('input', (e) => { step.duration = parseFloat(e.target.value) || 0 })
+        durationInput.addEventListener('input', (e) => { step.duration = parseDurationSeconds(e.target.value) })
         repeatInput.addEventListener('input', (e) => { step.repeat = parseInt(e.target.value, 10) || 0 })
         yoyoInput.addEventListener('change', (e) => { step.yoyo = e.target.checked })
 
@@ -3003,7 +3326,9 @@
           const isActive = Object.prototype.hasOwnProperty.call(step.properties || {}, propName)
           const fallback = el[propName] !== undefined ? el[propName] : PROPERTY_DEFAULTS[propName]
 
-          nameEl.textContent = propName
+          nameEl.textContent = animationEditorMode === 'enter' && (propName === 'x' || propName === 'y')
+            ? `${propName} offset`
+            : propName
           toggle.checked = isActive
           valueInput.disabled = !isActive
           valueInput.value = isActive ? step.properties[propName] : fallback
@@ -3052,17 +3377,29 @@
         if (el) {
           const node = document.getElementById(`el-node-${el.id}`)
           const normalized = AnimationEngine.normalizeAnimationConfig(el.animation)
-          AnimationEngine.setBaselineState(node, el)
-          AnimationEngine.buildTimelineFromSequence(el.id, node, animationEditorMode === 'exit'
-            ? { sequence: normalized.exitSequence, loop: false }
-            : normalized)
+          const activeState = getElementActiveState(el)
+          const target = getElementStateTarget(el, activeState)
+          if (animationEditorMode === 'transition') {
+            // Transition = perpindahan DARI state lain KE state aktif. Kalau dianimasikan
+            // dari target state aktif ke dirinya sendiri, tidak ada yang bergerak.
+            const otherState = Object.keys(el.stateTargets || {}).find(name => name !== activeState)
+            if (!otherState) {
+              window.alert('Preview transition butuh minimal 2 state di State Targets (mis. "default" dan "alert").')
+              return
+            }
+            AnimationEngine.setStateBaseline(node, el, getElementStateTarget(el, otherState))
+            AnimationEngine.buildTransitionTimeline(el.id, node, normalized, el, target)
+          } else {
+            AnimationEngine.setStateBaseline(node, el, target)
+            AnimationEngine.buildEnterTimeline(el.id, node, normalized, el, target)
+          }
         }
       })
 
       document.getElementById('anim-loop-toggle').addEventListener('change', (e) => {
         const el = getSelected()
         if (el) {
-          ensureAnimation(el).loop = e.target.checked
+          ensureAnimation(el).enter.loop = e.target.checked
         }
       })
 
@@ -3079,6 +3416,11 @@
         const el = getSelected()
         if (!el) return
         const anim = ensureAnimation(el)
+        if (animationEditorMode === 'transition') {
+          anim.transition.sequence.push({ id: `t${anim.transition.sequence.length}`, type: 'to', properties: TRANSITION_PROPERTIES.slice(), duration: 0.5, ease: 'power2.out' })
+          renderAnimationSequenceEditor(el)
+          return
+        }
         const sequence = activeAnimationSequence(anim)
         sequence.push({
           id: `q${sequence.length}`,
@@ -3097,6 +3439,11 @@
         const el = getSelected()
         if (!el) return
         const anim = ensureAnimation(el)
+        if (animationEditorMode === 'transition') {
+          anim.transition.sequence.push({ id: `delay${anim.transition.sequence.length}`, type: 'delay', duration: 0.5 })
+          renderAnimationSequenceEditor(el)
+          return
+        }
         const sequence = activeAnimationSequence(anim)
         sequence.push({
           id: `delay${sequence.length}`,
@@ -3315,37 +3662,150 @@
         updateBindingPreview()
       })
 
-      // Visibility Binding controls
-      const getVis = () => { const el = getSelected(); return el ? ensureVisibilityBinding(el) : null }
+      // State Binding controls
+      const getStateBinding = () => { const el = getSelected(); return el ? ensureStateBinding(el) : null }
       document.getElementById('prop-vis-enabled').addEventListener('change', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.enabled = e.target.checked
-        updateVisibilityControls()
+        const binding = getStateBinding(); if (!binding) return
+        binding.enabled = e.target.checked
+        updateStateBindingControls()
       })
       document.getElementById('prop-vis-source').addEventListener('change', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.source = e.target.value
-        if (vb.source === 'eventState') vb.comparator = 'eq'
-        updateVisibilityControls()
+        const binding = getStateBinding(); if (!binding) return
+        binding.source = e.target.value
+        updateStateBindingControls()
         refreshControlDatalists()
       })
       document.getElementById('prop-vis-name').addEventListener('input', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.group = e.target.value.trim()
-        delete vb.name
+        const binding = getStateBinding(); if (!binding) return
+        binding.group = e.target.value.trim()
         refreshControlDatalists()
       })
-      document.getElementById('prop-vis-comparator').addEventListener('change', (e) => {
-        const vb = getVis(); if (!vb) return
-        vb.comparator = e.target.value
-      })
       document.getElementById('prop-vis-value').addEventListener('input', (e) => {
-        const vb = getVis(); if (!vb) return
-        // counter: simpan angka; eventState: simpan string apa adanya
-        vb.matchValue = vb.source === 'counter' && e.target.value.trim() !== '' && Number.isFinite(Number(e.target.value))
-          ? Number(e.target.value)
-          : e.target.value
-        delete vb.value
+        const binding = getStateBinding(); if (!binding) return
+        binding.fallbackState = e.target.value.trim() || 'default'
+        const el = getSelected()
+        if (el) renderStateTargetsEditor(el)
+      })
+
+      // Delegasi event untuk state target cards (toggle, input, move, preview, delete)
+      const stContainer = document.getElementById('state-targets-container')
+      stContainer.addEventListener('change', (e) => {
+        const el = getSelected(); if (!el) return
+        if (e.target.matches('[data-st-visible]')) {
+          // Visible/invisible per state (terpisah dari opacity). Disimpan hanya saat invisible.
+          const { state } = e.target.dataset
+          if (!el.stateTargets) el.stateTargets = {}
+          if (!el.stateTargets[state]) el.stateTargets[state] = {}
+          if (e.target.value === 'invisible') el.stateTargets[state]._visible = false
+          else delete el.stateTargets[state]._visible
+          renderStateTargetsEditor(el)
+          renderCanvas()
+          return
+        }
+        if (e.target.matches('[data-st-direction]')) {
+          // Arah urutan step transition saat berpindah MASUK ke state ini (T0->Tn / Tn->T0).
+          const { state } = e.target.dataset
+          if (!el.stateTargets) el.stateTargets = {}
+          if (!el.stateTargets[state]) el.stateTargets[state] = {}
+          el.stateTargets[state]._direction = e.target.value === 'reverse' ? 'reverse' : 'forward'
+          return
+        }
+        if (e.target.matches('[data-st-toggle]')) {
+          const { state, prop } = e.target.dataset
+          if (!el.stateTargets) el.stateTargets = {}
+          if (!el.stateTargets[state]) el.stateTargets[state] = {}
+          const input = e.target.closest('div').querySelector('[data-st-input]')
+          if (e.target.checked) {
+            const val = input?.value !== '' ? Number(input.value) : getBaselineProp(el, prop)
+            el.stateTargets[state][prop] = val
+          } else {
+            delete el.stateTargets[state][prop]
+          }
+          renderStateTargetsEditor(el)
+          renderCanvas()
+        }
+      })
+
+      stContainer.addEventListener('input', (e) => {
+        const el = getSelected(); if (!el) return
+        if (e.target.matches('[data-st-input]') && e.target.value !== '') {
+          const { state, prop } = e.target.dataset
+          if (!el.stateTargets?.[state]) return
+          el.stateTargets[state][prop] = Number(e.target.value)
+          renderCanvas()
+        }
+      })
+
+      stContainer.addEventListener('click', (e) => {
+        const el = getSelected(); if (!el) return
+        const btn = e.target.closest('button[data-st-move], button[data-st-delete], button[data-st-preview]')
+        if (!btn) return
+        const stateName = btn.dataset.state
+
+        if (btn.hasAttribute('data-st-move')) {
+          // Hanya mengubah urutan tampil di editor (tidak memengaruhi runtime).
+          const order = getStateOrder(el)
+          const from = order.indexOf(stateName)
+          const to = btn.dataset.stMove === 'up' ? from - 1 : from + 1
+          if (from < 0 || to < 0 || to >= order.length) return
+          ;[order[from], order[to]] = [order[to], order[from]]
+          el.stateOrder = order
+          renderStateTargetsEditor(el)
+        } else if (btn.hasAttribute('data-st-preview')) {
+          if (editorStatePreview[el.id] === stateName) {
+            delete editorStatePreview[el.id]
+          } else {
+            editorStatePreview[el.id] = stateName
+          }
+          renderStateTargetsEditor(el)
+          renderCanvas()
+        } else if (btn.hasAttribute('data-st-delete')) {
+          delete el.stateTargets?.[stateName]
+          if (Array.isArray(el.stateOrder)) el.stateOrder = el.stateOrder.filter(name => name !== stateName)
+          if (editorStatePreview[el.id] === stateName) delete editorStatePreview[el.id]
+          renderStateTargetsEditor(el)
+          renderCanvas()
+        }
+      })
+
+      // Handler "+ Tambah State"
+      document.getElementById('state-target-add-btn').addEventListener('click', () => {
+        const form = document.getElementById('state-target-add-form')
+        form.classList.toggle('hidden')
+        if (!form.classList.contains('hidden')) {
+          const el = getSelected()
+          const binding = el?.stateBinding
+          const suggestions = document.getElementById('state-target-name-suggestions')
+          suggestions.innerHTML = ''
+          if (binding?.source === 'eventState' && binding.group) {
+            const opts = controlStateEditor.eventStates?.[binding.group]?.options || []
+            for (const opt of opts) {
+              if (!el.stateTargets?.[opt]) {
+                const o = document.createElement('option')
+                o.value = opt
+                suggestions.appendChild(o)
+              }
+            }
+          }
+          document.getElementById('state-target-new-name').focus()
+        }
+      })
+
+      document.getElementById('state-target-add-confirm').addEventListener('click', () => {
+        const el = getSelected(); if (!el) return
+        const input = document.getElementById('state-target-new-name')
+        const name = input.value.trim()
+        if (!name) return
+        if (!el.stateTargets) el.stateTargets = {}
+        if (!el.stateTargets[name]) el.stateTargets[name] = {}
+        input.value = ''
+        document.getElementById('state-target-add-form').classList.add('hidden')
+        renderStateTargetsEditor(el)
+      })
+
+      document.getElementById('state-target-add-cancel').addEventListener('click', () => {
+        document.getElementById('state-target-add-form').classList.add('hidden')
+        document.getElementById('state-target-new-name').value = ''
       })
       document.getElementById('prop-text-binding-timezone').addEventListener('change', (e) => {
         const el = getSelected()
@@ -3598,8 +4058,10 @@
         const node = document.getElementById(`el-node-${el.id}`)
         if (node && !el.hidden) {
           const normalized = AnimationEngine.normalizeAnimationConfig(el.animation)
-          AnimationEngine.setBaselineState(node, el)
-          AnimationEngine.buildTimelineFromSequence(el.id, node, normalized)
+          const state = getElementActiveState(el)
+          const target = getElementStateTarget(el, state)
+          AnimationEngine.setStateBaseline(node, el, target)
+          AnimationEngine.buildEnterTimeline(el.id, node, normalized, el, target)
         }
       })
     })
@@ -3643,11 +4105,11 @@
           borderWidth: 0
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.2 },
             { id: 'q0', type: 'from', properties: { opacity: 0 }, duration: 0.7, ease: 'power2.out' },
-          ]
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)
@@ -3679,12 +4141,12 @@
           gradient: { enabled: true, from: '#282c30', to: '#1e2124', angle: 145 }
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.1 },
             { id: 'q0', type: 'from', properties: { opacity: 0, y: 180 }, duration: 0.8, ease: 'power3.out' },
             { id: 'q1', type: 'to', properties: { scale: 1.04 }, duration: 1.5, repeat: -1, yoyo: true, ease: 'power1.inOut' },
-          ]
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)
@@ -3720,12 +4182,12 @@
           gradient: { enabled: true, from: '#27272a', to: '#09090b', angle: 90 }
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.2 },
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 960, scale: 0.8 }, duration: 0.9, ease: 'bounce.out' },
-            { id: 'q1', type: 'to', properties: { y: 850 }, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' },
-          ]
+            { id: 'q0', type: 'from', properties: { opacity: 0, y: 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out' },
+            { id: 'q1', type: 'to', properties: { y: -10 }, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' },
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)
@@ -3761,12 +4223,12 @@
           gradient: { enabled: true, from: '#0f172a', to: '#020617', angle: 135 }
         },
         animation: {
-          loop: false,
-          sequence: [
+          enter: { loop: false, sequence: [
             { id: 'delay0', type: 'delay', duration: 0.3 },
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 995 }, duration: 0.8, ease: 'power3.out' },
+            { id: 'q0', type: 'from', properties: { opacity: 0, y: 60 }, duration: 0.8, ease: 'power3.out' },
             { id: 'q1', type: 'to', properties: { scale: 1.04 }, duration: 1.6, repeat: -1, yoyo: true, ease: 'power1.inOut' },
-          ]
+          ] },
+          transition: { sequence: [] }
         }
       }
       scene.elements.push(newEl)

@@ -45,14 +45,16 @@ Saat elemen dipilih di kanvas, muncul panel untuk atur:
 
 #### 3.3.1 Model Animasi: Property Transition Sequence
 
-Model lama (Entrance → Loop → Exit sebagai 3 slot tetap dengan preset bernama) sudah digantikan sepenuhnya oleh model sequence generik. Prinsip yang **sudah settled**:
+Model animasi menggunakan state target terpisah dari sequence timing. Prinsip yang **sudah settled**:
 
 > **Animation = State Transition + Time**, bukan **Animation = Named Preset**.
 
-- Tiap elemen punya `animation.sequence`: array step berurutan (Q0 → Q1 → Q2 → ...), bukan 3 slot tetap. Jumlah step bebas.
-- Tiap step adalah transisi properti generik (`x`, `y`, `opacity`, `scale`, `rotation`, dst) dari state elemen saat ini menuju state target, dalam durasi tertentu — bukan nama preset (`fadeIn`/`slideUp`/dll) yang di-hardcode di engine.
+- Tiap elemen punya `stateBinding`, `stateTargets`, dan `animation.enter`/`animation.transition`.
+- `stateTargets` menyimpan target visual absolut per state; `stateBinding` memilih state aktif dari Event State atau Counter.
+- `animation.enter.sequence` mengatur animasi awal. `animation.transition.sequence` hanya mengatur timing/ease dan properties yang ikut bergerak menuju target state baru.
+- Nilai `x`/`y` pada Enter sequence adalah offset relatif terhadap target state; posisi pada `stateTargets` tetap absolut terhadap canvas.
 - Preset (fade, slide, pulse, dll) tetap ada di **level UI saja**, sebagai template quick-insert yang otomatis mengisi field step generik — bukan konsep yang dikenal oleh animation engine.
-- Posisi dianimasikan lewat `left`/`top` (mengikuti representasi kanonis `el.x`/`el.y` pixel-absolut yang sudah dipakai sistem drag/drop/resize/align), **bukan** `transform: translate()` — supaya tidak ada dua sistem koordinat paralel untuk posisi yang sama.
+- Posisi dasar state tetap pixel-absolut; animasi runtime memakai transform GSAP untuk offset/compositing tanpa mengubah koordinat kanonis.
 - Jeda waktu (delay) adalah **step tersendiri** (`{type:'delay', duration}`), bukan field yang nempel di tiap step animasi — supaya bisa disisipkan/dipindah/diduplikat/dihapus bebas di posisi manapun dalam sequence, sama seperti step animasi lainnya.
 - Satu GSAP timeline per elemen, dikelola terpusat (registry timeline per elementId), supaya cleanup saat elemen dihapus/scene diganti selalu konsisten dan tidak ada timeline yatim (orphaned) yang terus jalan.
 - Logic normalisasi & eksekusi sequence ini **wajib satu sumber kebenaran**, dipakai bersama oleh editor (`index.html`, untuk preview) dan overlay (`overlay.html`, untuk playback live) — bukan diimplementasikan dua kali secara terpisah seperti model lama.

@@ -6,6 +6,7 @@ import { basename } from 'node:path'
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector'
 import { Database } from 'bun:sqlite'
 import { ControlStateStore, validateControlName, type ControlStateData } from './control-state'
+import { migrateLegacyElement } from './scene-migration'
 
 const SETTINGS_FILE = 'settings.json'
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
@@ -104,6 +105,9 @@ interface AnimatableProperties {
   opacity?: number
   scale?: number
   rotation?: number
+  rotationX?: number
+  rotationY?: number
+  perspective?: number
 }
 
 /**
@@ -135,12 +139,24 @@ interface AnimationStep {
 }
 
 interface AnimationConfig {
-  /** Kalau true, sequence otomatis restart dari step pertama setelah step terakhir selesai.
-   *  Kalau false/tidak diisi, sequence main sekali lalu bertahan di state step terakhir. */
-  loop?: boolean
-  sequence: AnimationStep[]
-  /** Sequence yang dimainkan sekali sebelum elemen visibility binding dihapus. */
-  exitSequence?: AnimationStep[]
+  enter: {
+    sequence: AnimationStep[]
+    loop?: boolean
+  }
+  transition: {
+    sequence: TransitionStep[]
+  }
+}
+
+type StateTarget = Partial<AnimatableProperties>
+type TransitionProperty = keyof AnimatableProperties
+
+interface TransitionStep {
+  id?: string
+  type: 'to' | 'delay'
+  properties?: TransitionProperty[]
+  duration: number
+  ease?: string
 }
 
 type PlatformTextBindingField =
@@ -248,18 +264,11 @@ type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | Co
  *  tampil kalau eventState grup tsb bernilai `matchValue`). Terpisah dari `hidden` (manual toggle
  *  di Editor); kalau keduanya ada, `hidden=true` selalu menang (override manual tetap final).
  */
-interface VisibilityBinding {
+interface StateBinding {
   enabled?: boolean
   source: 'counter' | 'eventState'
-  /** Nama grup counter, atau nama grup eventState. */
   group: string
-  /** Hanya dipakai kalau source === 'counter'. Default 'eq'. */
-  comparator?: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'
-  /** counter: angka pembanding. eventState: opsi yang harus aktif supaya elemen tampil. */
-  matchValue: number | string
-  /** @deprecated alias lama untuk `group` / `matchValue` (scene lama) */
-  name?: string
-  value?: number | string
+  fallbackState?: string
 }
 
 interface MarqueeConfig {
@@ -297,7 +306,13 @@ interface SceneElement {
   style: ElementStyle
   animation?: AnimationConfig
   textBinding?: TextBinding
-  visibilityBinding?: VisibilityBinding
+  stateBinding?: StateBinding
+  /** @deprecated Skema lama. Dimigrasi otomatis ke stateBinding/stateTargets saat scene dimuat; hanya tersisa
+   *  kalau comparator-nya tidak bisa dipetakan ke state diskret (gt/gte/lt/lte/neq) — dipertahankan agar data tidak hilang. */
+  visibilityBinding?: Record<string, unknown>
+  stateTargets?: Record<string, StateTarget>
+  /** Urutan tampil state di editor (hanya kosmetik; key angka di objek selalu terurut naik). */
+  stateOrder?: string[]
   marquee?: MarqueeConfig
   scroll?: ScrollConfig
   /**
@@ -891,7 +906,7 @@ function normalizeScene(scene: Partial<SceneData>, index = 0): SceneData {
       height: Number(canvas.height) || 1080,
       backgroundColor: canvas.backgroundColor || 'transparent',
     },
-    elements: elements as SceneElement[],
+    elements: (elements as SceneElement[]).map(migrateLegacyElement),
   }
 }
 

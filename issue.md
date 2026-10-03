@@ -18,6 +18,7 @@
 | 8 | Animation Sequence & Property Transition System | ✅ Selesai |
 | 9 | Element Binding/Grouping (Parent-Child) | ✅ Selesai |
 | 10 | Text, 3D, Current Time, dan Control Panel | ✅ Selesai |
+| 11 | State Binding & Animation Enter/Transition | ✅ Selesai (termasuk migrasi scene lama) |
 
 ---
 
@@ -42,7 +43,11 @@
 
 ### Automated Testing
 
-`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 33 assertion, simulasi browser via `jsdom` + GSAP asli.
+`tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 44 assertion, simulasi browser via `jsdom` + GSAP asli.
+
+`tests/overlay-state.test.mjs` — 7 tes integrasi `overlay.html` utuh di jsdom (fallback state, visibilitas per state, arah transition, hidden manual, loop setelah transition). **Jalan via `node --test`, bukan `bun test`**: jsdom gagal di runner Bun (`EventTarget` tidak valid), jadi `bun run test` memanggil Node untuk file ini (butuh Node.js terpasang). Bisa dijalankan sendiri dengan `bun run test:overlay`.
+
+`tests/scene-migration.test.mjs` — 11 tes untuk `src/scene-migration.ts` (migrasi `visibilityBinding`, `exitSequence`, dan `animation.sequence` lama; idempoten; data yang tak bisa dimigrasi tidak dibuang).
 
 `tests/control-state.test.mjs` — 4 tes untuk serialisasi mutasi, nama reserved, timer pause/resume/restart, dan persistence load/save.
 
@@ -57,6 +62,12 @@ Belum masuk fase manapun — perlu didiskusikan & ditentukan skopnya sebelum die
 ### Fase 7 — Polish UX Editor
 Snap-to-grid, alignment guide, keyboard shortcut, undo/redo, dsb. Kandidat item tambahan:
 - Assign parent (grouping) lewat drag-and-drop langsung di Layers panel (sekarang cuma via dropdown).
+
+### `visibilityBinding` dengan comparator non-`eq` belum punya padanan di State Binding
+Scene lama yang memakai counter dengan `neq`/`gt`/`gte`/`lt`/`lte` tidak bisa dimigrasi otomatis (state bersifat diskret). Datanya **dipertahankan** di elemen (tidak hilang) tapi tidak lagi dibaca overlay, jadi elemen itu selalu tampil sampai diatur ulang manual lewat State Binding. Warning muncul sekali per elemen di log server (`[migrate] visibilityBinding ...`). Perlu keputusan: cukup dokumentasi manual, atau tambah dukungan rentang/comparator di State Binding.
+
+### Migrasi `exitSequence` bersifat lossy
+Exit lama dipetakan ke transition + target `hidden`. Kalau satu properti diubah di beberapa step exit, hanya nilai akhirnya yang dipakai; step `from` serta `repeat`/`yoyo` pada step exit tidak dibawa. Jalur kembali ke state tampil juga berbeda dari perilaku lama (transition terbalik, bukan enter diputar ulang). Detail di `CHANGELOG.md`.
 
 ### Browser Source dimension tidak auto-sync ke Canvas Settings scene
 `scene.canvas.width/height` cuma ngatur ukuran artboard di dalam overlay — tidak otomatis mengubah ukuran window Browser Source di OBS/TikTok Studio. User harus set manual dimensi Browser Source (Properties) supaya sesuai scene (misal 1080×1920 untuk portrait). Untuk sekarang diakali manual. Kemungkinan penyebab teknis: `scaleViewport()`/CSS transform overlay belum proper handle aspect ratio non-landscape — belum diverifikasi.

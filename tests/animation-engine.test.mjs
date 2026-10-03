@@ -312,20 +312,91 @@ section('12. 3D Transforms (rotationX, rotationY, perspective baseline & animati
 });
 
 // ============================================================
-section('13. Exit sequence untuk visibility binding', () => {
+section('13. State target, relative enter, dan transition', () => {
   const cfg = AnimationEngine.normalizeAnimationConfig({
-    loop: true,
-    sequence: [{ id: 'enter', type: 'from', properties: { opacity: 0 }, duration: 0.4 }],
-    exitSequence: [{ id: 'exit', type: 'to', properties: { opacity: 0 }, duration: 0.3, repeat: -1 }],
+    enter: {
+      sequence: [{ id: 'q0', type: 'from', properties: { x: 0, y: 50, opacity: 0 }, duration: 0.5 }],
+      loop: false,
+    },
+    transition: {
+      sequence: [{ id: 't0', type: 'to', properties: ['x', 'y', 'opacity'], duration: 0.4 }],
+    },
   });
-  check('exitSequence dinormalisasi terpisah dari sequence', cfg.exitSequence.length === 1 && cfg.sequence.length === 1);
-  check('exitSequence infinite repeat dipaksa finite', cfg.exitSequence[0].repeat === 0);
-  const tl = AnimationEngine.buildTimelineFromSequence('exit-el', box, {
-    sequence: cfg.exitSequence,
-    loop: false,
+  const el = { x: 100, y: 200, opacity: 1, scale: 1, rotation: 0 };
+  const target = { x: 400, y: 300, opacity: 0.5, scale: 1, rotation: 0 };
+  AnimationEngine.setStateBaseline(box, el, target);
+  const enter = AnimationEngine.buildEnterTimeline('state-enter-el', box, cfg, el, target);
+  enter.progress(0);
+  check('enter x/y memakai offset relatif terhadap target state', gsap.getProperty(box, 'x') === 300 && gsap.getProperty(box, 'y') === 150);
+  enter.progress(1);
+  check('enter selesai di target state', gsap.getProperty(box, 'x') === 300 && gsap.getProperty(box, 'y') === 100 && gsap.getProperty(box, 'opacity') === 0.5);
+  const transition = AnimationEngine.buildTransitionTimeline('state-transition-el', box, cfg, el, target);
+  transition.progress(1);
+  check('transition resolve target x/y absolut ke transform relatif baseline', gsap.getProperty(box, 'x') === 300 && gsap.getProperty(box, 'y') === 100);
+  check('transition resolve opacity target state', gsap.getProperty(box, 'opacity') === 0.5);
+  AnimationEngine.killTimeline('state-enter-el');
+  AnimationEngine.killTimeline('state-transition-el');
+});
+
+// ============================================================
+section('14. Arah transition diatur per state target (_direction)', () => {
+  // Sequence yang SAMA dipakai ke dua state: T0 menganimasikan x, T1 menganimasikan y.
+  const cfg = AnimationEngine.normalizeAnimationConfig({
+    transition: {
+      sequence: [
+        { id: 't0', type: 'to', properties: ['x'], duration: 1, ease: 'none' },
+        { id: 't1', type: 'to', properties: ['y'], duration: 1, ease: 'none' },
+      ],
+    },
   });
-  check('exit timeline tidak looping', tl.repeat() === 0 && Math.abs(tl.duration() - 0.3) < 0.01);
-  AnimationEngine.killTimeline('exit-el');
+  const el = { x: 0, y: 0, opacity: 1, scale: 1, rotation: 0 };
+  const origin = { x: 0, y: 0, opacity: 1 };
+  const run = (id, target, progress) => {
+    AnimationEngine.setStateBaseline(box, el, origin);
+    const tl = AnimationEngine.buildTransitionTimeline(id, box, cfg, el, target);
+    tl.progress(progress);
+    const snap = { x: gsap.getProperty(box, 'x'), y: gsap.getProperty(box, 'y') };
+    AnimationEngine.killTimeline(id);
+    return snap;
+  };
+
+  check('config transition tidak lagi punya direction global', !('direction' in cfg.transition));
+
+  // State "forward": T0 (x) jalan dulu, y belum bergerak
+  const fwd = run('dir-fwd', { x: 100, y: 200, opacity: 1, _direction: 'forward' }, 0.25);
+  check('forward: T0 (x) berjalan lebih dulu', fwd.x > 0 && fwd.y === 0);
+
+  // State "reverse": T1 (y) jalan dulu, x belum bergerak
+  const rev = run('dir-rev', { x: 100, y: 200, opacity: 1, _direction: 'reverse' }, 0.25);
+  check('reverse: T1 (y) berjalan lebih dulu', rev.y > 0 && rev.x === 0);
+
+  // Tanpa _direction -> forward (default)
+  const none = run('dir-none', { x: 100, y: 200, opacity: 1 }, 0.25);
+  check('tanpa _direction -> forward', none.x > 0 && none.y === 0);
+
+  // Dua state berbeda dengan sequence yang sama, arah independen (A->B forward, B->A reverse)
+  const toB = run('dir-a2b', { x: 100, y: 200, opacity: 1, _direction: 'forward' }, 0.25);
+  const toA = run('dir-b2a', { x: 100, y: 200, opacity: 1, _direction: 'reverse' }, 0.25);
+  check('A->B (forward) dan B->A (reverse) memakai arah masing-masing',
+    toB.x > 0 && toB.y === 0 && toA.y > 0 && toA.x === 0);
+
+  // Akhir animasi tetap sampai ke target di kedua arah
+  const endRev = run('dir-end', { x: 100, y: 200, opacity: 1, _direction: 'reverse' }, 1);
+  check('reverse tetap berakhir di target state', endRev.x === 100 && endRev.y === 200);
+
+  // Delay ikut terbalik: [T0 x, delay 1s, T1 y] -> reverse = [T1 y, delay, T0 x]
+  const cfgDelay = AnimationEngine.normalizeAnimationConfig({
+    transition: { sequence: [
+      { id: 'a', type: 'to', properties: ['x'], duration: 1, ease: 'none' },
+      { type: 'delay', duration: 1 },
+      { id: 'b', type: 'to', properties: ['y'], duration: 1, ease: 'none' },
+    ] },
+  });
+  AnimationEngine.setStateBaseline(box, el, origin);
+  const tlD = AnimationEngine.buildTransitionTimeline('dir-delay', box, cfgDelay, el, { x: 100, y: 200, opacity: 1, _direction: 'reverse' });
+  tlD.progress(1 / 3 / 2); // 1/6 durasi total (3s) = 0.5s -> di tengah step pertama
+  check('reverse dengan delay: step terakhir (y) jalan paling awal', gsap.getProperty(box, 'y') > 0 && gsap.getProperty(box, 'x') === 0);
+  AnimationEngine.killTimeline('dir-delay');
 });
 
 // ============================================================

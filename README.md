@@ -10,6 +10,17 @@ Prinsip utama: **WYSIWYG — What You See Is What You Stream**. Apa yang disusun
 
 ---
 
+## Screenshots
+
+### Editor
+![Editor overview](docs/screenshots/editor-overview.png)
+
+### State Binding
+![State Binding inspector](docs/screenshots/editor-state-binding.png)
+
+### Control Panel
+![Control Panel](docs/screenshots/control-panel.png)
+
 ## ✨ Fitur Utama
 
 - 🎨 **Canvas Editor Visual**: Drag & drop elemen langsung di kanvas — bukan lagi form statis. Mirip artboard di Illustrator/Figma, lengkap dengan panel Layers.

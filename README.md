@@ -119,7 +119,8 @@ Perubahan tersimpan otomatis / lewat tombol Save, dan langsung ter-refresh di ov
 | `bun run build` | Mengompilasi Tailwind CSS (`src/styles/input.css` ke `public/styles.css`) |
 | `bun run build:css` | Mengompilasi `src/styles/input.css` ke `public/styles.css` secara langsung |
 | `bun start` | Menjalankan server dalam mode produksi |
-| `bun run test` | Menjalankan regression test Animation Sequence Engine dan Control State |
+| `bun run test` | Menjalankan seluruh regression test: Animation Engine, Control State, migrasi scene lama, dan integrasi overlay. Test integrasi overlay memakai `node --test` (jsdom belum kompatibel dengan runner Bun), jadi **Node.js 20+** perlu terpasang |
+| `bun run test:overlay` | Hanya test integrasi overlay (state binding, visibilitas per state, arah transition) |
 
 ---
 
@@ -190,9 +191,13 @@ LiveOverlay/
 │   └── styles.css            # Compiled Tailwind CSS
 ├── src/
 │   ├── index.ts              # ElysiaJS Backend Server & API Routes
+│   ├── scene-migration.ts    # Migrasi otomatis scene lama (visibilityBinding / exitSequence / animation.sequence)
 │   └── styles/input.css      # Tailwind CSS entry directive
 ├── tests/
-│   └── animation-engine.test.mjs  # Regression test untuk Animation Sequence Engine
+│   ├── animation-engine.test.mjs  # Regression test untuk Animation Sequence Engine
+│   ├── control-state.test.mjs     # Test Control Panel state (counter, timer, persistence)
+│   ├── overlay-state.test.mjs     # Test integrasi overlay.html di jsdom (jalan via Node)
+│   └── scene-migration.test.mjs   # Test migrasi scene lama ke model State Binding
 ├── scenes.example.json       # Template data scene
 ├── settings.example.json     # Template konfigurasi platform live stats
 ├── live-stats.example.json   # Template cache data live stats

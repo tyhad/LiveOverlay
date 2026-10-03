@@ -6,6 +6,7 @@ import { basename } from 'node:path'
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector'
 import { Database } from 'bun:sqlite'
 import { ControlStateStore, validateControlName, type ControlStateData } from './control-state'
+import { migrateLegacyElement } from './scene-migration'
 
 const SETTINGS_FILE = 'settings.json'
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
@@ -306,6 +307,9 @@ interface SceneElement {
   animation?: AnimationConfig
   textBinding?: TextBinding
   stateBinding?: StateBinding
+  /** @deprecated Skema lama. Dimigrasi otomatis ke stateBinding/stateTargets saat scene dimuat; hanya tersisa
+   *  kalau comparator-nya tidak bisa dipetakan ke state diskret (gt/gte/lt/lte/neq) — dipertahankan agar data tidak hilang. */
+  visibilityBinding?: Record<string, unknown>
   stateTargets?: Record<string, StateTarget>
   /** Urutan tampil state di editor (hanya kosmetik; key angka di objek selalu terurut naik). */
   stateOrder?: string[]
@@ -885,33 +889,6 @@ function normalizeSceneId(value: string, fallback: string): string {
     .replace(/^-+|-+$/g, '') || fallback
 }
 
-/**
- * Migrasi sekali untuk scene lama: `visibilityBinding` (tampil kalau nilai == matchValue)
- * diubah jadi stateBinding + stateTargets (state cocok -> opacity asli, selain itu -> opacity 0).
- * Hanya comparator 'eq' / eventState yang bisa dipetakan 1:1 ke state diskret; comparator
- * lain (gt/lt/dst) dibiarkan apa adanya & diberi warning. Scene yang sudah punya stateBinding dilewati.
- */
-function migrateLegacyVisibilityBinding(el: SceneElement): SceneElement {
-  const legacy = (el as any)?.visibilityBinding
-  if (!legacy) return el
-  const { visibilityBinding: _drop, ...rest } = el as any
-  if (rest.stateBinding?.enabled) return rest
-  const group = legacy.group ?? legacy.name
-  const matchValue = legacy.matchValue ?? legacy.value
-  const comparator = legacy.source === 'counter' ? (legacy.comparator || 'eq') : 'eq'
-  if (!legacy.enabled || !group || matchValue === undefined || matchValue === '') return rest
-  if (comparator !== 'eq') {
-    console.warn(`[migrate] visibilityBinding comparator "${comparator}" pada elemen ${rest.id} tidak bisa dimigrasi otomatis.`)
-    return rest
-  }
-  const shown = rest.opacity ?? 1
-  return {
-    ...rest,
-    stateBinding: { enabled: true, source: legacy.source, group, fallbackState: 'hidden' },
-    stateTargets: { ...(rest.stateTargets || {}), [String(matchValue)]: { opacity: shown }, hidden: { opacity: 0 } },
-  }
-}
-
 function normalizeScene(scene: Partial<SceneData>, index = 0): SceneData {
   const safeIndex = index >= 0 ? index : 0
   const fallbackId = safeIndex === 0 ? 'default' : `scene-${safeIndex + 1}`
@@ -929,7 +906,7 @@ function normalizeScene(scene: Partial<SceneData>, index = 0): SceneData {
       height: Number(canvas.height) || 1080,
       backgroundColor: canvas.backgroundColor || 'transparent',
     },
-    elements: (elements as SceneElement[]).map(migrateLegacyVisibilityBinding),
+    elements: (elements as SceneElement[]).map(migrateLegacyElement),
   }
 }
 

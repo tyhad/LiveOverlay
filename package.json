@@ -10,7 +10,8 @@
     "build:css": "tailwindcss -i src/styles/input.css -o public/styles.css --minify",
     "build": "bun run build:css",
     "start": "bun src/index.ts",
-    "test": "bun test tests/animation-engine.test.mjs && bun test tests/control-state.test.mjs"
+    "test": "bun test tests/animation-engine.test.mjs && bun test tests/control-state.test.mjs && bun test tests/scene-migration.test.mjs && node --test tests/overlay-state.test.mjs",
+    "test:overlay": "node --test tests/overlay-state.test.mjs"
   },
   "devDependencies": {
     "@types/bun": "latest",

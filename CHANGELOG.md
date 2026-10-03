@@ -4,6 +4,34 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ---
 
+## [Unreleased] - State Binding & Animation Enter/Transition
+
+Model animasi dipisah antara **target visual per state** dan **timing perpindahan**.
+
+- Elemen punya `stateBinding` (sumber: Event State atau Counter, plus `fallbackState`), `stateTargets` (target visual absolut per state), dan `animation.enter` / `animation.transition`.
+- `animation.enter` dimainkan saat elemen pertama kali muncul; nilai `x`/`y` di sini adalah **offset relatif** terhadap target state. `animation.transition` hanya menyimpan timing/ease dan properti yang ikut bergerak; **nilai tujuannya dibaca dari target state baru**.
+- Tiap target state bisa membawa `_direction` (`forward` / `reverse`) untuk urutan step transition saat masuk ke state itu, dan `_visible: false` supaya elemen benar-benar disembunyikan (`visibility: hidden`) **setelah** transition selesai. Masuk ke state tampil, elemen ditampilkan **sebelum** transition mulai supaya fade-in terlihat.
+- Transition membunuh timeline enter/loop; loop dibangun ulang menuju target state baru (`buildLoopTimeline`, dengan reset baseline lebih dulu supaya `from` tidak beranimasi dari nilai beku).
+- `visibilityBinding` dan `animation.exitSequence` **dihapus** dari model; digantikan state `hidden` + transition.
+
+### Migrasi otomatis scene lama (`src/scene-migration.ts`)
+Dijalankan di `normalizeScene()` setiap scene dibaca/disimpan. Idempoten, tidak mengubah input, dan hasilnya tertulis ke `scenes.json` saat scene berikutnya disimpan.
+
+- `visibilityBinding` (eventState, atau counter dengan comparator `eq`) menjadi `stateBinding` + `stateTargets` (state cocok = opacity asli, `hidden` = opacity 0 + `_visible: false`). Nilai counter dibandingkan sebagai angka (`"05"` menjadi state `"5"`).
+- `animation.exitSequence` menjadi `animation.transition` + target state `hidden`; urutan exit dimainkan **terbalik** saat kembali ke state tampil. Kalau exit tidak menyentuh opacity, ditambahkan step opacity instan supaya elemen bisa muncul lagi.
+- `animation.sequence` / `loop` skema lama menjadi `animation.enter`. Nilai `x`/`y` yang dulu absolut kanvas dikonversi ke offset relatif (`x - el.x`), dan field `delay` per-step dipecah jadi step `delay` tersendiri.
+- **Tidak ada data yang dibuang diam-diam.** `visibilityBinding` dengan comparator `neq` / `gt` / `gte` / `lt` / `lte` tidak bisa dipetakan ke state diskret: datanya (termasuk `exitSequence`-nya) **dipertahankan** di elemen dan diberi warning satu kali di log, tetapi tidak lagi dibaca overlay, jadi elemen itu selalu tampil sampai diatur ulang manual. Binding yang sudah nonaktif dibuang karena memang tidak punya efek.
+
+Keterbatasan migrasi `exitSequence` (diberi warning di log): bila satu properti diubah di beberapa step, hanya nilai akhirnya yang dipakai sebagai target `hidden`; step bertipe `from` dan `repeat`/`yoyo` pada step exit tidak dibawa.
+
+**Perubahan perilaku yang perlu diketahui**: dulu elemen dibuat ulang saat binding kembali true sehingga animasi *enter* diputar lagi. Sekarang enter hanya dimainkan saat elemen pertama muncul, dan kembali ke state tampil memainkan transition (terbalik dari exit).
+
+### Pengujian
+- `tests/animation-engine.test.mjs`: 44 assertion (bertambah: transition, arah per state, loop setelah pindah state).
+- `tests/overlay-state.test.mjs` (baru): 7 tes integrasi `overlay.html` di jsdom — fallback state tak terdaftar, visibilitas per state, arah transition, hidden manual menang, loop lanjut setelah transition.
+- `tests/scene-migration.test.mjs` (baru): 11 tes migrasi.
+- `bun run test` sekarang menjalankan keempat file. `overlay-state` memakai `node --test` karena jsdom gagal di runner Bun (`'addEventListener' called on an object that is not a valid instance of EventTarget`); script `test:overlay` tersedia untuk menjalankannya sendiri.
+
 ## [Unreleased] - UI Refactor & Design System Cleanup
 
 - Menambahkan design tokens berdasarkan referensi desain lokal pribadi untuk warna Studio Canvas, Sage Olive, typography Manrope, dan shadow neumorphic; sumber kebenaran token di repo adalah `public/design.css`.

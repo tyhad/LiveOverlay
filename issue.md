@@ -34,6 +34,10 @@
 
 ## Technical Debt
 
+### Multi-platform chat rollout
+
+- C1-C2 complete: ChatHub/feed API and server-owned notification queue are covered by unit tests. Connector v2, archive, and UI bindings remain to be migrated in subsequent phases.
+
 > ⚠️ **Race condition di `persistSceneStore()`** — dua `Bun.write()` berurutan tanpa lock; kalau dua save scene terjadi nyaris bersamaan berpotensi `scenes.json` sempat inkonsisten. Belum jadi masalah nyata di penggunaan saat ini, tapi diwaspadai kalau pola pemakaian berubah.
 
 > ⚠️ **File `f1gstats.sqlite` bisa ter-lock** oleh proses lain (server LiveOverlay yang masih jalan) saat fetcher F1GStats coba overwrite file itu; di Windows ini gagal keras (`The process cannot access the file`). SOP manual: stop server LiveOverlay dulu sebelum re-run fetcher. Belum perlu jadi item kerja aktif.

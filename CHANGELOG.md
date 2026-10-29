@@ -6,6 +6,11 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased] - State Binding & Animation Enter/Transition
 
+### Multi-platform chat (C1-C2)
+
+- Added a server-owned chat feed with bounded deduplication and monotonic sequence IDs; chat bursts no longer write `live-stats.json` per TikTok message.
+- Added the notification queue state machine (`idle`/`showing`), including a minimum 300 ms gap so state-bound animations can retrigger reliably.
+
 Model animasi dipisah antara **target visual per state** dan **timing perpindahan**.
 
 - Elemen punya `stateBinding` (sumber: Event State atau Counter, plus `fallbackState`), `stateTargets` (target visual absolut per state), dan `animation.enter` / `animation.transition`.

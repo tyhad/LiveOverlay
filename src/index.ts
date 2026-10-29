@@ -7,6 +7,9 @@ import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-co
 import { Database } from 'bun:sqlite'
 import { ControlStateStore, validateControlName, type ControlStateData } from './control-state'
 import { migrateLegacyElement } from './scene-migration'
+import { ChatHub } from './chat-hub'
+import { NotifQueue } from './notif-queue'
+import type { PlatformStatus } from './chat-types'
 
 const SETTINGS_FILE = 'settings.json'
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
@@ -30,6 +33,9 @@ const ASSET_MIME_TYPES = new Map([
   ['image/webp', 'webp'],
   ['image/gif', 'gif'],
 ])
+
+const chatNotifQueue = new NotifQueue()
+const chatHub = new ChatHub({ notif: chatNotifQueue })
 
 interface Settings {
   tiktokUsername: string
@@ -1372,10 +1378,11 @@ async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void>
     isLive: true,
     ...(followerCount !== undefined ? { followerCount } : {}),
     ...(Number.isFinite(likeCount) ? { likeCount } : {}),
-    latestChatAuthor,
-    latestChatMessage,
-    chatMessages: chatMessages.length > 0 ? chatMessages : undefined,
+    ...(chatMessages.length > 0 ? { latestChatAuthor, latestChatMessage } : {}),
   })
+  for (const message of chatMessages) {
+    chatHub.push({ platform: 'youtube', id: message.id, author: message.author, message: message.message, ts: Date.parse(message.receivedAt) || Date.now() })
+  }
 }
 
 function parseCompactNumber(value: unknown): number | undefined {
@@ -1433,10 +1440,7 @@ function startTikTokConnector(rawUsername: string): void {
   conn.on(WebcastEvent.CHAT, async (data: any) => {
     const author = data.user?.nickname || data.user?.uniqueId || 'viewer'
     const message = data.content || ''
-    await saveLiveStats({
-      latestChatAuthor: author,
-      latestChatMessage: message,
-    })
+    chatHub.push({ platform: 'tiktok', id: String(data.msgId || `${author}:${message}:${Math.floor(Date.now() / 1000)}`), author, message })
     platformConnectorStatus.lastSuccessAt = new Date().toISOString()
     platformConnectorStatus.lastError = null
   })
@@ -1616,6 +1620,20 @@ const app = new Elysia()
     timestamp: new Date().toISOString(),
     message: 'LiveOverlay Studio Backend Ready',
   }))
+  .get('/api/chat/feed', ({ query }) => {
+    const is = (platform: PlatformType): PlatformStatus => ({
+      enabled: platformConnectorStatus.enabled && platformConnectorStatus.platform === platform,
+      running: platformConnectorStatus.running && platformConnectorStatus.platform === platform,
+      isLive: platformConnectorStatus.running && platformConnectorStatus.platform === platform,
+      lastError: platformConnectorStatus.platform === platform ? platformConnectorStatus.lastError : null,
+      lastSuccessAt: platformConnectorStatus.platform === platform ? platformConnectorStatus.lastSuccessAt : null,
+    })
+    return { ...chatHub.since(Number(query.since), Number(query.limit)), notif: chatNotifQueue.getSnapshot(), status: { tiktok: is('tiktok'), youtube: is('youtube') } }
+  })
+  .get('/api/chat/status', () => {
+    const is = (platform: PlatformType): PlatformStatus => ({ enabled: platformConnectorStatus.enabled && platformConnectorStatus.platform === platform, running: platformConnectorStatus.running && platformConnectorStatus.platform === platform, isLive: platformConnectorStatus.running && platformConnectorStatus.platform === platform, lastError: platformConnectorStatus.platform === platform ? platformConnectorStatus.lastError : null, lastSuccessAt: platformConnectorStatus.platform === platform ? platformConnectorStatus.lastSuccessAt : null })
+    return { tiktok: is('tiktok'), youtube: is('youtube') }
+  })
   // NOTE: /api/settings is intentionally removed — it was dead code from the
   // pre-scene-system era. Use /api/live-stats and /api/scenes instead.
   .get('/api/platform-connector', async () => {

@@ -10,6 +10,7 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 - Added a server-owned chat feed with bounded deduplication and monotonic sequence IDs; chat bursts no longer write `live-stats.json` per TikTok message.
 - Added the notification queue state machine (`idle`/`showing`), including a minimum 300 ms gap so state-bound animations can retrigger reliably.
+- Added the v1-to-v2 platform-config migration foundation, retaining legacy TikTok/YouTube credentials and notification duration.
 
 Model animasi dipisah antara **target visual per state** dan **timing perpindahan**.
 

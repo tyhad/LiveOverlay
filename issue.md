@@ -36,7 +36,7 @@
 
 ### Multi-platform chat rollout
 
-- C1-C2 complete: ChatHub/feed API and server-owned notification queue are covered by unit tests. C3 config migration is covered; connector v2 lifecycle, archive, and UI bindings remain to be migrated in subsequent phases.
+- C1-C3 complete: ChatHub/feed API, server-owned notification queue, platform config v2 migration (with v1 backup), modular TikTok & YouTube connectors (`src/connectors/`), independent YouTube chat loop (`pollingIntervalMillis`, pagination, quota tracking), per-platform start/stop endpoints, and connector manager are covered by unit tests. C4 (chat archive), C5 (overlay stack & notif binding), C6 (editor & control UI), and C7 (stress test & release) remain for subsequent phases.
 
 > ⚠️ **Race condition di `persistSceneStore()`** — dua `Bun.write()` berurutan tanpa lock; kalau dua save scene terjadi nyaris bersamaan berpotensi `scenes.json` sempat inkonsisten. Belum jadi masalah nyata di penggunaan saat ini, tapi diwaspadai kalau pola pemakaian berubah.
 

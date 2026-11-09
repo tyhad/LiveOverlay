@@ -6,11 +6,16 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased] - State Binding & Animation Enter/Transition
 
-### Multi-platform chat (C1-C2)
+### Multi-platform chat (C1-C3 complete)
 
-- Added a server-owned chat feed with bounded deduplication and monotonic sequence IDs; chat bursts no longer write `live-stats.json` per TikTok message.
+- Added a server-owned chat feed with bounded deduplication and monotonic sequence IDs; chat bursts no longer write `live-stats.json` per TikTok message (in-memory cached and debounced by >= 2s).
 - Added the notification queue state machine (`idle`/`showing`), including a minimum 300 ms gap so state-bound animations can retrigger reliably.
 - Added the v1-to-v2 platform-config migration foundation, retaining legacy TikTok/YouTube credentials and notification duration.
+- Platform config files now migrate on first load: the original is retained as `platform-config.v1.bak.json`, while legacy API clients continue receiving their existing single-platform shape during the UI transition.
+- Refactored TikTok connector into a modular class (`src/connectors/tiktok.ts`) with independent state, reconnection backoff, and direct forwarding to ChatHub.
+- Implemented dedicated YouTube connector (`src/connectors/youtube.ts`) separating chat polling loop from stats poll loop; chat loop continuously obeys `pollingIntervalMillis`, uses pagination (`nextPageToken`), dedupes items, and tracks daily quota units used (`quotaUnitsUsedToday`), with 5-minute backoff on 403 quota errors without crashing.
+- Introduced `ConnectorManager` (`src/connectors/manager.ts`) managing both connectors concurrently. TikTok and YouTube can be enabled simultaneously without conflict.
+- Extended `/api/platform-connector/start` and `/api/platform-connector/stop` to accept optional `{ platform: 'tiktok' | 'youtube' }` for granular per-platform control while maintaining legacy backward-compatible behavior.
 
 Model animasi dipisah antara **target visual per state** dan **timing perpindahan**.
 

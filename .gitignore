@@ -32,6 +32,7 @@ control-state.json
 platform-config.json
 f1-text-templates.json
 public/uploads/
+chat-archive/
 
 # caches
 .eslintcache

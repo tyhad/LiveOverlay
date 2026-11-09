@@ -9,9 +9,10 @@ import { ControlStateStore, validateControlName, type ControlStateData } from '.
 import { migrateLegacyElement } from './scene-migration'
 import { ChatHub } from './chat-hub'
 import { NotifQueue } from './notif-queue'
-import type { PlatformStatus } from './chat-types'
+import type { PlatformStatus, ChatEvent } from './chat-types'
 import { loadPlatformConfigFile, savePlatformConfigFile } from './platform-config-store'
 import type { PlatformConfigV2 } from './platform-config'
+import { ChatArchiveManager } from './chat-archive'
 
 const SETTINGS_FILE = 'settings.json'
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
@@ -37,7 +38,13 @@ const ASSET_MIME_TYPES = new Map([
 ])
 
 const chatNotifQueue = new NotifQueue()
-const chatHub = new ChatHub({ notif: chatNotifQueue })
+const chatArchive = new ChatArchiveManager()
+const chatHub = new ChatHub({
+  notif: chatNotifQueue,
+  onChat: (event: ChatEvent) => {
+    chatArchive.appendChat(event)
+  },
+})
 
 interface Settings {
   tiktokUsername: string
@@ -1249,6 +1256,10 @@ function legacyConnectorStatus(config: PlatformConfigV2): PlatformConnectorStatu
 
 function schedulePlatformConnectors(config: PlatformConfigV2): void {
   chatNotifQueue.configure(config.notif)
+  const anyEnabled = config.tiktok.enabled || config.youtube.enabled
+  if (anyEnabled && config.archive.enabled && !chatArchive.getActiveSessionId()) {
+    void chatArchive.startSession()
+  }
   connectorManager.applyConfig(config)
 }
 
@@ -1283,6 +1294,88 @@ const app = new Elysia()
     return { ...chatHub.since(Number(query.since), Number(query.limit)), notif: chatNotifQueue.getSnapshot(), status: { tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') } }
   })
   .get('/api/chat/status', () => ({ tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') }))
+  // ─── Chat Archive Endpoints ───────────────────────────────────────────────
+  .get('/api/chat/archive', async ({ headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    return { sessions: await chatArchive.listSessions() }
+  })
+  .post('/api/chat/archive/session/end', async ({ headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    const sessionId = chatArchive.getActiveSessionId()
+    if (!sessionId) {
+      set.status = 404
+      return { success: false, message: 'No active archive session' }
+    }
+    await chatArchive.endSession()
+    return { success: true, sessionId }
+  })
+  .get('/api/chat/archive/:id/chats', async ({ params, query, headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    try {
+      const offset = Math.max(0, Number(query.offset) || 0)
+      const limit = Math.max(1, Math.min(500, Number(query.limit) || 50))
+      return await chatArchive.getSessionChats(params.id, offset, limit)
+    } catch (err: any) {
+      set.status = 404
+      return { success: false, message: err.message }
+    }
+  })
+  .get('/api/chat/archive/:id/align', async ({ params, query, headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    const chatSeq = Number(query.chatSeq)
+    const videoTime = String(query.videoTime || '')
+    if (!chatSeq || !videoTime) {
+      set.status = 400
+      return { success: false, message: 'chatSeq and videoTime are required' }
+    }
+    try {
+      return await chatArchive.calculateAlignment(params.id, chatSeq, videoTime)
+    } catch (err: any) {
+      set.status = 404
+      return { success: false, message: err.message }
+    }
+  })
+  .get('/api/chat/archive/:id/export', async ({ params, query, headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    try {
+      const result = await chatArchive.exportSession(params.id, {
+        format: (query.format as any) || 'srt',
+        offset: Number(query.offset) || 0,
+        mode: (query.mode as any) || 'stack',
+        lines: Number(query.lines) || 5,
+        ttl: Number(query.ttl) || 8,
+        tags: query.tags === undefined ? true : Number(query.tags) !== 0,
+      })
+      set.headers = {
+        'Content-Type': result.contentType,
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      }
+      return new Response(result.content, {
+        headers: {
+          'Content-Type': result.contentType,
+          'Content-Disposition': `attachment; filename="${result.filename}"`,
+        },
+      })
+    } catch (err: any) {
+      set.status = 404
+      return { success: false, message: err.message }
+    }
+  })
   // NOTE: /api/settings is intentionally removed — it was dead code from the
   // pre-scene-system era. Use /api/live-stats and /api/scenes instead.
   .get('/api/platform-connector', async () => {
@@ -1802,3 +1895,11 @@ const app = new Elysia()
   })
 
 console.log(`🦊 LiveOverlay Studio running at http://${app.server?.hostname}:${app.server?.port}`)
+
+// Flush chat archive on graceful shutdown so no lines are lost
+const handleShutdown = async () => {
+  await chatArchive.flush()
+  process.exit(0)
+}
+process.once('SIGINT', () => void handleShutdown())
+process.once('SIGTERM', () => void handleShutdown())

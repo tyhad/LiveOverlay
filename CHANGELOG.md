@@ -6,7 +6,24 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased] - State Binding & Animation Enter/Transition
 
-### Multi-platform chat (C1-C3 complete)
+### Multi-platform chat (C1-C4 complete)
+
+#### C4 — Chat Archive & Export
+
+- Implemented `ChatArchiveManager` (`src/chat-archive.ts`): append-only JSONL sessions in `chat-archive/`, one file per session named `YYYYMMDD-HHmmss.jsonl`. Each file opens with a `session` header line and closes with `session_end`.
+- Flush is debounced (≥100 items **or** 1 s) and serialised via a promise chain to prevent concurrent `appendFile` calls from dropping messages during bursts.
+- Tolerant line parser: corrupt or truncated lines (e.g., after a crash) are silently skipped when reading a session; `listSessions()` marks files without a `session_end` line as `interrupted: true`.
+- Archive auto-starts when the first platform connector is enabled (via `schedulePlatformConnectors`) and flushes cleanly on SIGINT/SIGTERM.
+- Export engine: SRT, VTT (HTML-escaped `& < >`), CSV (injection-protected: cells starting with `= + - @` get a `'` prefix), JSON — with **stack** mode (sweep over cue boundaries, min 300 ms cue duration) and **single** mode, configurable `ttl`, `lines`, `offset`, and `tags` filter.
+- Video-sync alignment helper: given a `chatSeq` and a `videoTime` string (`[HH:]MM:SS[.mmm]`), returns `offsetSec` to align archive timestamps to video playback.
+- `chat-archive/` added to `.gitignore`.
+- New API endpoints (all archive GET endpoints guarded by `SETTINGS_SECRET`):
+  - `GET /api/chat/archive` — list sessions with metadata
+  - `POST /api/chat/archive/session/end` — end active session
+  - `GET /api/chat/archive/:id/chats?limit=&offset=` — paginated chat lines
+  - `GET /api/chat/archive/:id/align?chatSeq=&videoTime=` — alignment helper
+  - `GET /api/chat/archive/:id/export?format=&offset=&mode=&lines=&ttl=&tags=` — download file (sets `Content-Disposition`)
+- Acceptance criteria verified by test: 6 000 chats → exactly 6 000 lines in JSONL; SRT export timestamps are strictly ascending with no negative cues.
 
 - Added a server-owned chat feed with bounded deduplication and monotonic sequence IDs; chat bursts no longer write `live-stats.json` per TikTok message (in-memory cached and debounced by >= 2s).
 - Added the notification queue state machine (`idle`/`showing`), including a minimum 300 ms gap so state-bound animations can retrigger reliably.

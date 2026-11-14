@@ -1549,10 +1549,18 @@
       if (!el) return null
       if (editorStatePreview[el.id]) return editorStatePreview[el.id]
       const binding = el?.stateBinding
-      if (!binding?.enabled || !binding.group) return null
-      const raw = binding.source === 'counter'
-        ? controlStateEditor.counters?.[binding.group]?.value
-        : controlStateEditor.eventStates?.[binding.group]?.value
+      if (!binding?.enabled) return null
+      let raw
+      if (binding.source === 'chatNotif') {
+        // Di editor tidak ada feed chat live; default ke idle. Preview manual per
+        // state tetap bisa dipakai untuk melihat state "showing".
+        raw = 'idle'
+      } else {
+        if (!binding.group) return null
+        raw = binding.source === 'counter'
+          ? controlStateEditor.counters?.[binding.group]?.value
+          : controlStateEditor.eventStates?.[binding.group]?.value
+      }
       return String(raw ?? binding.fallbackState ?? 'default')
     }
 

@@ -6,7 +6,7 @@ import { basename } from 'node:path'
 import { ConnectorManager } from './connectors/manager'
 import { Database } from 'bun:sqlite'
 import { ControlStateStore, validateControlName, type ControlStateData } from './control-state'
-import { migrateLegacyElement } from './scene-migration'
+import { migrateLegacyElement, normalizeChatBindings } from './scene-migration'
 import { ChatHub } from './chat-hub'
 import { NotifQueue } from './notif-queue'
 import type { PlatformStatus, ChatEvent } from './chat-types'
@@ -260,6 +260,22 @@ interface ClockTextBinding {
   fallback?: string
 }
 
+/** Chat feed (Fase C5) — teks yang dibind ke buffer chat overlay (stack N baris)
+ *  atau ke snapshot notifikasi server (author + message). Formatter-nya
+ *  `public/chat-format.js`, dipakai bersama editor & overlay. */
+interface ChatTextBinding {
+  enabled?: boolean
+  source: 'chat'
+  field: 'stack' | 'notif'
+  /** Khusus `stack`: jumlah baris terakhir, default 5, rentang 1–30. */
+  lines?: number
+  /** Placeholder: {platformTag}, {platform}, {author}, {message}. */
+  template?: string
+  prefix?: string
+  suffix?: string
+  fallback?: string
+}
+
 /** Control Panel — teks bebas (single/multiline) yang ditulis di /control dan bisa di-bind ke
  *  banyak elemen teks sekaligus lewat nama grup yang sama. `group` = nama grup teks. */
 interface TextControlBinding {
@@ -272,17 +288,20 @@ interface TextControlBinding {
   fallback?: string
 }
 
-type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | CounterTextBinding | EventStateTextBinding | TimerTextBinding | ClockTextBinding
+type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | CounterTextBinding | EventStateTextBinding | TimerTextBinding | ClockTextBinding | ChatTextBinding
 
 /** Infrastruktur Control Panel (fondasi #5/#6) — kontrol visibility elemen berdasarkan
  *  nilai Counter (dibanding dengan `matchValue` pakai `comparator`) atau Event State (elemen
  *  tampil kalau eventState grup tsb bernilai `matchValue`). Terpisah dari `hidden` (manual toggle
  *  di Editor); kalau keduanya ada, `hidden=true` selalu menang (override manual tetap final).
+ *
+ *  `chatNotif` (Fase C5) memakai state machine notifikasi chat milik server:
+ *  `idle` / `showing`. `group` tidak dipakai untuk sumber ini.
  */
 interface StateBinding {
   enabled?: boolean
-  source: 'counter' | 'eventState'
-  group: string
+  source: 'counter' | 'eventState' | 'chatNotif'
+  group?: string
   fallbackState?: string
 }
 
@@ -921,7 +940,7 @@ function normalizeScene(scene: Partial<SceneData>, index = 0): SceneData {
       height: Number(canvas.height) || 1080,
       backgroundColor: canvas.backgroundColor || 'transparent',
     },
-    elements: (elements as SceneElement[]).map(migrateLegacyElement),
+    elements: (elements as SceneElement[]).map(migrateLegacyElement).map(normalizeChatBindings),
   }
 }
 

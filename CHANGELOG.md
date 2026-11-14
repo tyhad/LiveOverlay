@@ -6,7 +6,21 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased] - State Binding & Animation Enter/Transition
 
-### Multi-platform chat (C1-C4 complete)
+### Multi-platform chat (C1-C5 complete)
+
+#### C5 — Overlay: Chat Stack + Notification
+
+- Overlay now polls the server-owned feed (`GET /api/chat/feed?since=&limit=`) every ±500 ms instead of keeping a local chat queue. The local buffer stores the last 50 chats and server sequence IDs keep ordering identical across multiple browser sources (portrait + landscape).
+- New text binding `source: 'chat'`:
+  - `field: 'stack'` renders the last N chats (default 5, clamped 1–30) oldest→newest joined with `\n`, so the newest line is at the bottom. Uses the same multiline render path as `f1data`.
+  - `field: 'notif'` renders the current `NotifSnapshot` as a single `author: message` string (default template `{author}: {message}`).
+  - Custom `template` supports `{platformTag}`, `{platform}`, `{author}`, `{message}`; formatting uses the shared `public/chat-format.js`. Platform tags are read from `chatFormat` in config v2 (`[TT]` / `[YT]` by default).
+- New State Binding source `source: 'chatNotif'` with states `idle` / `showing`; `group` is unused. Animations still use the existing State Binding + Enter/Transition system — no new animation engine.
+- Removed the old overlay-local queue (`chatDisplayQueue`, `tickChatDisplay`, `restartChatDisplayTimer`). Legacy `latestChatAuthor` / `latestChatMessage` bindings still work and now read the latest feed chat (fallback: notification snapshot → live stats).
+- Feed application is coalesced through `requestAnimationFrame` so a 50 chats/second burst produces at most one render per frame, not one render per message.
+- First feed load takes the tail for the stack but suppresses a snapshot that is already `showing`, so reloading OBS/browser source never replays an old notification; the next new chat (`seq` changes) shows normally.
+- Scene normalization now preserves and lightly validates new bindings: `normalizeChatBindings()` in `src/scene-migration.ts` keeps `source: 'chat'` / `'chatNotif'` and clamps stack `lines` to 1–30 instead of dropping unknown sources.
+- Tests added to `tests/overlay-state.test.mjs` (stack order/tags/default + custom template, notif `showing`→`idle`, legacy latest-chat fields, two overlays staying in sync, and reload suppression) and `tests/scene-migration.test.mjs` (chat bindings survive normalization).
 
 #### C4 — Chat Archive & Export
 
@@ -56,8 +70,8 @@ Keterbatasan migrasi `exitSequence` (diberi warning di log): bila satu properti 
 
 ### Pengujian
 - `tests/animation-engine.test.mjs`: 44 assertion (bertambah: transition, arah per state, loop setelah pindah state).
-- `tests/overlay-state.test.mjs` (baru): 7 tes integrasi `overlay.html` di jsdom — fallback state tak terdaftar, visibilitas per state, arah transition, hidden manual menang, loop lanjut setelah transition.
-- `tests/scene-migration.test.mjs` (baru): 11 tes migrasi.
+- `tests/overlay-state.test.mjs` (baru): 13 tes integrasi `overlay.html` di jsdom — fallback state tak terdaftar, visibilitas per state, arah transition, hidden manual menang, loop lanjut setelah transition, stack chat, notif `chatNotif`, field chat lama, dua overlay sinkron, dan reload tanpa notif lama.
+- `tests/scene-migration.test.mjs` (baru): 13 tes migrasi + normalisasi binding chat.
 - `bun run test` sekarang menjalankan keempat file. `overlay-state` memakai `node --test` karena jsdom gagal di runner Bun (`'addEventListener' called on an object that is not a valid instance of EventTarget`); script `test:overlay` tersedia untuk menjalankannya sendiri.
 
 ## [Unreleased] - UI Refactor & Design System Cleanup

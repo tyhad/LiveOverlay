@@ -36,7 +36,7 @@
 
 ### Multi-platform chat rollout
 
-- C1–C4 complete: ChatHub/feed API, server-owned notification queue, platform config v2 migration (with v1 backup), modular TikTok & YouTube connectors (`src/connectors/`), independent YouTube chat loop (`pollingIntervalMillis`, pagination, quota tracking), per-platform start/stop endpoints, connector manager, and **C4 chat archive** (append-only JSONL sessions, flush-safe via promise chain, tolerant parser, export SRT/VTT/CSV/JSON with stack/single mode, alignment helper, 5 new API endpoints) are all covered by unit tests. C5 (overlay stack & notif binding), C6 (editor & control UI), and C7 (stress test & release) remain for subsequent phases.
+- C1–C5 complete: ChatHub/feed API, server-owned notification queue, platform config v2 migration (with v1 backup), modular TikTok & YouTube connectors (`src/connectors/`), independent YouTube chat loop (`pollingIntervalMillis`, pagination, quota tracking), per-platform start/stop endpoints, connector manager, **C4 chat archive** (append-only JSONL sessions, flush-safe via promise chain, tolerant parser, export SRT/VTT/CSV/JSON with stack/single mode, alignment helper, 5 new API endpoints), and **C5 overlay bindings** (server-owned feed polling, local 50-chat stack buffer, `source: 'chat'` stack/notif text bindings, `source: 'chatNotif'` state binding, reload suppression) are all covered by unit tests. C6 (editor & control UI) and C7 (stress test & release) remain for subsequent phases.
 
 > ⚠️ **Race condition di `persistSceneStore()`** — dua `Bun.write()` berurutan tanpa lock; kalau dua save scene terjadi nyaris bersamaan berpotensi `scenes.json` sempat inkonsisten. Belum jadi masalah nyata di penggunaan saat ini, tapi diwaspadai kalau pola pemakaian berubah.
 
@@ -49,9 +49,9 @@
 
 `tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 44 assertion, simulasi browser via `jsdom` + GSAP asli.
 
-`tests/overlay-state.test.mjs` — 7 tes integrasi `overlay.html` utuh di jsdom (fallback state, visibilitas per state, arah transition, hidden manual, loop setelah transition). **Jalan via `node --test`, bukan `bun test`**: jsdom gagal di runner Bun (`EventTarget` tidak valid), jadi `bun run test` memanggil Node untuk file ini (butuh Node.js terpasang). Bisa dijalankan sendiri dengan `bun run test:overlay`.
+`tests/overlay-state.test.mjs` — 13 tes integrasi `overlay.html` utuh di jsdom (fallback state, visibilitas per state, arah transition, hidden manual, loop setelah transition, Chat Stack, Chat Notification `chatNotif`, field chat lama, dua overlay sinkron, dan reload tanpa notif lama). **Jalan via `node --test`, bukan `bun test`**: jsdom gagal di runner Bun (`EventTarget` tidak valid), jadi `bun run test` memanggil Node untuk file ini (butuh Node.js terpasang). Bisa dijalankan sendiri dengan `bun run test:overlay`.
 
-`tests/scene-migration.test.mjs` — 11 tes untuk `src/scene-migration.ts` (migrasi `visibilityBinding`, `exitSequence`, dan `animation.sequence` lama; idempoten; data yang tak bisa dimigrasi tidak dibuang).
+`tests/scene-migration.test.mjs` — 13 tes untuk `src/scene-migration.ts` (migrasi `visibilityBinding`, `exitSequence`, dan `animation.sequence` lama; idempoten; data yang tak bisa dimigrasi tidak dibuang; binding `chat`/`chatNotif` tidak hilang).
 
 `tests/control-state.test.mjs` — 4 tes untuk serialisasi mutasi, nama reserved, timer pause/resume/restart, dan persistence load/save.
 

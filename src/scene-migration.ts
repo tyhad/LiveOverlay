@@ -10,6 +10,7 @@
  *  1. `visibilityBinding` (comparator eq / eventState)  -> `stateBinding` + `stateTargets`.
  *  2. `animation.exitSequence`                          -> `animation.transition` + target state hidden.
  *  3. `animation.{sequence, loop}` (skema lama)         -> `animation.enter` (x/y absolut -> offset).
+ *  4. Binding chat (`source: 'chat'` / `'chatNotif'`)   -> dipertahankan & dinormalisasi (Fase C5).
  */
 
 type AnyRecord = Record<string, any>
@@ -214,6 +215,43 @@ function isLegacyAnimation(animation: unknown): animation is AnyRecord {
     !animation.transition &&
     (Array.isArray(animation.sequence) || Array.isArray(animation.exitSequence))
   )
+}
+
+/**
+ * Fase C5 — normalisasi binding chat TANPA membuang data scene lama/baru.
+ * `textBinding.source === 'chat'` dan `stateBinding.source === 'chatNotif'` bukan
+ * bagian dari migrasi lama, tetapi tetap harus lolos `normalizeScene()`. Helper ini
+ * hanya merapikan nilai yang aman (field & jumlah baris) dan mengembalikan referensi
+ * yang sama kalau elemen tidak memakai binding chat.
+ */
+export function normalizeChatBindings<T>(element: T): T {
+  if (!isRecord(element)) return element
+
+  const text = isRecord(element.textBinding) ? element.textBinding : null
+  const state = isRecord(element.stateBinding) ? element.stateBinding : null
+  if (!text && !state) return element
+
+  let next: AnyRecord = element
+
+  if (text?.source === 'chat') {
+    const field = text.field === 'notif' ? 'notif' : (text.field === 'stack' ? 'stack' : null)
+    if (field) {
+      const normalized: AnyRecord = { ...text, field }
+      if (field === 'stack') {
+        const rawLines = Number(text.lines)
+        normalized.lines = Number.isFinite(rawLines) && rawLines > 0
+          ? Math.min(30, Math.max(1, Math.round(rawLines)))
+          : 5
+      }
+      next = { ...next, textBinding: normalized }
+    }
+  }
+
+  if (state?.source === 'chatNotif') {
+    next = { ...next, stateBinding: { ...state, enabled: state.enabled !== false } }
+  }
+
+  return next as T
 }
 
 /** Migrasikan satu elemen scene. Elemen yang sudah di skema baru dikembalikan apa adanya (referensi sama). */

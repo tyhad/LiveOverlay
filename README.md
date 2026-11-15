@@ -296,12 +296,13 @@ LiveOverlay/
 ├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)
 ├── issue.md                  # Backlog & technical debt aktif (selalu up-to-date)
 ├── CHANGELOG.md              # Riwayat lengkap pengembangan tiap fase
+├── AUDIT.md                  # Hasil audit repo: temuan, prioritas, dan perbaikan yang disarankan
 ├── package.json              # Project dependencies & scripts
 ├── tsconfig.json             # TypeScript configuration
 └── README.md                 # Dokumentasi proyek
 ```
 
-Untuk detail visi produk & arsitektur, lihat [`Vision.md`](./Vision.md). Untuk backlog & status implementasi terkini, lihat [`issue.md`](./issue.md). Untuk riwayat pengembangan lengkap, lihat [`CHANGELOG.md`](./CHANGELOG.md).
+Untuk detail visi produk & arsitektur, lihat [`Vision.md`](./Vision.md). Untuk backlog & status implementasi terkini, lihat [`issue.md`](./issue.md). Untuk riwayat pengembangan lengkap, lihat [`CHANGELOG.md`](./CHANGELOG.md). Untuk hasil audit menyeluruh (temuan bug, risiko, dan prioritas perbaikan), lihat [`AUDIT.md`](./AUDIT.md).
 
 ---
 

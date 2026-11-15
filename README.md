@@ -223,6 +223,8 @@ SETTINGS_SECRET=kunci_rahasia_anda_disini
 
 `HOST=0.0.0.0` membuat server menerima koneksi dari interface jaringan lokal. Buka `http://IP-DEVICE-SERVER:3000` dari perangkat lain. Gunakan `SETTINGS_SECRET` untuk semua request yang mengubah data dengan header `Authorization: Bearer <secret>` atau `X-Secret-Token: <secret>`. Endpoint **GET arsip chat juga dilindungi** karena berisi username penonton.
 
+Upload aset dibatasi 10 MB dan hanya menerima tipe gambar/SVG yang dikenal; file `/uploads/*` disajikan dengan `Content-Security-Policy: sandbox` + `X-Content-Type-Options: nosniff`, dan body request maksimal 12 MB.
+
 Editor dan Control Panel akan meminta secret saat aksi perubahan pertama dilakukan, lalu menyimpannya sementara selama tab browser masih terbuka. File `platform-config.v1.bak.json` (backup migrasi config) dan folder `chat-archive/` diabaikan Git.
 
 > ⚠️ `SETTINGS_SECRET` wajib diatur sebelum server dibuka ke LAN. File `.env` tidak masuk Git. Pengaturan ini ditujukan untuk jaringan lokal tepercaya, bukan internet publik; koneksi LAN ini belum menggunakan TLS.
@@ -236,7 +238,6 @@ Editor dan Control Panel akan meminta secret saat aksi perubahan pertama dilakuk
 - **Binding counter non-`eq`** (`neq`/`gt`/`gte`/`lt`/`lte`) dari scene lama tidak bisa dimigrasi ke State Binding dan perlu diatur ulang manual — lihat [Upgrade dari Versi Lama](#upgrade-dari-versi-lama).
 - **YouTube Data API punya kuota harian.** Isi `videoId` kalau sudah tahu supaya connector tidak perlu mencari lewat `channelId` (pencarian memakai kuota lebih banyak). Sisa/pemakaian kuota hari ini terlihat di panel connector.
 - **Chat archive bisa berisi username penonton.** Jika `SETTINGS_SECRET` aktif, endpoint GET arsip juga meminta secret; jangan membuka `/control` ke jaringan publik.
-- **Race condition minor** di penyimpanan scene (`persistSceneStore`) kalau dua penyimpanan terjadi nyaris bersamaan — belum jadi masalah nyata di pemakaian normal (personal-use, single editor session).
 - File `f1gstats.sqlite` bisa ter-lock oleh proses lain saat fetcher F1GStats jalan bersamaan server LiveOverlay masih aktif (khususnya di Windows) — stop server dulu sebelum re-run fetcher.
 
 Detail & status lengkap ada di [`issue.md`](./issue.md).
@@ -253,6 +254,7 @@ LiveOverlay/
 │   ├── overlay.html          # Transparent OBS Browser Source Overlay (player)
 │   ├── animation-engine.js   # Modul Animation Sequence Engine (dipakai bersama editor & overlay)
 │   ├── chat-format.js        # Formatter template chat bersama editor & overlay
+│   ├── text-binding.js       # Helper teks/warna/timer bersama editor & overlay
 │   ├── design.css            # Design tokens bersama + styling Control Panel
 │   ├── editor.css            # Styling editor utama
 │   ├── styles.css            # Compiled Tailwind CSS (jangan diedit manual)
@@ -271,6 +273,7 @@ LiveOverlay/
 │   │   ├── tiktok.ts
 │   │   └── youtube.ts
 │   ├── control-state.ts      # Penyimpanan & logika state Control Panel
+│   ├── scene-store.ts        # Baca/tulis scene atomik, cache mtime, guard file korup
 │   ├── scene-migration.ts    # Migrasi otomatis scene lama
 │   └── styles/input.css      # Tailwind CSS entry directive
 ├── tests/
@@ -284,6 +287,8 @@ LiveOverlay/
 │   ├── platform-config.test.mjs   # Migrasi config v1 → v2
 │   ├── stress-chat.mjs            # Stress test terintegrasi 6 000 chat
 │   ├── control-state.test.mjs     # Test Control Panel state
+│   ├── scene-store.test.mjs       # Test penyimpanan scene & guard file korup
+│   ├── text-binding.test.mjs      # Test helper teks/timer bersama
 │   ├── overlay-state.test.mjs     # Test integrasi overlay.html di jsdom (via Node)
 │   └── scene-migration.test.mjs   # Test migrasi scene lama
 ├── chat-archive/             # Arsip chat lokal (dibuat otomatis, tidak masuk Git)

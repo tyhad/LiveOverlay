@@ -3,13 +3,13 @@
 **Tanggal:** 15 November 2026
 **Scope:** seluruh repo (kode server, halaman publik, test, konfigurasi)
 **Versi yang diaudit:** `package.json` v1.2.0, commit `eef387a`
-**Status:** semua temuan masih terbuka — tidak ada kode yang diubah oleh audit ini
+**Status:** seluruh 18 temuan sudah diperbaiki (commit `980e011`); dokumen ini dipertahankan sebagai catatan audit.
 
 Cara verifikasi cepat:
 
 ```bash
-bun run test            # semua test lulus (exit 0)
-bunx tsc --noEmit       # 13 error di src/chat-archive.ts (lihat temuan 18)
+bun run test            # semua test lulus (exit 0, termasuk tsc --noEmit)
+bunx tsc --noEmit       # bersih
 ```
 
 ---

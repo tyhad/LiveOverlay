@@ -320,6 +320,7 @@
   .timer-toggle input { width: 16px; height: 16px; }
 
   /* Chat Archive */
+  .hidden { display: none !important; }
   .archive-panel {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -499,7 +500,7 @@
 
   <!-- Panel arsip sengaja DI LUAR #app: render() control-state berjalan tiap detik
        dan tidak boleh menghapus form/daftar sesi yang sedang dipakai. -->
-  <section id="chat-archive-panel" class="archive-panel">
+  <section id="chat-archive-panel" class="archive-panel hidden">
     <div class="archive-head">
       <div>
         <h2>Chat Archive</h2>
@@ -622,9 +623,10 @@
       const eventStates = new Set()
       const timers = new Set()
       const texts = new Set()
+      let chatNotif = false
       try {
         const res = await fetch('/api/scenes')
-        if (!res.ok) return { counters, eventStates, timers, texts }
+        if (!res.ok) return { counters, eventStates, timers, texts, chatNotif }
         const data = await res.json()
         const scenes = Array.isArray(data.scenes) ? data.scenes : []
         scenes.forEach(scene => {
@@ -637,12 +639,13 @@
             const sb = el.stateBinding
             if (sb?.source === 'counter' && sb.group) counters.add(sb.group)
             if (sb?.source === 'eventState' && sb.group) eventStates.add(sb.group)
+            if (sb?.enabled && sb.source === 'chatNotif') chatNotif = true
           })
         })
       } catch (err) {
         console.error('Failed to scan scenes for control groups:', err)
       }
-      return { counters, eventStates, timers, texts }
+      return { counters, eventStates, timers, texts, chatNotif }
     }
 
     async function syncControlState() {
@@ -1291,6 +1294,16 @@
       }
     }
 
+    let chatArchiveStarted = false
+    function applyChatArchiveVisibility() {
+      const panel = document.getElementById('chat-archive-panel')
+      const visible = usedGroups.chatNotif === true
+      if (panel) panel.classList.toggle('hidden', !visible)
+      if (!visible || chatArchiveStarted) return
+      chatArchiveStarted = true
+      initChatArchive()
+    }
+
     function initChatArchive() {
       document.getElementById('archive-refresh-btn').addEventListener('click', loadArchiveSessions)
       document.getElementById('archive-new-btn').addEventListener('click', startArchiveSession)
@@ -1316,7 +1329,7 @@
       usedGroups = groups
 
       scanned = true
-      initChatArchive()
+      applyChatArchiveVisibility()
       await syncControlState()
       setInterval(syncControlState, POLL_MS)
       // Tick lokal buat display timer yang sedang running, tanpa nunggu poll 1 detik
@@ -1326,6 +1339,7 @@
       // (tanpa perlu reload manual Control Panel) tetap ke-detect.
       setInterval(async () => {
         usedGroups = await scanUsedGroups()
+        applyChatArchiveVisibility()
         render()
       }, 8000)
     }

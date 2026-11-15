@@ -37,6 +37,53 @@ class FakeTikTokConnection {
   }
 }
 
+test('tiktok reconnects after STREAM_END instead of staying idle', async () => {
+  const chats = []
+  let fakeConn = null
+  const connector = new TikTokConnector({
+    onChat: (payload) => chats.push(payload),
+    connectionFactory: (username) => {
+      fakeConn = new FakeTikTokConnection(username)
+      return fakeConn
+    },
+  })
+
+  let reconnects = 0
+  try {
+    connector.start('@mycreator')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    connector.scheduleReconnect = () => { reconnects++ }
+
+    fakeConn.emit(WebcastEvent.STREAM_END)
+    assert.equal(reconnects, 1)
+    assert.equal(connector.getStatus().running, false)
+  } finally {
+    connector.stop()
+  }
+})
+
+test('tiktok memutus koneksi lama saat username dikosongkan', async () => {
+  let fakeConn = null
+  const connector = new TikTokConnector({
+    onChat: () => {},
+    connectionFactory: (username) => {
+      fakeConn = new FakeTikTokConnection(username)
+      return fakeConn
+    },
+  })
+
+  try {
+    connector.start('@mycreator')
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    connector.start('   ')
+    assert.equal(fakeConn.disconnected, true)
+    assert.equal(connector.getStatus().running, false)
+    assert.equal(connector.getStatus().lastError, 'TikTok username is required')
+  } finally {
+    connector.stop()
+  }
+})
+
 test('tiktok connector forwards chat and room stats correctly', async () => {
   const chats = []
   const statsUpdates = []

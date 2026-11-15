@@ -290,7 +290,6 @@ LiveOverlay/
 ├── docs/screenshots/         # Screenshot untuk README
 ├── scenes.example.json       # Template data scene
 ├── control-state.example.json # Template state Control Panel
-├── settings.example.json     # Template konfigurasi platform live stats
 ├── live-stats.example.json   # Template cache data live stats
 ├── f1-text-templates.example.json # Template format teks F1GStats (custom text templates)
 ├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)

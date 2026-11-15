@@ -52,6 +52,8 @@ export class TikTokConnector {
       this.status.running = false
       this.status.isLive = false
       this.status.lastError = 'TikTok username is required'
+      // Jangan biarkan koneksi username lama tetap hidup setelah config dikosongkan.
+      this.stopConnectionOnly()
       return
     }
 
@@ -106,6 +108,9 @@ export class TikTokConnector {
       this.status.running = false
       this.status.isLive = false
       void this.options.onStats?.({ isLive: false })
+      // Stream selesai bukan alasan berhenti mencoba: live berikutnya harus
+      // tersambung tanpa klik Simpan/Start.
+      this.scheduleReconnect()
     })
 
     conn.on(ControlEvent.DISCONNECTED, () => {

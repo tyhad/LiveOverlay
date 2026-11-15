@@ -580,7 +580,9 @@
     <div class="empty-state">Memuat binding dari scene…</div>
   </main>
 
+  <script src="/text-binding.js"></script>
   <script>
+    const { computeTimerDisplayMs, formatTimerMs } = window.TextBinding
     const nativeFetch = window.fetch.bind(window)
     window.fetch = async (input, init = {}) => {
       const response = await nativeFetch(input, init)
@@ -770,30 +772,6 @@
     // di-tick tiap 250ms lokal (setInterval) supaya display mulus di antara poll 1 detik,
     // tanpa perlu polling super cepat ke server.
     let timerTickHandle = null
-
-    function computeTimerElapsedMs(timer) {
-      if (!timer) return 0
-      if (timer.isRunning && typeof timer.startedAtMs === 'number') {
-        return Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
-      }
-      return timer.pausedAccumMs || 0
-    }
-    function computeTimerDisplayMs(timer) {
-      const elapsed = computeTimerElapsedMs(timer)
-      if (timer?.mode === 'countdown') {
-        const remaining = (timer.durationMs || 0) - elapsed
-        if (remaining <= 0 && !timer.continueBelowZero) return 0
-        return remaining
-      }
-      return elapsed
-    }
-    function formatTimerMs(ms) {
-      const sign = ms < 0 ? '-' : ''
-      const abs = Math.abs(Math.round(ms / 1000))
-      const mm = Math.floor(abs / 60).toString().padStart(2, '0')
-      const ss = (abs % 60).toString().padStart(2, '0')
-      return `${sign}${mm}:${ss}`
-    }
 
     /** Parse durasi ketikan manual. Format:
      *   "50"       -> 50 menit (angka polos = menit, kompatibel dengan versi lama)

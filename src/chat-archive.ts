@@ -57,9 +57,9 @@ export function parseVideoTime(str: string): number {
   if (!clean) return 0
   const parts = clean.split(':').map((p) => parseFloat(p))
   if (parts.some((p) => Number.isNaN(p))) return 0
-  if (parts.length === 1) return parts[0]
-  if (parts.length === 2) return parts[0] * 60 + parts[1]
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+  if (parts.length === 1) return parts[0] ?? 0
+  if (parts.length === 2) return (parts[0] ?? 0) * 60 + (parts[1] ?? 0)
+  if (parts.length === 3) return (parts[0] ?? 0) * 3600 + (parts[1] ?? 0) * 60 + (parts[2] ?? 0)
   return 0
 }
 
@@ -84,6 +84,8 @@ export class ChatArchiveManager {
   private flushTimer: ReturnType<typeof setTimeout> | null = null
   private flushPromise: Promise<void> | null = null
   private now: () => number
+  /** Parsed session metadata keyed by file, invalidated by mtime/size. */
+  private sessionMetaCache = new Map<string, { mtimeMs: number; size: number; meta: SessionMeta }>()
 
   constructor(options: { baseDir?: string; now?: () => number } = {}) {
     this.baseDir = options.baseDir || process.env.CHAT_ARCHIVE_DIR || 'chat-archive'
@@ -233,17 +235,23 @@ export class ChatArchiveManager {
       const filePath = join(this.baseDir, f)
       try {
         const fileStat = await stat(filePath)
-        const parsed = await this.readSessionLines(sessionId)
         const isActive = sessionId === this.activeSessionId
-        sessions.push({
+        const cached = this.sessionMetaCache.get(sessionId)
+        if (cached && cached.mtimeMs === fileStat.mtimeMs && cached.size === fileStat.size) {
+          sessions.push({ ...cached.meta, interrupted: !cached.meta.endedAt && !isActive, isActive })
+          continue
+        }
+        const parsed = await this.readSessionLines(sessionId)
+        const meta: SessionMeta = {
           id: sessionId,
           startedAt: parsed.startedAt || new Date(fileStat.birthtimeMs || fileStat.mtimeMs).toISOString(),
           endedAt: parsed.endedAt,
           interrupted: !parsed.endedAt && !isActive,
           chatCount: parsed.chats.length,
           bytes: fileStat.size,
-          isActive,
-        })
+        }
+        this.sessionMetaCache.set(sessionId, { mtimeMs: fileStat.mtimeMs, size: fileStat.size, meta })
+        sessions.push({ ...meta, isActive })
       } catch {
         // Skip corrupted unreadable file
       }
@@ -258,6 +266,11 @@ export class ChatArchiveManager {
     chats: ChatEvent[]
     statuses: any[]
   }> {
+    // `:id` comes straight from the URL and is also used in a filename and a
+    // Content-Disposition header: only accept our own session id format.
+    if (!/^\d{8}-\d{6}$/.test(sessionId)) {
+      throw new Error(`Session ${sessionId} not found`)
+    }
     const filePath = join(this.baseDir, `${sessionId}.jsonl`)
     const file = Bun.file(filePath)
     if (!(await file.exists())) {
@@ -453,18 +466,25 @@ export class ChatArchiveManager {
 
       const sortedTimes = Array.from(timePoints).sort((a, b) => a - b)
 
+      // Same ttl for every chat means entries and exits are both monotonic, so a
+      // single sliding window replaces filtering the whole list per interval.
+      const ordered = timedChats.sort((a, b) => a.tEnter - b.tEnter)
+      let head = 0
+      let tail = 0
+
       for (let i = 0; i < sortedTimes.length - 1; i++) {
-        const tStart = sortedTimes[i]
-        const tEnd = sortedTimes[i + 1]
+        const tStart = sortedTimes[i] ?? 0
+        const tEnd = sortedTimes[i + 1] ?? tStart
         if (tEnd <= tStart) continue
 
-        // Active chats during interval [tStart, tEnd]
-        const active = timedChats.filter(
-          (c) => c.tEnter <= tStart && c.tExit >= tEnd
-        )
-        if (active.length === 0) continue
+        while (tail < ordered.length && (ordered[tail]?.tEnter ?? Infinity) <= tStart) tail++
+        while (head < tail && (ordered[head]?.tExit ?? 0) <= tStart) head++
+        if (head >= tail) continue
 
-        const displayed = active.slice(-lines).map((c) => c.text).join('\n')
+        const displayed = ordered
+          .slice(Math.max(head, tail - lines), tail)
+          .map((c) => c.text)
+          .join('\n')
         rawCues.push({ start: tStart, end: tEnd, text: displayed })
       }
     }

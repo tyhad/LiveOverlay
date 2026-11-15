@@ -95,6 +95,8 @@ export class YouTubeConnector {
       this.status.running = false
       this.status.isLive = false
       this.status.lastError = 'YouTube API key is required'
+      // Timer poll lama tidak boleh lanjut memakai key/config sebelumnya.
+      this.stopTimers()
       return
     }
 
@@ -105,6 +107,7 @@ export class YouTubeConnector {
       this.status.running = false
       this.status.isLive = false
       this.status.lastError = 'Either YouTube Video ID or Channel ID is required'
+      this.stopTimers()
       return
     }
 

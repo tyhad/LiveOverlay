@@ -21,6 +21,7 @@ function bootOverlay() {
   w.eval(fs.readFileSync(path.join(root, 'node_modules/gsap/dist/gsap.min.js'), 'utf8'))
   w.eval(fs.readFileSync(path.join(root, 'public/animation-engine.js'), 'utf8'))
   w.eval(fs.readFileSync(path.join(root, 'public/chat-format.js'), 'utf8'))
+  w.eval(fs.readFileSync(path.join(root, 'public/text-binding.js'), 'utf8'))
   w.setInterval = () => 0
   w.setTimeout = () => 0
   const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n')

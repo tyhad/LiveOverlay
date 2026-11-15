@@ -1,4 +1,4 @@
-import { mkdir, readdir, stat } from 'node:fs/promises'
+import { mkdir, readdir, stat, unlink } from 'node:fs/promises'
 import { appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { ChatEvent, ChatPlatform } from './chat-types'
@@ -123,8 +123,13 @@ export class ChatArchiveManager {
     if (this.activeSessionId) return this.activeSessionId
     await this.ensureDir()
 
-    const date = new Date(this.now())
-    const sessionId = this.formatSessionId(date)
+    // A restart within the same second must not append to the previous file.
+    let date = new Date(this.now())
+    let sessionId = this.formatSessionId(date)
+    while (await Bun.file(join(this.baseDir, `${sessionId}.jsonl`)).exists()) {
+      date = new Date(date.getTime() + 1000)
+      sessionId = this.formatSessionId(date)
+    }
     const startedAt = date.toISOString()
 
     this.activeSessionId = sessionId
@@ -216,6 +221,19 @@ export class ChatArchiveManager {
     this.activeSessionId = null
     this.activeStartedAt = null
     this.activeChatCount = 0
+  }
+
+  /** Delete one finished session file. Returns false when it does not exist. */
+  async deleteSession(sessionId: string): Promise<boolean> {
+    if (!/^\d{8}-\d{6}$/.test(sessionId)) return false
+    if (sessionId === this.activeSessionId) {
+      throw new Error('Cannot delete the active session')
+    }
+    const filePath = join(this.baseDir, `${sessionId}.jsonl`)
+    if (!(await Bun.file(filePath).exists())) return false
+    await unlink(filePath)
+    this.sessionMetaCache.delete(sessionId)
+    return true
   }
 
   async listSessions(): Promise<SessionMeta[]> {

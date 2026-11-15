@@ -106,6 +106,32 @@ test('subtitle formatting helpers and export (SRT, VTT, CSV, JSON)', async () =>
   }
 })
 
+test('session restart never reuses a file, and deleteSession only removes finished sessions', async () => {
+  const clock = 1700000000000
+  const manager = new ChatArchiveManager({ baseDir: testDir, now: () => clock })
+
+  try {
+    const first = await manager.startSession()
+    manager.appendChat({ seq: 1, id: '1', platform: 'tiktok', author: 'A', message: 'hi', ts: clock })
+    await manager.flush()
+    await manager.endSession()
+
+    // Same clock: the new session must bump to the next free second instead of appending.
+    const second = await manager.startSession()
+    assert.notEqual(second, first)
+    await manager.flush()
+    assert.equal((await manager.listSessions()).length, 2)
+
+    await assert.rejects(() => manager.deleteSession(second), /active session/)
+    assert.equal(await manager.deleteSession('../../etc/passwd'), false)
+    assert.equal(await manager.deleteSession(first), true)
+    assert.equal(await manager.deleteSession(first), false)
+    assert.equal((await manager.listSessions()).length, 1)
+  } finally {
+    await rm(testDir, { recursive: true, force: true })
+  }
+})
+
 test('acceptance criteria: 6000 chats flushed without loss, SRT export valid', async () => {
   const baseTs = 1700000000000
   let clock = baseTs

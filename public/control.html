@@ -356,10 +356,12 @@
   .archive-label-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
     margin-bottom: 6px;
   }
   .archive-label {
+    margin-right: auto;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
@@ -510,7 +512,9 @@
 
     <div class="archive-label-row">
       <span class="archive-label">Daftar sesi</span>
+      <button id="archive-new-btn" class="archive-btn primary">Sesi baru</button>
       <button id="archive-end-btn" class="archive-btn danger hidden">End session aktif</button>
+      <button id="archive-delete-btn" class="archive-btn danger" disabled>Hapus sesi</button>
     </div>
     <div id="archive-sessions" class="archive-sessions">
       <div class="archive-status">Memuat…</div>
@@ -992,7 +996,7 @@
     }
 
     // ─── Chat Archive panel ─────────────────────────────────────────────────
-    const archiveState = { sessions: [], selectedId: null, activeId: null }
+    const archiveState = { sessions: [], selectedId: null, activeId: null, followActive: true, deferredActiveId: null }
     let archiveChats = []
 
     function formatBytes(bytes) {
@@ -1019,6 +1023,12 @@
 
       const endBtn = document.getElementById('archive-end-btn')
       if (endBtn) endBtn.classList.toggle('hidden', !active)
+
+      const deleteBtn = document.getElementById('archive-delete-btn')
+      if (deleteBtn) {
+        const selected = archiveSelectedSession()
+        deleteBtn.disabled = !selected || Boolean(selected.isActive)
+      }
 
       const label = document.getElementById('archive-selected-label')
       if (label) label.textContent = archiveState.selectedId || '—'
@@ -1061,6 +1071,7 @@
         const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/chats?limit=500&offset=0`)
         if (!res.ok) throw new Error('gagal memuat chat')
         const data = await res.json()
+        const previousValue = select.value
         archiveChats = Array.isArray(data.chats) ? data.chats : []
         select.innerHTML = archiveChats.length === 0
           ? '<option value="">Sesi ini belum punya chat</option>'
@@ -1069,6 +1080,10 @@
               const platform = String(chat.platform || '').toUpperCase()
               return `<option value="${chat.seq}">#${chat.seq} [${esc(platform)}] ${esc(text)}</option>`
             }).join('')
+        // Keep the chat the user picked while new chats arrive every refresh.
+        if (previousValue && archiveChats.some(chat => String(chat.seq) === previousValue)) {
+          select.value = previousValue
+        }
         const status = document.getElementById('archive-align-status')
         if (status && Number(data.total) > archiveChats.length) {
           status.textContent = `Menampilkan ${archiveChats.length} dari ${data.total} chat pertama.`
@@ -1080,6 +1095,8 @@
 
     async function selectArchiveSession(id) {
       archiveState.selectedId = id || null
+      archiveState.deferredActiveId = null
+      archiveState.followActive = Boolean(archiveState.sessions.find(s => s.id === id)?.isActive)
       renderArchiveSessions()
       const preview = document.getElementById('archive-preview')
       if (preview) preview.textContent = 'Pilih sesi lalu klik “Preview 3 cue”.'
@@ -1098,14 +1115,30 @@
         const data = await res.json()
         archiveState.sessions = Array.isArray(data.sessions) ? data.sessions : []
         const active = archiveState.sessions.find(s => s.isActive)
-        const stillExists = archiveState.sessions.some(s => s.id === archiveState.selectedId)
-        const nextSelected = stillExists
-          ? archiveState.selectedId
-          : (active ? active.id : (archiveState.sessions[0]?.id || null))
-        const selectionChanged = nextSelected !== archiveState.selectedId
-        archiveState.selectedId = nextSelected
+        const previousActiveId = archiveState.activeId
+
+        // Follow the active session, but keep the previous one selected for one
+        // refresh cycle so chats archived right before the rollover are shown first.
+        if (archiveState.deferredActiveId) {
+          archiveState.selectedId = archiveState.deferredActiveId
+          archiveState.deferredActiveId = null
+        } else if (archiveState.followActive && active) {
+          const rolledOver = previousActiveId && previousActiveId !== active.id
+          if (rolledOver && archiveState.selectedId === previousActiveId) {
+            archiveState.deferredActiveId = active.id
+          } else {
+            archiveState.selectedId = active.id
+          }
+        }
+        if (!archiveState.sessions.some(s => s.id === archiveState.selectedId)) {
+          archiveState.selectedId = active ? active.id : (archiveState.sessions[0]?.id || null)
+          archiveState.deferredActiveId = null
+        }
+
         renderArchiveSessions()
-        if (selectionChanged) await loadArchiveChats()
+        // Refresh the chat list too: chats archived since the last poll must show
+        // before the panel moves on to a newer session.
+        await loadArchiveChats()
       } catch (err) {
         if (container) container.innerHTML = `<div class="archive-status">Gagal memuat arsip: ${esc(err.message)}</div>`
       }
@@ -1203,6 +1236,40 @@
       }
     }
 
+    async function startArchiveSession() {
+      const active = archiveState.sessions.find(s => s.isActive)
+      const question = active
+        ? `Mulai sesi baru? Sesi aktif ${active.id} akan ditutup.`
+        : 'Mulai sesi arsip baru?'
+      if (!window.confirm(question)) return
+      try {
+        const res = await fetch('/api/chat/archive/session/start', { method: 'POST' })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        archiveState.selectedId = data.sessionId || null
+        archiveState.followActive = true
+        archiveState.deferredActiveId = null
+        await loadArchiveSessions()
+      } catch (err) {
+        alert(`Gagal memulai sesi: ${err.message}`)
+      }
+    }
+
+    async function deleteArchiveSession() {
+      const session = archiveSelectedSession()
+      if (!session || session.isActive) return
+      if (!window.confirm(`Hapus sesi ${session.id}? Chat di dalamnya akan hilang permanen.`)) return
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}`, { method: 'DELETE' })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        archiveState.selectedId = null
+        await loadArchiveSessions()
+      } catch (err) {
+        alert(`Gagal menghapus sesi: ${err.message}`)
+      }
+    }
+
     async function alignArchive() {
       const session = archiveSelectedSession()
       const status = document.getElementById('archive-align-status')
@@ -1226,7 +1293,9 @@
 
     function initChatArchive() {
       document.getElementById('archive-refresh-btn').addEventListener('click', loadArchiveSessions)
+      document.getElementById('archive-new-btn').addEventListener('click', startArchiveSession)
       document.getElementById('archive-end-btn').addEventListener('click', endArchiveSession)
+      document.getElementById('archive-delete-btn').addEventListener('click', deleteArchiveSession)
       document.getElementById('archive-preview-btn').addEventListener('click', previewArchive)
       document.getElementById('archive-download-btn').addEventListener('click', downloadArchive)
       document.getElementById('archive-align-btn').addEventListener('click', alignArchive)

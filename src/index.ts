@@ -854,6 +854,23 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
     await chatArchive.endSession()
     return { success: true, sessionId }
   })
+  .post('/api/chat/archive/session/start', async () => {
+    if (chatArchive.getActiveSessionId()) await chatArchive.endSession()
+    const sessionId = await chatArchive.startSession()
+    return { success: true, sessionId }
+  })
+  .delete('/api/chat/archive/:id', async ({ params, set }) => {
+    if (params.id === chatArchive.getActiveSessionId()) {
+      set.status = 400
+      return { success: false, message: 'Cannot delete the active session' }
+    }
+    const deleted = await chatArchive.deleteSession(params.id)
+    if (!deleted) {
+      set.status = 404
+      return { success: false, message: 'Session not found' }
+    }
+    return { success: true, sessionId: params.id }
+  })
   .get('/api/chat/archive/:id/chats', async ({ params, query, headers, set }) => {
     if (SETTINGS_SECRET) {
       const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')

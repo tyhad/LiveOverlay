@@ -39,10 +39,13 @@ const ASSET_MIME_TYPES = new Map([
 
 const chatNotifQueue = new NotifQueue()
 const chatArchive = new ChatArchiveManager()
+// Di-set dari config v2 sebelum connector mulai. Saat false, chat tetap tampil
+// di overlay tetapi tidak ditulis ke chat-archive/.
+let chatArchiveEnabled = false
 const chatHub = new ChatHub({
   notif: chatNotifQueue,
   onChat: (event: ChatEvent) => {
-    chatArchive.appendChat(event)
+    if (chatArchiveEnabled) chatArchive.appendChat(event)
   },
 })
 
@@ -1276,7 +1279,13 @@ function legacyConnectorStatus(config: PlatformConfigV2): PlatformConnectorStatu
 function schedulePlatformConnectors(config: PlatformConfigV2): void {
   chatNotifQueue.configure(config.notif)
   const anyEnabled = config.tiktok.enabled || config.youtube.enabled
-  if (anyEnabled && config.archive.enabled && !chatArchive.getActiveSessionId()) {
+  chatArchiveEnabled = Boolean(config.archive.enabled)
+  // D4: sesi arsip hidup selama minimal satu connector aktif dan arsip tidak
+  // dimatikan lewat toggle editor. Stop Semua / archive off menutup sesi aktif
+  // supaya daftar sesi di /control menandainya selesai.
+  if (!chatArchiveEnabled || !anyEnabled) {
+    if (chatArchive.getActiveSessionId()) void chatArchive.endSession()
+  } else if (!chatArchive.getActiveSessionId()) {
     void chatArchive.startSession()
   }
   connectorManager.applyConfig(config)
@@ -1313,6 +1322,39 @@ const app = new Elysia()
     return { ...chatHub.since(Number(query.since), Number(query.limit)), notif: chatNotifQueue.getSnapshot(), status: { tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') } }
   })
   .get('/api/chat/status', () => ({ tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') }))
+  // Dev-only helper for manual C6 acceptance: inject a synthetic chat into the
+  // same hub/notification/archive pipeline the real connectors use.
+  .post(
+    '/api/chat/dev-inject',
+    ({ body, set }) => {
+      if (process.env.NODE_ENV === 'production' && process.env.CHAT_DEV_INJECT !== '1') {
+        set.status = 404
+        return { success: false, message: 'Not found' }
+      }
+
+      const platform = body.platform === 'youtube' ? 'youtube' : 'tiktok'
+      const message = String(body.message || '').trim()
+      if (!message) {
+        set.status = 400
+        return { success: false, message: '"message" is required' }
+      }
+
+      const event = chatHub.push({
+        id: `dev-${Date.now()}-${crypto.randomUUID()}`,
+        platform,
+        author: String(body.author || 'tester').trim() || 'tester',
+        message,
+      })
+      return { success: true, event, notif: chatNotifQueue.getSnapshot() }
+    },
+    {
+      body: t.Object({
+        platform: t.Optional(t.String()),
+        author: t.Optional(t.String()),
+        message: t.String(),
+      }),
+    }
+  )
   // ─── Chat Archive Endpoints ───────────────────────────────────────────────
   .get('/api/chat/archive', async ({ headers, set }) => {
     if (SETTINGS_SECRET) {
@@ -1445,6 +1487,7 @@ const app = new Elysia()
         status: {
           ...legacyConnectorStatus(configV2),
         },
+        statusV2: connectorManager.getStatus(),
         configV2,
       }
     },
@@ -1483,15 +1526,13 @@ const app = new Elysia()
       let configV2: PlatformConfigV2
       if (targetPlatform === 'tiktok') {
         configV2 = await savePlatformConfigFile(PLATFORM_CONFIG_FILE, { tiktok: { enabled: true } })
-        connectorManager.startPlatform('tiktok', configV2)
       } else if (targetPlatform === 'youtube') {
         configV2 = await savePlatformConfigFile(PLATFORM_CONFIG_FILE, { youtube: { enabled: true } })
-        connectorManager.startPlatform('youtube', configV2)
       } else {
         await savePlatformConfig({ enabled: true })
         configV2 = await loadPlatformConfigFile(PLATFORM_CONFIG_FILE)
-        schedulePlatformConnectors(configV2)
       }
+      schedulePlatformConnectors(configV2)
 
       const legacyConfig = toLegacyPlatformConfig(configV2)
       return {
@@ -1525,15 +1566,13 @@ const app = new Elysia()
       let configV2: PlatformConfigV2
       if (targetPlatform === 'tiktok') {
         configV2 = await savePlatformConfigFile(PLATFORM_CONFIG_FILE, { tiktok: { enabled: false } })
-        connectorManager.stopPlatform('tiktok')
       } else if (targetPlatform === 'youtube') {
         configV2 = await savePlatformConfigFile(PLATFORM_CONFIG_FILE, { youtube: { enabled: false } })
-        connectorManager.stopPlatform('youtube')
       } else {
         await savePlatformConfig({ enabled: false })
         configV2 = await loadPlatformConfigFile(PLATFORM_CONFIG_FILE)
-        schedulePlatformConnectors(configV2)
       }
+      schedulePlatformConnectors(configV2)
 
       return {
         success: true,

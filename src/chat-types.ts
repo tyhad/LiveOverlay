@@ -25,5 +25,7 @@ export interface PlatformStatus {
   isLive: boolean
   lastError: string | null
   lastSuccessAt: string | null
+  /** Viewer count reported by this platform's most recent stats event. */
+  viewerCount?: number
   quotaUnitsUsedToday?: number
 }

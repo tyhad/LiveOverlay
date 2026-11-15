@@ -96,6 +96,7 @@ export class TikTokConnector {
     conn.on(WebcastEvent.ROOM_USER, (data: any) => {
       const viewerCount = Number(data.total)
       if (Number.isFinite(viewerCount)) {
+        this.status.viewerCount = viewerCount
         void this.options.onStats?.({ viewerCount })
       }
     })
@@ -133,6 +134,7 @@ export class TikTokConnector {
       const followerCount = owner.follow_info?.follower_count ?? undefined
       const viewerCount = Number.isFinite(roomInfo?.user_count) ? roomInfo.user_count : undefined
       const likeCount = Number.isFinite(roomInfo?.like_count) ? roomInfo.like_count : undefined
+      if (viewerCount !== undefined) this.status.viewerCount = viewerCount
 
       void this.options.onStats?.({
         platform: 'TikTok Live',
@@ -183,6 +185,7 @@ export class TikTokConnector {
     this.status.enabled = false
     this.status.running = false
     this.status.isLive = false
+    this.status.viewerCount = 0
     this.stopConnectionOnly()
     this.backoffAttempt = 0
     this.username = ''

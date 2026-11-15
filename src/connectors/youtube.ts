@@ -136,6 +136,7 @@ export class YouTubeConnector {
     this.status.enabled = false
     this.status.running = false
     this.status.isLive = false
+    this.status.viewerCount = 0
     this.stopTimers()
     this.config = null
     this.chatBackoffAttempt = 0
@@ -253,6 +254,7 @@ export class YouTubeConnector {
           this.pageToken = null
           this.status.running = true
           this.status.isLive = false
+          this.status.viewerCount = 0
           this.status.lastError = `Video ${videoId} is no longer live`
           void this.options.onStats?.({ isLive: false })
         } else {
@@ -276,6 +278,7 @@ export class YouTubeConnector {
 
           this.status.running = true
           this.status.isLive = true
+          this.status.viewerCount = viewerCount
           this.status.lastSuccessAt = new Date(this.now()).toISOString()
           this.status.lastError = null
           this.statsBackoffAttempt = 0

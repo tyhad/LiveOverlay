@@ -740,10 +740,32 @@
         if (JSON.stringify(chatNotif) !== previousSignature) changed = true
       }
 
-      if (payload.status && typeof payload.status === 'object') chatPlatformStatus = payload.status
+      if (payload.status && typeof payload.status === 'object') {
+        const previousStatus = JSON.stringify(chatPlatformStatus)
+        chatPlatformStatus = payload.status
+        if (JSON.stringify(chatPlatformStatus) !== previousStatus) changed = true
+      }
       if (isInitial) chatFeedInitialized = true
       if (changed) scheduleChatRender()
       return changed
+    }
+
+    /** D1: status/viewers per platform, diambil dari status feed (bukan liveStats tunggal). */
+    function getPlatformStatusField(field) {
+      const map = {
+        statusTiktok: ['tiktok', 'isLive'],
+        statusYoutube: ['youtube', 'isLive'],
+        viewerTiktok: ['tiktok', 'viewerCount'],
+        viewerYoutube: ['youtube', 'viewerCount'],
+      }
+      const target = map[field]
+      if (!target) return undefined
+      const status = chatPlatformStatus?.[target[0]]
+      if (target[1] === 'isLive') {
+        if (!status) return ''
+        return status.running && status.isLive ? 'LIVE' : status.enabled ? 'OFFLINE' : 'OFF'
+      }
+      return Number(status?.viewerCount) || 0
     }
 
     function resolveElementText(el) {
@@ -768,6 +790,9 @@
       } else if (binding.source === 'chat') {
         const value = resolveChatText(binding) || fallback
         return `${binding.prefix || ''}${value}${binding.suffix || ''}`
+      } else if (binding.field === 'statusTiktok' || binding.field === 'statusYoutube' ||
+                 binding.field === 'viewerTiktok' || binding.field === 'viewerYoutube') {
+        rawValue = getPlatformStatusField(binding.field)
       } else if (binding.field === 'latestChatAuthor') {
         rawValue = getLatestChat().author
       } else if (binding.field === 'latestChatMessage') {

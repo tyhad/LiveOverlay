@@ -6,7 +6,18 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased] - State Binding & Animation Enter/Transition
 
-### Multi-platform chat (C1-C5 complete)
+### Multi-platform chat (C1-C6 complete)
+
+#### C6 — Editor & /control UI
+
+- Editor connector panel now shows **two independent blocks** (TikTok and YouTube), each with its own enable toggle, fields, status dot/label, and error line. YouTube also shows today's `quotaUnitsUsedToday` and a hint to fill `videoId` to save quota. Saving uses the v2 config shape (`tiktok`, `youtube`, `stats`, `notif`, `chatFormat`, `archive`) instead of the legacy single-platform payload.
+- Added chat notification settings to the editor: `displayMs`, `gapMs` (documented as ≥ 300 ms and ideally ≥ the out-animation duration), `maxQueue`, plus editable TikTok/YouTube platform tags and the archive toggle. "Start Semua"/"Stop Semua" enable/disable both connectors in one click. Turning archive off (or stopping all connectors) now closes the active archive session per D4, and no chats are written while archive is off.
+- Text Binding gained `source: 'chat'` with **Chat Stack** (`field: 'stack'`, `lines`, `template`) and **Chat Notification (Author + Message)** (`field: 'notif'`, `template`). Placeholders `{platformTag}`, `{platform}`, `{author}`, `{message}` use the shared `public/chat-format.js`; the editor polls `/api/chat/feed` every 1.5 s so both bindings preview live.
+- Per D1, the platform dropdown now exposes only **Status/Viewers TikTok** and **Status/Viewers YouTube**. Deprecated fields (`username`, `followers`, `likes`, `latestChat*`, etc.) still render for old scenes and are inserted as a temporary "Lama" option instead of being silently lost. Per-platform status/viewers are read from the chat feed status, and `PlatformStatus` now carries `viewerCount`.
+- State Binding source gained **Chat Notification** (`chatNotif`) with `idle` / `showing` states. The editor hides the unused group name, suggests both state names, and provides a one-click preset (`showing` opacity 1, `idle` opacity 0) so Enter/Transition can be configured immediately. Both states remain manually previewable in the canvas.
+- `/control` got a standalone **Chat Archive** panel outside `#app`: session list with active/interrupted badges, active-session chat count and size, **End session**, export form (format, offset, mode, lines, ttl, tags), and a **samakan dengan chat** helper (pick a chat + video time → server `offsetSec` is written into the offset field). "Preview 3 cue" renders the first three cues/rows before download.
+- Control-page secret handling now also retries archive **GET** requests on 401, not only POST/PUT/PATCH/DELETE, because archive GETs contain viewer usernames.
+- Added dev-only `POST /api/chat/dev-inject` (`NODE_ENV !== 'production'` or `CHAT_DEV_INJECT=1`) accepting `{ platform, author, message }`. It feeds the same ChatHub → NotifQueue → archive pipeline as real connectors, for the C6 manual acceptance test.
 
 #### C5 — Overlay: Chat Stack + Notification
 

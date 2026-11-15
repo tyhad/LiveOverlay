@@ -318,6 +318,174 @@
     color: var(--text-dim);
   }
   .timer-toggle input { width: 16px; height: 16px; }
+
+  /* Chat Archive */
+  .archive-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    max-width: 720px;
+    margin: 0 auto 16px;
+  }
+  .archive-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .archive-head h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .archive-sub { margin: 3px 0 0; font-size: 11px; color: var(--text-dim); }
+  .archive-active {
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  .archive-active b { color: var(--text); }
+  .archive-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .archive-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+  }
+  .archive-sessions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 190px;
+    overflow: auto;
+  }
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .session-item.selected { border-color: var(--indigo-2); box-shadow: 0 0 0 2px rgba(142,152,132,.25); }
+  .session-item small { color: var(--text-dim); font-size: 10px; }
+  .session-item .session-badge {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .session-item .session-badge.active { background: rgba(16,185,129,.18); color: var(--ok); }
+  .session-item .session-badge.interrupted { background: rgba(255,35,87,.16); color: var(--danger); }
+  .archive-details { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px; }
+  .archive-details summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .archive-details summary::-webkit-details-marker { display: none; }
+  .archive-details[open] summary { color: var(--text); margin-bottom: 10px; }
+  .archive-selected { font-size: 10px; color: var(--indigo-2); font-weight: 600; }
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .archive-field label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .archive-field input,
+  .archive-field select {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .archive-field.archive-check { display: flex; align-items: flex-end; }
+  .archive-field.archive-check label { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text); margin: 0 0 7px; }
+  .archive-field.archive-check input { width: 16px; height: 16px; padding: 0; }
+  .archive-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .archive-btn {
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .archive-btn.primary { background: var(--indigo); border-color: var(--indigo-2); }
+  .archive-btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .archive-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .archive-btn:active:not(:disabled) { transform: scale(.97); }
+  .archive-preview {
+    margin: 10px 0 0;
+    min-height: 58px;
+    max-height: 220px;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--text-dim);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 10px;
+  }
+  .archive-align-row { display: flex; gap: 8px; margin-top: 8px; }
+  .archive-align-row input {
+    flex: 1; min-width: 0; padding: 9px 10px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: 12px; font-family: inherit;
+  }
+  .archive-align-row button {
+    padding: 9px 12px; border-radius: 10px; border: none;
+    background: var(--indigo); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer;
+  }
+  .archive-status { margin: 8px 0 0; font-size: 11px; color: var(--text-dim); }
+  @media (max-width: 520px) {
+    .archive-grid { grid-template-columns: 1fr; }
+  }
 </style>
 <link rel="stylesheet" href="/design.css" />
 </head>
@@ -327,6 +495,87 @@
     <div id="status-dot" title="Sinkronisasi control-state"></div>
   </header>
 
+  <!-- Panel arsip sengaja DI LUAR #app: render() control-state berjalan tiap detik
+       dan tidak boleh menghapus form/daftar sesi yang sedang dipakai. -->
+  <section id="chat-archive-panel" class="archive-panel">
+    <div class="archive-head">
+      <div>
+        <h2>Chat Archive</h2>
+        <p class="archive-sub">Rekaman chat per sesi dan export subtitle (SRT/VTT/CSV/JSON).</p>
+      </div>
+      <button id="archive-refresh-btn" class="archive-btn" title="Muat ulang daftar sesi">↻</button>
+    </div>
+
+    <div id="archive-active-summary" class="archive-active">Memuat sesi arsip…</div>
+
+    <div class="archive-label-row">
+      <span class="archive-label">Daftar sesi</span>
+      <button id="archive-end-btn" class="archive-btn danger hidden">End session aktif</button>
+    </div>
+    <div id="archive-sessions" class="archive-sessions">
+      <div class="archive-status">Memuat…</div>
+    </div>
+
+    <details class="archive-details" open>
+      <summary>
+        <span>Export</span>
+        <span id="archive-selected-label" class="archive-selected">—</span>
+      </summary>
+      <div class="archive-grid">
+        <div class="archive-field">
+          <label for="archive-format">Format</label>
+          <select id="archive-format">
+            <option value="srt">SRT</option>
+            <option value="vtt">VTT</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
+        <div class="archive-field">
+          <label for="archive-offset">Offset (detik)</label>
+          <input id="archive-offset" type="number" step="0.1" value="0" />
+        </div>
+        <div class="archive-field">
+          <label for="archive-mode">Mode</label>
+          <select id="archive-mode">
+            <option value="stack">Stack (N baris)</option>
+            <option value="single">Single (1 chat/cue)</option>
+          </select>
+        </div>
+        <div class="archive-field">
+          <label for="archive-lines">Lines</label>
+          <input id="archive-lines" type="number" min="1" max="30" step="1" value="5" />
+        </div>
+        <div class="archive-field">
+          <label for="archive-ttl">TTL per chat (detik)</label>
+          <input id="archive-ttl" type="number" min="1" max="120" step="1" value="8" />
+        </div>
+        <div class="archive-field archive-check">
+          <label><input id="archive-tags" type="checkbox" checked /> Tag [TT] / [YT]</label>
+        </div>
+      </div>
+      <div class="archive-actions">
+        <button id="archive-preview-btn" class="archive-btn">Preview 3 cue</button>
+        <button id="archive-download-btn" class="archive-btn primary">Download</button>
+      </div>
+      <pre id="archive-preview" class="archive-preview">Pilih sesi lalu klik “Preview 3 cue”.</pre>
+    </details>
+
+    <details class="archive-details">
+      <summary>Samakan dengan chat</summary>
+      <div class="archive-field">
+        <label for="archive-align-chat">Chat yang muncul di video</label>
+        <select id="archive-align-chat"></select>
+      </div>
+      <div class="archive-align-row">
+        <input id="archive-align-time" type="text" inputmode="numeric" placeholder="Waktu di video, mis. 12:34" />
+        <button id="archive-align-btn">Hitung offset</button>
+      </div>
+      <p class="archive-status" id="archive-align-status">Offset hasil hitungan otomatis masuk ke kolom Offset di
+        atas.</p>
+    </details>
+  </section>
+
   <main id="app">
     <div class="empty-state">Memuat binding dari scene…</div>
   </main>
@@ -334,16 +583,18 @@
   <script>
     const nativeFetch = window.fetch.bind(window)
     window.fetch = async (input, init = {}) => {
-      const method = (init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase()
       const response = await nativeFetch(input, init)
-      if (response.status !== 401 || method === 'GET' || !String(input).includes('/api/')) return response
+      // Archive GET endpoints are also protected (they contain viewer usernames).
+      if (response.status !== 401 || !String(input).includes('/api/')) return response
 
       const token = sessionStorage.getItem('liveoverlay-secret') || window.prompt('Masukkan secret key LiveOverlay')
       if (!token) return response
       sessionStorage.setItem('liveoverlay-secret', token)
       const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined))
       headers.set('X-Secret-Token', token)
-      return nativeFetch(input, { ...init, headers })
+      const retry = await nativeFetch(input, { ...init, headers })
+      if (retry.status === 401) sessionStorage.removeItem('liveoverlay-secret')
+      return retry
     }
 
     const POLL_MS = 1000
@@ -762,11 +1013,263 @@
       }
     }
 
+    // ─── Chat Archive panel ─────────────────────────────────────────────────
+    const archiveState = { sessions: [], selectedId: null, activeId: null }
+    let archiveChats = []
+
+    function formatBytes(bytes) {
+      const n = Number(bytes) || 0
+      if (n < 1024) return `${n} B`
+      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+      return `${(n / (1024 * 1024)).toFixed(2)} MB`
+    }
+
+    function archiveSelectedSession() {
+      return archiveState.sessions.find(s => s.id === archiveState.selectedId) || null
+    }
+
+    function updateArchiveSessionUI() {
+      const active = archiveState.sessions.find(s => s.isActive) || null
+      archiveState.activeId = active ? active.id : null
+
+      const summary = document.getElementById('archive-active-summary')
+      if (summary) {
+        summary.innerHTML = active
+          ? `Sesi aktif: <b>${esc(active.id)}</b> · ${active.chatCount.toLocaleString()} chat · ${formatBytes(active.bytes)}`
+          : 'Tidak ada sesi aktif. Chat baru akan otomatis membuka sesi berikutnya.'
+      }
+
+      const endBtn = document.getElementById('archive-end-btn')
+      if (endBtn) endBtn.classList.toggle('hidden', !active)
+
+      const label = document.getElementById('archive-selected-label')
+      if (label) label.textContent = archiveState.selectedId || '—'
+    }
+
+    function renderArchiveSessions() {
+      const container = document.getElementById('archive-sessions')
+      if (!container) return
+      if (archiveState.sessions.length === 0) {
+        container.innerHTML = '<div class="archive-status">Belum ada sesi arsip.</div>'
+      } else {
+        container.innerHTML = archiveState.sessions.map(session => {
+          const started = new Date(session.startedAt).toLocaleString()
+          const badge = session.isActive ? 'aktif' : session.interrupted ? 'interrupted' : 'selesai'
+          const badgeClass = session.isActive ? 'active' : session.interrupted ? 'interrupted' : ''
+          return `
+            <button class="session-item ${session.id === archiveState.selectedId ? 'selected' : ''}"
+              data-archive-session="${esc(session.id)}">
+              <span>
+                <b>${esc(session.id)}</b><br/>
+                <small>${esc(started)} · ${session.chatCount.toLocaleString()} chat · ${formatBytes(session.bytes)}</small>
+              </span>
+              <span class="session-badge ${badgeClass}">${badge}</span>
+            </button>`
+        }).join('')
+      }
+      updateArchiveSessionUI()
+    }
+
+    async function loadArchiveChats() {
+      const select = document.getElementById('archive-align-chat')
+      if (!select) return
+      const session = archiveSelectedSession()
+      if (!session) {
+        archiveChats = []
+        select.innerHTML = '<option value="">Pilih sesi dulu</option>'
+        return
+      }
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/chats?limit=500&offset=0`)
+        if (!res.ok) throw new Error('gagal memuat chat')
+        const data = await res.json()
+        archiveChats = Array.isArray(data.chats) ? data.chats : []
+        select.innerHTML = archiveChats.length === 0
+          ? '<option value="">Sesi ini belum punya chat</option>'
+          : archiveChats.map(chat => {
+              const text = `${chat.author}: ${chat.message}`.replace(/\s+/g, ' ').slice(0, 80)
+              const platform = String(chat.platform || '').toUpperCase()
+              return `<option value="${chat.seq}">#${chat.seq} [${esc(platform)}] ${esc(text)}</option>`
+            }).join('')
+        const status = document.getElementById('archive-align-status')
+        if (status && Number(data.total) > archiveChats.length) {
+          status.textContent = `Menampilkan ${archiveChats.length} dari ${data.total} chat pertama.`
+        }
+      } catch (err) {
+        select.innerHTML = '<option value="">Gagal memuat chat</option>'
+      }
+    }
+
+    async function selectArchiveSession(id) {
+      archiveState.selectedId = id || null
+      renderArchiveSessions()
+      const preview = document.getElementById('archive-preview')
+      if (preview) preview.textContent = 'Pilih sesi lalu klik “Preview 3 cue”.'
+      const status = document.getElementById('archive-align-status')
+      if (status) {
+        status.textContent = 'Offset hasil hitungan otomatis masuk ke kolom Offset di atas.'
+      }
+      await loadArchiveChats()
+    }
+
+    async function loadArchiveSessions() {
+      const container = document.getElementById('archive-sessions')
+      try {
+        const res = await fetch('/api/chat/archive')
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        archiveState.sessions = Array.isArray(data.sessions) ? data.sessions : []
+        const active = archiveState.sessions.find(s => s.isActive)
+        const stillExists = archiveState.sessions.some(s => s.id === archiveState.selectedId)
+        const nextSelected = stillExists
+          ? archiveState.selectedId
+          : (active ? active.id : (archiveState.sessions[0]?.id || null))
+        const selectionChanged = nextSelected !== archiveState.selectedId
+        archiveState.selectedId = nextSelected
+        renderArchiveSessions()
+        if (selectionChanged) await loadArchiveChats()
+      } catch (err) {
+        if (container) container.innerHTML = `<div class="archive-status">Gagal memuat arsip: ${esc(err.message)}</div>`
+      }
+    }
+
+    function archiveExportQuery(format) {
+      const params = new URLSearchParams()
+      params.set('format', format)
+      params.set('offset', String(Number(document.getElementById('archive-offset').value) || 0))
+      params.set('mode', document.getElementById('archive-mode').value === 'single' ? 'single' : 'stack')
+      params.set('lines', String(Math.max(1, Math.min(30, parseInt(document.getElementById('archive-lines').value, 10) || 5))))
+      params.set('ttl', String(Math.max(1, Math.min(120, parseInt(document.getElementById('archive-ttl').value, 10) || 8))))
+      params.set('tags', document.getElementById('archive-tags').checked ? '1' : '0')
+      return params
+    }
+
+    function previewCueText(text, format) {
+      if (format === 'json') {
+        try {
+          const data = JSON.parse(text)
+          const chats = Array.isArray(data.chats) ? data.chats : []
+          if (chats.length === 0) return 'Tidak ada chat pada sesi ini.'
+          return chats.slice(0, 3)
+            .map(c => `t=${Number(c.t_rel_sec).toFixed(2)}s [${String(c.platform || '').toUpperCase()}] ${c.author}: ${c.message}`)
+            .join('\n')
+        } catch {
+          return text.slice(0, 600)
+        }
+      }
+      if (format === 'csv') {
+        return text.replace(/\r/g, '').split('\n').slice(0, 4).join('\n') || 'Tidak ada data CSV.'
+      }
+      const blocks = text.replace(/\r/g, '').split(/\n\n+/).map(b => b.trim()).filter(b => b.includes('-->'))
+      if (blocks.length === 0) return 'Tidak ada cue pada rentang/offset ini.'
+      return blocks.slice(0, 3).join('\n\n')
+    }
+
+    async function previewArchive() {
+      const session = archiveSelectedSession()
+      const preview = document.getElementById('archive-preview')
+      if (!session) { if (preview) preview.textContent = 'Pilih sesi dulu.'; return }
+      if (preview) preview.textContent = 'Memuat preview…'
+      const format = document.getElementById('archive-format').value
+      const params = archiveExportQuery(format)
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/export?${params.toString()}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const text = await res.text()
+        if (preview) preview.textContent = previewCueText(text, format)
+      } catch (err) {
+        if (preview) preview.textContent = `Gagal memuat preview: ${err.message}`
+      }
+    }
+
+    async function downloadArchive() {
+      const session = archiveSelectedSession()
+      if (!session) { alert('Pilih sesi dulu.'); return }
+      const format = document.getElementById('archive-format').value
+      const params = archiveExportQuery(format)
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/export?${params.toString()}`)
+        if (!res.ok) {
+          let message = `HTTP ${res.status}`
+          try { message = (await res.json()).message || message } catch {}
+          throw new Error(message)
+        }
+        const blob = await res.blob()
+        const disposition = res.headers.get('content-disposition') || ''
+        const match = /filename="?([^";]+)"?/i.exec(disposition)
+        const filename = match ? match[1] : `chat-${session.id}.${format}`
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      } catch (err) {
+        alert(`Gagal mengunduh: ${err.message}`)
+      }
+    }
+
+    async function endArchiveSession() {
+      const active = archiveState.sessions.find(s => s.isActive)
+      if (!active) return
+      if (!window.confirm(`Akhiri sesi arsip ${active.id}? Chat berikutnya akan membuka sesi baru.`)) return
+      try {
+        const res = await fetch('/api/chat/archive/session/end', { method: 'POST' })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        await loadArchiveSessions()
+      } catch (err) {
+        alert(`Gagal mengakhiri sesi: ${err.message}`)
+      }
+    }
+
+    async function alignArchive() {
+      const session = archiveSelectedSession()
+      const status = document.getElementById('archive-align-status')
+      if (!session) { if (status) status.textContent = 'Pilih sesi dulu.'; return }
+      const chatSeq = Number(document.getElementById('archive-align-chat').value)
+      const videoTime = document.getElementById('archive-align-time').value.trim()
+      if (!chatSeq) { if (status) status.textContent = 'Pilih chat yang muncul di video.'; return }
+      if (!videoTime) { if (status) status.textContent = 'Isi waktu kemunculan di video (mis. 12:34).'; return }
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/align?chatSeq=${encodeURIComponent(chatSeq)}&videoTime=${encodeURIComponent(videoTime)}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        document.getElementById('archive-offset').value = String(data.offsetSec)
+        if (status) {
+          status.textContent = `Offset ${data.offsetSec}s diterapkan. Preview/download berikutnya memakai offset ini.`
+        }
+      } catch (err) {
+        if (status) status.textContent = `Gagal menghitung offset: ${err.message}`
+      }
+    }
+
+    function initChatArchive() {
+      document.getElementById('archive-refresh-btn').addEventListener('click', loadArchiveSessions)
+      document.getElementById('archive-end-btn').addEventListener('click', endArchiveSession)
+      document.getElementById('archive-preview-btn').addEventListener('click', previewArchive)
+      document.getElementById('archive-download-btn').addEventListener('click', downloadArchive)
+      document.getElementById('archive-align-btn').addEventListener('click', alignArchive)
+      document.getElementById('archive-sessions').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-archive-session]')
+        if (btn) selectArchiveSession(btn.dataset.archiveSession)
+      })
+      document.getElementById('archive-format').addEventListener('change', () => {
+        const preview = document.getElementById('archive-preview')
+        if (preview) preview.textContent = 'Klik “Preview 3 cue” untuk melihat hasil format ini.'
+      })
+      loadArchiveSessions()
+      setInterval(loadArchiveSessions, 5000)
+    }
+
     async function init() {
       const groups = await scanUsedGroups()
       usedGroups = groups
 
       scanned = true
+      initChatArchive()
       await syncControlState()
       setInterval(syncControlState, POLL_MS)
       // Tick lokal buat display timer yang sedang running, tanpa nunggu poll 1 detik

@@ -4,9 +4,27 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ---
 
-## [Unreleased] - State Binding & Animation Enter/Transition
+## [Unreleased]
 
-### Multi-platform chat (C1-C6 complete)
+_(Belum ada perubahan setelah v1.2.0.)_
+
+## [1.2.0] - 2026-11-15 - Multi-platform Chat & State Binding
+
+### Multi-platform chat (C1-C7 complete)
+
+#### C7 — Stress test, dokumentasi, rilis
+
+- Added `tests/stress-chat.mjs`, an integrated stress test that drives ChatHub → NotifQueue → ChatArchive with 6 000 chats from both platforms. It simulates 10 minutes of virtual time as 120 bursts of 50 chats/second, and asserts:
+  - all 6 000 chats reach the archive in order with no loss;
+  - the server ring buffer stays bounded at 500;
+  - the notification queue never exceeds `maxQueue` (20);
+  - feed polling (`since`) keeps a reasonable latency (p95 under 50 ms; measured ~0.02 ms locally);
+  - no crash or unhandled failure.
+- Added `bun run test:stress`; the stress test is also part of `bun run test`.
+- Updated `README.md` with multi-platform chat usage: how to bind **Chat Stack** and **Chat Notification**, how to animate notifications with State Binding `chatNotif`, where archives are stored (`chat-archive/YYYYMMDD-HHmmss.jsonl`), how to preview/download SRT/VTT/CSV/JSON from `/control`, and the dev-only `POST /api/chat/dev-inject` flow. Project structure, scripts, LAN/secret notes, and known limitations were refreshed.
+- Updated `Vision.md` §3.3 to record that live chat is exposed through text binding (`chat`) while animated notifications use State Binding `chatNotif` (no separate animation system).
+- Updated `issue.md` to mark C1–C7 complete and document the stress test coverage.
+- Bumped `package.json` to **1.2.0** and added `platform-config.v1.bak.json` to `.gitignore` so migration backups never get committed.
 
 #### C6 — Editor & /control UI
 
@@ -80,12 +98,14 @@ Keterbatasan migrasi `exitSequence` (diberi warning di log): bila satu properti 
 **Perubahan perilaku yang perlu diketahui**: dulu elemen dibuat ulang saat binding kembali true sehingga animasi *enter* diputar lagi. Sekarang enter hanya dimainkan saat elemen pertama muncul, dan kembali ke state tampil memainkan transition (terbalik dari exit).
 
 ### Pengujian
-- `tests/animation-engine.test.mjs`: 44 assertion (bertambah: transition, arah per state, loop setelah pindah state).
-- `tests/overlay-state.test.mjs` (baru): 13 tes integrasi `overlay.html` di jsdom — fallback state tak terdaftar, visibilitas per state, arah transition, hidden manual menang, loop lanjut setelah transition, stack chat, notif `chatNotif`, field chat lama, dua overlay sinkron, dan reload tanpa notif lama.
-- `tests/scene-migration.test.mjs` (baru): 13 tes migrasi + normalisasi binding chat.
-- `bun run test` sekarang menjalankan keempat file. `overlay-state` memakai `node --test` karena jsdom gagal di runner Bun (`'addEventListener' called on an object that is not a valid instance of EventTarget`); script `test:overlay` tersedia untuk menjalankannya sendiri.
+- `tests/animation-engine.test.mjs`: 44 assertion (transition, arah per state, loop setelah pindah state).
+- `tests/overlay-state.test.mjs`: 13 tes integrasi `overlay.html` di jsdom — fallback state, visibilitas per state, arah transition, hidden manual, loop setelah transition, stack chat, notif `chatNotif`, field chat lama, dua overlay sinkron, dan reload tanpa notif lama.
+- `tests/scene-migration.test.mjs`: 13 tes migrasi + normalisasi binding chat.
+- Suite chat: `chat-hub`, `notif-queue`, `platform-config`, `tiktok-connector`, `youtube-connector`, `connector-manager`, dan `chat-archive` (termasuk 6 000 chat tanpa kehilangan).
+- `tests/stress-chat.mjs` (C7): 6 000 chat dari dua platform dalam 10 menit virtual, burst 50 chat/detik; verifikasi arsip lengkap, ring buffer 500, `maxQueue`, dan latensi feed.
+- `bun run test` menjalankan seluruh suite di atas. `overlay-state` memakai `node --test` karena jsdom gagal di runner Bun (`'addEventListener' called on an object that is not a valid instance of EventTarget`); script `test:overlay` dan `test:stress` tersedia untuk menjalankannya sendiri.
 
-## [Unreleased] - UI Refactor & Design System Cleanup
+### UI Refactor & Design System Cleanup
 
 - Menambahkan design tokens berdasarkan referensi desain lokal pribadi untuk warna Studio Canvas, Sage Olive, typography Manrope, dan shadow neumorphic; sumber kebenaran token di repo adalah `public/design.css`.
 - Memisahkan styling editor ke `public/editor.css` dengan scope `.editor-page`.

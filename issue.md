@@ -6,7 +6,7 @@
 
 ## Status Fase
 
-**v1.1.0 — Visi v1.0 tercapai.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
+**v1.2.0 — Visi v1.0 tercapai + chat multi-platform.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
 
 | Fase | Nama | Status |
 |---|---|---|
@@ -19,6 +19,7 @@
 | 9 | Element Binding/Grouping (Parent-Child) | ✅ Selesai |
 | 10 | Text, 3D, Current Time, dan Control Panel | ✅ Selesai |
 | 11 | State Binding & Animation Enter/Transition | ✅ Selesai (termasuk migrasi scene lama) |
+| C1–C7 | Multi-platform Chat (TikTok + YouTube, archive/export, editor & `/control` UI, stress test) | ✅ Selesai (v1.2.0) |
 
 ---
 
@@ -36,7 +37,7 @@
 
 ### Multi-platform chat rollout
 
-- C1–C6 complete: ChatHub/feed API, server-owned notification queue, platform config v2 migration (with v1 backup), modular TikTok & YouTube connectors (`src/connectors/`), independent YouTube chat loop (`pollingIntervalMillis`, pagination, quota tracking), per-platform start/stop endpoints, connector manager, **C4 chat archive** (append-only JSONL sessions, flush-safe via promise chain, tolerant parser, export SRT/VTT/CSV/JSON with stack/single mode, alignment helper, 5 new API endpoints), **C5 overlay bindings** (server-owned feed polling, local 50-chat stack buffer, `source: 'chat'` stack/notif text bindings, `source: 'chatNotif'` state binding, reload suppression), and **C6 editor & /control UI** (dual TikTok/YouTube connector blocks, chat stack/notif binding UI with live editor preview, notification/tag/archive settings, Chat Notification state preset, Chat Archive panel with end-session/export/preview/alignment helper, dev-only `POST /api/chat/dev-inject`). C7 (stress test, README/docs polish, v1.2.0 release) remains.
+- C1–C7 complete (v1.2.0): ChatHub/feed API, server-owned notification queue, platform config v2 migration (with v1 backup), modular TikTok & YouTube connectors (`src/connectors/`), independent YouTube chat loop (`pollingIntervalMillis`, pagination, quota tracking), per-platform start/stop endpoints, connector manager, **C4 chat archive** (append-only JSONL sessions, flush-safe via promise chain, tolerant parser, export SRT/VTT/CSV/JSON with stack/single mode, alignment helper, 5 new API endpoints), **C5 overlay bindings** (server-owned feed polling, local 50-chat stack buffer, `source: 'chat'` stack/notif text bindings, `source: 'chatNotif'` state binding, reload suppression), **C6 editor & /control UI** (dual TikTok/YouTube connector blocks, chat stack/notif binding UI with live editor preview, notification/tag/archive settings, Chat Notification state preset, Chat Archive panel with end-session/export/preview/alignment helper, dev-only `POST /api/chat/dev-inject`), and **C7 stress test & release** (integrated 6 000-chat stress test, README/Vision/CHANGELOG updates, v1.2.0 version bump).
 
 > ⚠️ **Race condition di `persistSceneStore()`** — dua `Bun.write()` berurutan tanpa lock; kalau dua save scene terjadi nyaris bersamaan berpotensi `scenes.json` sempat inkonsisten. Belum jadi masalah nyata di penggunaan saat ini, tapi diwaspadai kalau pola pemakaian berubah.
 
@@ -54,6 +55,8 @@
 `tests/scene-migration.test.mjs` — 13 tes untuk `src/scene-migration.ts` (migrasi `visibilityBinding`, `exitSequence`, dan `animation.sequence` lama; idempoten; data yang tak bisa dimigrasi tidak dibuang; binding `chat`/`chatNotif` tidak hilang).
 
 `tests/control-state.test.mjs` — 4 tes untuk serialisasi mutasi, nama reserved, timer pause/resume/restart, dan persistence load/save.
+
+`tests/stress-chat.mjs` — stress test terintegrasi ChatHub → NotifQueue → ChatArchive: 6 000 chat dari dua platform, 50 chat/detik dalam 120 burst (10 menit virtual). Memastikan arsip lengkap, ring buffer tetap 500, antrean notif tidak melewati `maxQueue`, latensi feed wajar, dan proses tidak crash. Jalan via `bun run test:stress` dan juga termasuk `bun run test`.
 
 **Belum tercakup**: testing UI/DOM penuh dan integrasi browser end-to-end. Detail cakupan di `CHANGELOG.md`.
 

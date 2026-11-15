@@ -36,14 +36,15 @@ Halaman `/control` untuk mengubah Counter, Event State, Timer, dan Text secara l
 - 🎛️ **Panel Properti Lengkap**: Atur transform (posisi, ukuran, rotasi), style (warna, opacity, border, font), dan animasi per elemen langsung dari sidebar.
 - 🌀 **State Binding & Animation Sequence per Elemen**: Bind elemen ke Event State atau Counter, atur target visual absolut per state, lalu gunakan sequence Enter dan Transition untuk mengatur cara perpindahannya. State hidden cukup memakai opacity 0; elemen tidak perlu dihapus dari DOM. Scene lama yang memakai `visibilityBinding`/`exitSequence` dimigrasi otomatis (lihat [Upgrade dari Versi Lama](#upgrade-dari-versi-lama)).
 - 🕹️ **Control Panel (`/control`)**: Halaman kontrol terpisah untuk mengubah **Counter, Event State, Timer, dan Text** secara live. Elemen di overlay bisa di-bind ke kontrol tersebut, dan halamannya bisa dibuka dari perangkat lain lewat LAN (lihat [Akses dari Perangkat Lain di LAN](#akses-dari-perangkat-lain-di-lan)).
-- 🔗 **Text Binding**: Elemen text bisa dibind ke Counter, Event State, Timer, Text Control Panel, jam lokal (Current Time), Platform Live Stats, maupun data F1 — lengkap dengan prefix/suffix dan format.
+- 🔗 **Text Binding**: Elemen text bisa dibind ke Counter, Event State, Timer, Text Control Panel, jam lokal (Current Time), Platform Live Stats, **Chat Stack / Chat Notification**, maupun data F1 — lengkap dengan prefix/suffix dan format.
 - 🧊 **Transform 3D & Shadow**: rotateX/Y/Z dengan perspective, plus drop shadow untuk teks.
 - 👨‍👧 **Parent-Child Grouping**: Elemen child ikut posisi dan animasi parent (1 level nesting).
 - 🔤 **Running Text (Adaptive Marquee)**: Elemen text bisa dibuat berjalan (ticker/marquee) dengan kecepatan konstan, arah, dan gap yang bisa diatur — cocok untuk teks berapapun panjangnya.
 - 🔼 **Scroll Text (Up/Down)**: Varian vertikal dari Running Text — teks scroll ke atas/bawah, mode loop infinite atau yoyo (bolak-balik dengan jeda), cocok untuk credit roll atau reveal teks panjang.
 - 📤 **Asset Management**: Upload SVG, PNG, JPEG, WEBP, atau GIF hasil desain sendiri (misal dari Illustrator), tersimpan di server, dan bisa dipakai berulang di elemen manapun.
 - 🖥️ **Multi-Scene & Multi-Output**: Simpan banyak scene dengan ukuran kanvas (width/height) dan background masing-masing. Beberapa scene bisa dijalankan **bersamaan** di browser source berbeda — misalnya layout portrait untuk TikTok dan landscape untuk YouTube, sekaligus, tanpa saling mengganggu.
-- 📊 **Platform Live Stats (TikTok/YouTube)**: Bind elemen text ke data live real-time — username, display name, viewer count, follower count, like count, hingga chat terbaru — via WebSocket (TikTok) dan Data API v3 (YouTube).
+- 📊 **Platform Live Stats (TikTok/YouTube)**: Bind elemen text ke data live real-time — status live dan viewer count per platform — via WebSocket (TikTok) dan Data API v3 (YouTube). TikTok dan YouTube bisa aktif bersamaan.
+- 💬 **Chat Multi-Platform + Archive**: Chat TikTok dan YouTube digabung ke satu feed server. Tampilkan sebagai **Chat Stack** (N baris terakhir) atau **Chat Notification**, lengkap dengan tag `[TT]`/`[YT]`, template, dan animasi `idle`/`showing`. Setiap sesi otomatis diarsipkan ke `chat-archive/*.jsonl` dan bisa di-export ke SRT/VTT/CSV/JSON dari `/control`.
 - 🏎️ **F1GStats Integration**: Bind elemen text ke data F1 (jadwal sesi & klasemen WDC/WCC) yang dibaca dari database SQLite lokal, hasil prefetch dari project Python terpisah — lihat [bagian F1GStats Integration](#f1gstats-integration) di bawah.
 - 🔄 **Real-Time Auto Sync**: Overlay otomatis mendeteksi perubahan dari editor tanpa perlu refresh OBS Browser Source.
 - 🔒 **Local Binding & Secure**: Server secara default hanya terikat ke `127.0.0.1` (localhost).
@@ -130,7 +131,23 @@ Untuk **State Binding**, setiap nilai Event State (atau angka Counter, misalnya 
 
 State Control Panel disimpan di `control-state.json` (diabaikan Git, template di [`control-state.example.json`](./control-state.example.json)) dan dapat diakses lewat endpoint `/api/control-state/*`.
 
-### 3. Memasang Overlay di OBS Studio
+### 3. Chat Multi-Platform (TikTok + YouTube)
+
+1. Di editor, buka **Platform Connectors**. Aktifkan TikTok dan/atau YouTube, isi username/API key/videoId, lalu klik **Simpan**. Gunakan **Start Semua** / **Stop Semua** untuk mengaktifkan atau mematikan keduanya sekaligus.
+2. **Chat Stack** — pilih elemen text → **Text Binding** → Source **Chat** → field **Chat Stack**. Atur `lines` (1–30) dan template. Baris terbaru selalu di bawah.
+3. **Chat Notification** — Source **Chat** → field **Chat Notification (Author + Message)**. Lalu di **State Binding** pilih source **Chat Notification** dan klik preset `idle` / `showing`. Atur animasi masuk/keluar lewat **Enter** dan **Transition** seperti state binding biasa.
+4. Atur **Tampil** (`displayMs`), **Jeda** (`gapMs`), **Antrean** (`maxQueue`), tag platform, dan **archive toggle** di panel connector. `gapMs` minimal 300 ms dan sebaiknya lebih besar dari durasi animasi keluar supaya state sempat kembali ke `idle`.
+5. **Penyimpanan chat** — chat live dan chat hasil `dev-inject` disimpan ke `chat-archive/YYYYMMDD-HHmmss.jsonl` (satu file per sesi, append-only, diabaikan Git). Sesi dimulai saat connector pertama aktif, ditutup saat semua connector dimatikan atau tombol **End session** ditekan. Kalau archive toggle dimatikan, chat tetap tampil di overlay tetapi tidak ditulis ke arsip.
+6. Buka **[http://localhost:3000/control](http://localhost:3000/control)** → panel **Chat Archive** untuk melihat sesi aktif, mengakhiri sesi, preview 3 cue, dan mengunduh **SRT / VTT / CSV / JSON**. Offset bisa diisi manual atau memakai helper **Samakan dengan chat** (pilih chat yang terlihat di video + waktu kemunculannya).
+7. Untuk tes tanpa live stream, gunakan endpoint dev-only:
+   ```powershell
+   curl.exe -X POST http://localhost:3000/api/chat/dev-inject `
+     -H "Content-Type: application/json" `
+     -d "{\"platform\":\"tiktok\",\"author\":\"tester\",\"message\":\"halo\"}"
+   ```
+   Endpoint ini hanya aktif saat `NODE_ENV !== 'production'` atau `CHAT_DEV_INJECT=1`. Jika `SETTINGS_SECRET` diatur, sertakan header `X-Secret-Token`.
+
+### 4. Memasang Overlay di OBS Studio
 
 1. Buka **OBS Studio**.
 2. Pada panel **Sources**, klik tombol **`+`** lalu pilih **Browser** (Browser Source).
@@ -156,8 +173,9 @@ State Control Panel disimpan di `control-state.json` (diabaikan Git, template di
 | `bun run build` | Mengompilasi Tailwind CSS (`src/styles/input.css` ke `public/styles.css`) |
 | `bun run build:css` | Mengompilasi `src/styles/input.css` ke `public/styles.css` secara langsung |
 | `bun start` | Menjalankan server dalam mode produksi |
-| `bun run test` | Menjalankan seluruh regression test: Animation Engine, Control State, migrasi scene lama, dan integrasi overlay. Test integrasi overlay memakai `node --test` (jsdom belum kompatibel dengan runner Bun), jadi **Node.js 22.22.2+** perlu terpasang |
-| `bun run test:overlay` | Hanya test integrasi overlay (state binding, visibilitas per state, arah transition) |
+| `bun run test` | Menjalankan seluruh regression test: Animation Engine, Control State, migrasi scene lama, chat hub/notif/config/connector/archive, stress test chat, dan integrasi overlay. Test integrasi overlay memakai `node --test` (jsdom belum kompatibel dengan runner Bun), jadi **Node.js 22.22.2+** perlu terpasang |
+| `bun run test:stress` | Stress test terintegrasi: 6 000 chat dari TikTok + YouTube selama 10 menit virtual, burst 50 chat/detik; memeriksa arsip lengkap, ring buffer 500, batas `maxQueue`, dan latensi feed |
+| `bun run test:overlay` | Hanya test integrasi overlay (state binding, visibilitas per state, arah transition, chat stack/notif) |
 
 ---
 
@@ -203,9 +221,9 @@ PORT=3000
 SETTINGS_SECRET=kunci_rahasia_anda_disini
 ```
 
-`HOST=0.0.0.0` membuat server menerima koneksi dari interface jaringan lokal. Buka `http://IP-DEVICE-SERVER:3000` dari perangkat lain. Gunakan `SETTINGS_SECRET` untuk semua request yang mengubah data dengan header `Authorization: Bearer <secret>` atau `X-Secret-Token: <secret>`.
+`HOST=0.0.0.0` membuat server menerima koneksi dari interface jaringan lokal. Buka `http://IP-DEVICE-SERVER:3000` dari perangkat lain. Gunakan `SETTINGS_SECRET` untuk semua request yang mengubah data dengan header `Authorization: Bearer <secret>` atau `X-Secret-Token: <secret>`. Endpoint **GET arsip chat juga dilindungi** karena berisi username penonton.
 
-Editor dan Control Panel akan meminta secret saat aksi perubahan pertama dilakukan, lalu menyimpannya sementara selama tab browser masih terbuka.
+Editor dan Control Panel akan meminta secret saat aksi perubahan pertama dilakukan, lalu menyimpannya sementara selama tab browser masih terbuka. File `platform-config.v1.bak.json` (backup migrasi config) dan folder `chat-archive/` diabaikan Git.
 
 > ⚠️ `SETTINGS_SECRET` wajib diatur sebelum server dibuka ke LAN. File `.env` tidak masuk Git. Pengaturan ini ditujukan untuk jaringan lokal tepercaya, bukan internet publik; koneksi LAN ini belum menggunakan TLS.
 
@@ -216,6 +234,8 @@ Editor dan Control Panel akan meminta secret saat aksi perubahan pertama dilakuk
 - **Browser Source dimension tidak auto-sync** ke Canvas Settings scene — kamu perlu set manual dimensi Browser Source di OBS/TikTok Studio supaya sesuai ukuran scene (misal 1080×1920 untuk portrait).
 - **GSAP dan Google Fonts dimuat dari CDN** (`cdnjs.cloudflare.com`, `fonts.googleapis.com`) di editor, overlay, dan Control Panel. Tanpa koneksi internet, animasi tidak berjalan dan font jatuh ke font sistem. Hanya CSS Tailwind yang dikompilasi lokal.
 - **Binding counter non-`eq`** (`neq`/`gt`/`gte`/`lt`/`lte`) dari scene lama tidak bisa dimigrasi ke State Binding dan perlu diatur ulang manual — lihat [Upgrade dari Versi Lama](#upgrade-dari-versi-lama).
+- **YouTube Data API punya kuota harian.** Isi `videoId` kalau sudah tahu supaya connector tidak perlu mencari lewat `channelId` (pencarian memakai kuota lebih banyak). Sisa/pemakaian kuota hari ini terlihat di panel connector.
+- **Chat archive bisa berisi username penonton.** Jika `SETTINGS_SECRET` aktif, endpoint GET arsip juga meminta secret; jangan membuka `/control` ke jaringan publik.
 - **Race condition minor** di penyimpanan scene (`persistSceneStore`) kalau dua penyimpanan terjadi nyaris bersamaan — belum jadi masalah nyata di pemakaian normal (personal-use, single editor session).
 - File `f1gstats.sqlite` bisa ter-lock oleh proses lain saat fetcher F1GStats jalan bersamaan server LiveOverlay masih aktif (khususnya di Windows) — stop server dulu sebelum re-run fetcher.
 
@@ -229,9 +249,10 @@ Detail & status lengkap ada di [`issue.md`](./issue.md).
 LiveOverlay/
 ├── public/
 │   ├── index.html            # Canvas Editor (GUI utama)
-│   ├── control.html          # Control Panel (/control)
+│   ├── control.html          # Control Panel + Chat Archive (/control)
 │   ├── overlay.html          # Transparent OBS Browser Source Overlay (player)
 │   ├── animation-engine.js   # Modul Animation Sequence Engine (dipakai bersama editor & overlay)
+│   ├── chat-format.js        # Formatter template chat bersama editor & overlay
 │   ├── design.css            # Design tokens bersama + styling Control Panel
 │   ├── editor.css            # Styling editor utama
 │   ├── styles.css            # Compiled Tailwind CSS (jangan diedit manual)
@@ -239,14 +260,33 @@ LiveOverlay/
 │   └── uploads/              # Aset hasil upload (dibuat otomatis, tidak masuk Git)
 ├── src/
 │   ├── index.ts              # ElysiaJS Backend Server & API Routes
+│   ├── chat-hub.ts           # Feed chat server-owned + ring buffer
+│   ├── notif-queue.ts        # State machine notifikasi idle/showing
+│   ├── chat-archive.ts       # Arsip JSONL, export SRT/VTT/CSV/JSON, alignment
+│   ├── chat-types.ts         # Tipe ChatEvent, NotifSnapshot, PlatformStatus
+│   ├── platform-config.ts    # Skema & migrasi config v1 → v2
+│   ├── platform-config-store.ts # Baca/tulis platform-config.json
+│   ├── connectors/           # TikTok & YouTube connector modular
+│   │   ├── manager.ts
+│   │   ├── tiktok.ts
+│   │   └── youtube.ts
 │   ├── control-state.ts      # Penyimpanan & logika state Control Panel
-│   ├── scene-migration.ts    # Migrasi otomatis scene lama (visibilityBinding / exitSequence / animation.sequence)
+│   ├── scene-migration.ts    # Migrasi otomatis scene lama
 │   └── styles/input.css      # Tailwind CSS entry directive
 ├── tests/
-│   ├── animation-engine.test.mjs  # Regression test untuk Animation Sequence Engine
-│   ├── control-state.test.mjs     # Test Control Panel state (counter, timer, persistence)
-│   ├── overlay-state.test.mjs     # Test integrasi overlay.html di jsdom (jalan via Node)
-│   └── scene-migration.test.mjs   # Test migrasi scene lama ke model State Binding
+│   ├── animation-engine.test.mjs  # Regression test Animation Sequence Engine
+│   ├── chat-hub.test.mjs          # Feed, urutan, dedupe, reset
+│   ├── notif-queue.test.mjs       # State machine notifikasi
+│   ├── chat-archive.test.mjs      # Arsip, parser toleran, export
+│   ├── connector-manager.test.mjs # Koordinasi TikTok + YouTube
+│   ├── tiktok-connector.test.mjs
+│   ├── youtube-connector.test.mjs
+│   ├── platform-config.test.mjs   # Migrasi config v1 → v2
+│   ├── stress-chat.mjs            # Stress test terintegrasi 6 000 chat
+│   ├── control-state.test.mjs     # Test Control Panel state
+│   ├── overlay-state.test.mjs     # Test integrasi overlay.html di jsdom (via Node)
+│   └── scene-migration.test.mjs   # Test migrasi scene lama
+├── chat-archive/             # Arsip chat lokal (dibuat otomatis, tidak masuk Git)
 ├── docs/screenshots/         # Screenshot untuk README
 ├── scenes.example.json       # Template data scene
 ├── control-state.example.json # Template state Control Panel

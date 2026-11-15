@@ -30,6 +30,7 @@ data-sources.json
 live-stats.json
 control-state.json
 platform-config.json
+platform-config.v1.bak.json
 f1-text-templates.json
 public/uploads/
 chat-archive/

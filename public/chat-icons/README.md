@@ -1,12 +1,13 @@
 # Ikon platform chat
 
-Taruh ikon di folder ini dengan nama file:
+Taruh ikon di folder ini dengan nama file `tiktok.<ext>` dan `youtube.<ext>`.
+Ekstensi yang didukung, berurutan sesuai prioritas: `.svg`, `.png`, `.webp`, `.ico`.
 
-- `tiktok.ico` (atau `.svg`, `.png`, `.webp`)
-- `youtube.ico` (atau `.svg`, `.png`, `.webp`)
+Ikon otomatis dipakai menggantikan `{platformTag}` di Chat Stack / Chat Notification
+(ukuran mengikuti `font-size` elemen). Kalau file tidak ada, `{platformTag}` kembali
+memakai teks tag dari config (`platform-config.json` → `chatFormat.tiktokTag` / `youtubeTag`).
 
-Ikon otomatis dipakai menggantikan `{platformTag}` di Chat Stack / Chat Notification.
-Kalau file tidak ada, `{platformTag}` kembali memakai teks tag dari config
-(`platform-config.json` → `chatFormat.tiktokTag` / `youtubeTag`).
+Running Text dan Scroll Text tidak memakai ikon — di sana `{platformTag}` selalu jadi teks tag.
 
-Ganti file kapan saja; halaman overlay cukup di-reload untuk memuat ikon baru.
+Ganti file kapan saja; halaman overlay cukup di-reload untuk memuat ikon baru
+(server memeriksa isi folder tiap ±5 detik, jadi tidak perlu restart).

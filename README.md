@@ -44,7 +44,7 @@ Halaman `/control` untuk mengubah Counter, Event State, Timer, dan Text secara l
 - 📤 **Asset Management**: Upload SVG, PNG, JPEG, WEBP, atau GIF hasil desain sendiri (misal dari Illustrator), tersimpan di server, dan bisa dipakai berulang di elemen manapun.
 - 🖥️ **Multi-Scene & Multi-Output**: Simpan banyak scene dengan ukuran kanvas (width/height) dan background masing-masing. Beberapa scene bisa dijalankan **bersamaan** di browser source berbeda — misalnya layout portrait untuk TikTok dan landscape untuk YouTube, sekaligus, tanpa saling mengganggu.
 - 📊 **Platform Live Stats (TikTok/YouTube)**: Bind elemen text ke data live real-time — status live dan viewer count per platform — via WebSocket (TikTok) dan Data API v3 (YouTube). TikTok dan YouTube bisa aktif bersamaan.
-- 💬 **Chat Multi-Platform + Archive**: Chat TikTok dan YouTube digabung ke satu feed server. Tampilkan sebagai **Chat Stack** (N baris terakhir) atau **Chat Notification**, lengkap dengan tag `[TT]`/`[YT]`, template, dan animasi `idle`/`showing`. Setiap sesi otomatis diarsipkan ke `chat-archive/*.jsonl` dan bisa di-export ke SRT/VTT/CSV/JSON dari `/control`.
+- 💬 **Chat Multi-Platform + Archive**: Chat TikTok dan YouTube digabung ke satu feed server. Tampilkan sebagai **Chat Stack** (N baris terakhir) atau **Chat Notification**, lengkap dengan tag `[TT]`/`[YT]` atau ikon platform sendiri, template, dan animasi `idle`/`showing`. Panel **Chat Review** di `/control` memutar ulang notifikasi lama dengan tombol ▲/▼. Setiap sesi otomatis diarsipkan ke `chat-archive/*.jsonl` dan bisa di-export ke SRT/VTT/CSV/JSON dari `/control`.
 - 🏎️ **F1GStats Integration**: Bind elemen text ke data F1 (jadwal sesi & klasemen WDC/WCC) yang dibaca dari database SQLite lokal, hasil prefetch dari project Python terpisah — lihat [bagian F1GStats Integration](#f1gstats-integration) di bawah.
 - 🔄 **Real-Time Auto Sync**: Overlay otomatis mendeteksi perubahan dari editor tanpa perlu refresh OBS Browser Source.
 - 🔒 **Local Binding & Secure**: Server secara default hanya terikat ke `127.0.0.1` (localhost).
@@ -135,11 +135,13 @@ State Control Panel disimpan di `control-state.json` (diabaikan Git, template di
 
 1. Di editor, buka **Platform Connectors**. Aktifkan TikTok dan/atau YouTube, isi username/API key/videoId, lalu klik **Simpan**. Gunakan **Start Semua** / **Stop Semua** untuk mengaktifkan atau mematikan keduanya sekaligus.
 2. **Chat Stack** — pilih elemen text → **Text Binding** → Source **Chat** → field **Chat Stack**. Atur `lines` (1–30) dan template. Baris terbaru selalu di bawah.
-3. **Chat Notification** — Source **Chat** → field **Chat Notification (Author + Message)**. Lalu di **State Binding** pilih source **Chat Notification** dan klik preset `idle` / `showing`. Atur animasi masuk/keluar lewat **Enter** dan **Transition** seperti state binding biasa.
-4. Atur **Tampil** (`displayMs`), **Jeda** (`gapMs`), **Antrean** (`maxQueue`), tag platform, dan **archive toggle** di panel connector. `gapMs` minimal 300 ms dan sebaiknya lebih besar dari durasi animasi keluar supaya state sempat kembali ke `idle`.
-5. **Penyimpanan chat** — chat live dan chat hasil `dev-inject` disimpan ke `chat-archive/YYYYMMDD-HHmmss.jsonl` (satu file per sesi, append-only, diabaikan Git). Sesi dimulai saat connector pertama aktif, ditutup saat semua connector dimatikan atau tombol **End session** ditekan. Kalau archive toggle dimatikan, chat tetap tampil di overlay tetapi tidak ditulis ke arsip.
-6. Buka **[http://localhost:3000/control](http://localhost:3000/control)** → panel **Chat Archive** untuk melihat sesi aktif, memulai **Sesi baru**, mengakhiri sesi, menghapus sesi lama, preview 3 cue, dan mengunduh **SRT / VTT / CSV / JSON**. Panel ini hanya muncul kalau ada **State Binding → Chat Notification** yang di-enable di salah satu scene. Offset bisa diisi manual atau memakai helper **Samakan dengan chat** (pilih chat yang terlihat di video + waktu kemunculannya).
-7. Untuk tes tanpa live stream, gunakan endpoint dev-only:
+3. **Chat Notification** — Source **Chat** → field **Chat Notification (Author + Message)**. Lalu di **State Binding** pilih source **Chat Notification** dan klik preset `idle` / `showing`. Atur animasi masuk/keluar lewat **Enter** dan **Transition** seperti state binding biasa. Template default-nya dua baris (`{author}` di atas, `{message}` di bawah); template satu baris dari scene lama dimigrasi otomatis.
+4. **Template & ikon platform** — tulis `\n` di template untuk baris baru. `{platformTag}` memakai teks tag (`[TT]`/`[YT]`) dari panel connector, dan otomatis berganti ikon kalau ada file `public/chat-icons/tiktok.*` atau `youtube.*` (urutan deteksi `.svg` → `.png` → `.webp` → `.ico`). Ikon hanya berlaku di Chat Stack / Chat Notification; Running Text dan Scroll Text tetap memakai teks tag.
+5. Atur **Tampil** (`displayMs`), **Jeda** (`gapMs`), **Antrean** (`maxQueue`), tag platform, dan **archive toggle** di panel connector. `gapMs` minimal 300 ms dan sebaiknya lebih besar dari durasi animasi keluar supaya state sempat kembali ke `idle`.
+6. **Penyimpanan chat** — chat live dan chat hasil `dev-inject` disimpan ke `chat-archive/YYYYMMDD-HHmmss.jsonl` (satu file per sesi, append-only, diabaikan Git). Sesi dimulai saat connector pertama aktif, ditutup saat semua connector dimatikan atau tombol **End session** ditekan. Kalau archive toggle dimatikan, chat tetap tampil di overlay tetapi tidak ditulis ke arsip.
+7. Buka **[http://localhost:3000/control](http://localhost:3000/control)** → panel **Chat Archive** untuk melihat sesi aktif, memulai **Sesi baru**, mengakhiri sesi, menghapus sesi lama, preview 3 cue, dan mengunduh **SRT / VTT / CSV / JSON**. Panel ini hanya muncul kalau ada **State Binding → Chat Notification** yang di-enable di salah satu scene. Offset bisa diisi manual atau memakai helper **Samakan dengan chat** (pilih chat yang terlihat di video + waktu kemunculannya).
+8. Panel **Chat Review** (juga hanya muncul kalau ada binding `chatNotif`) menampilkan notifikasi yang sedang tampil beserta posisi antrean. Tombol ▲/▼ menelusuri 100 notifikasi terakhir tanpa mengganggu antrean live — badge menunjukkan **LIVE** atau **REVIEW**, animasi elemen diputar ulang tiap pindah, dan semua Browser Source tetap sinkron karena state review disimpan di server.
+9. Untuk tes tanpa live stream, gunakan endpoint dev-only:
    ```powershell
    curl.exe -X POST http://localhost:3000/api/chat/dev-inject `
      -H "Content-Type: application/json" `
@@ -238,6 +240,8 @@ Editor dan Control Panel akan meminta secret saat aksi perubahan pertama dilakuk
 - **Binding counter non-`eq`** (`neq`/`gt`/`gte`/`lt`/`lte`) dari scene lama tidak bisa dimigrasi ke State Binding dan perlu diatur ulang manual — lihat [Upgrade dari Versi Lama](#upgrade-dari-versi-lama).
 - **YouTube Data API punya kuota harian.** Isi `videoId` kalau sudah tahu supaya connector tidak perlu mencari lewat `channelId` (pencarian memakai kuota lebih banyak). Sisa/pemakaian kuota hari ini terlihat di panel connector.
 - **Chat archive bisa berisi username penonton.** Jika `SETTINGS_SECRET` aktif, endpoint GET arsip juga meminta secret; jangan membuka `/control` ke jaringan publik.
+- **Ikon platform hanya dipakai di text binding biasa** (Chat Stack / Chat Notification / preview editor). Di **Running Text** dan **Scroll Text**, `{platformTag}` jatuh ke teks tag karena pengukuran lebar teks memakai canvas.
+- **Ikon platform bersifat file statis**, bukan upload dari UI: ganti/isi `public/chat-icons/tiktok.*` dan `youtube.*` lalu reload overlay. Kalau ada beberapa ekstensi sekaligus, urutan prioritasnya `.svg` > `.png` > `.webp` > `.ico`.
 - File `f1gstats.sqlite` bisa ter-lock oleh proses lain saat fetcher F1GStats jalan bersamaan server LiveOverlay masih aktif (khususnya di Windows) — stop server dulu sebelum re-run fetcher.
 
 Detail & status lengkap ada di [`issue.md`](./issue.md).
@@ -259,6 +263,7 @@ LiveOverlay/
 │   ├── editor.css            # Styling editor utama
 │   ├── styles.css            # Compiled Tailwind CSS (jangan diedit manual)
 │   ├── KerasnG.png           # Logo editor
+│   ├── chat-icons/           # Ikon {platformTag} opsional (tiktok.*, youtube.*; lihat README di folder ini)
 │   └── uploads/              # Aset hasil upload (dibuat otomatis, tidak masuk Git)
 ├── src/
 │   ├── index.ts              # ElysiaJS Backend Server & API Routes
@@ -292,7 +297,11 @@ LiveOverlay/
 │   ├── overlay-state.test.mjs     # Test integrasi overlay.html di jsdom (via Node)
 │   └── scene-migration.test.mjs   # Test migrasi scene lama
 ├── chat-archive/             # Arsip chat lokal (dibuat otomatis, tidak masuk Git)
-├── docs/screenshots/         # Screenshot untuk README
+├── docs/
+│   ├── screenshots/          # Screenshot untuk README
+│   ├── audit-2026-11-15.md   # Audit repo 15 Nov 2026: 18 temuan, semua sudah diperbaiki
+│   └── plans/
+│       └── multi-platform-chat.md # Catatan plan & keputusan fitur chat multi-platform (selesai v1.2.0)
 ├── scenes.example.json       # Template data scene
 ├── control-state.example.json # Template state Control Panel
 ├── live-stats.example.json   # Template cache data live stats
@@ -300,13 +309,12 @@ LiveOverlay/
 ├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)
 ├── issue.md                  # Backlog & technical debt aktif (selalu up-to-date)
 ├── CHANGELOG.md              # Riwayat lengkap pengembangan tiap fase
-├── AUDIT.md                  # Hasil audit repo: temuan, prioritas, dan perbaikan yang disarankan
 ├── package.json              # Project dependencies & scripts
 ├── tsconfig.json             # TypeScript configuration
 └── README.md                 # Dokumentasi proyek
 ```
 
-Untuk detail visi produk & arsitektur, lihat [`Vision.md`](./Vision.md). Untuk backlog & status implementasi terkini, lihat [`issue.md`](./issue.md). Untuk riwayat pengembangan lengkap, lihat [`CHANGELOG.md`](./CHANGELOG.md). Untuk hasil audit menyeluruh (temuan bug, risiko, dan prioritas perbaikan), lihat [`AUDIT.md`](./AUDIT.md).
+Untuk detail visi produk & arsitektur, lihat [`Vision.md`](./Vision.md). Untuk backlog & status implementasi terkini, lihat [`issue.md`](./issue.md). Untuk riwayat pengembangan lengkap, lihat [`CHANGELOG.md`](./CHANGELOG.md). Untuk hasil audit menyeluruh (temuan bug, risiko, dan prioritas perbaikan), lihat [`docs/audit-2026-11-15.md`](./docs/audit-2026-11-15.md). Catatan plan & keputusan fitur chat ada di [`docs/plans/multi-platform-chat.md`](./docs/plans/multi-platform-chat.md).
 
 ---
 

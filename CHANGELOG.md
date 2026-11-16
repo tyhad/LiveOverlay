@@ -6,7 +6,15 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased]
 
-### Audit hardening (`AUDIT.md` temuan 1–18)
+### Chat notification review, notif dua baris, dan ikon platform
+
+- `/control` mendapat panel **Chat Review** (di luar `#app`, hanya tampil kalau ada State Binding `chatNotif` yang enabled): tombol ▲/▼ menelusuri 100 notifikasi terakhir, badge **LIVE/REVIEW**, status posisi & antrean, dan antrean live otomatis dipause selama review. State review disimpan di server (`GET /api/chat/notif`, `POST /api/chat/notif/step`) supaya semua Browser Source OBS menampilkan notifikasi yang sama.
+- Overlay memutar ulang animasi kemunculan elemen (`idle → showing`, atau enter animation kalau transition belum diatur) setiap kali review berpindah notifikasi, lalu loop di-resume seperti semula.
+- Template **Chat Notification** default menjadi dua baris `{author}\n{message}` (author di atas, message di bawah). Template satu baris lama dimigrasi otomatis & idempoten di `normalizeChatBindings`; `\n` pada template dirender sebagai baris baru oleh `public/chat-format.js`.
+- `{platformTag}` bisa diganti ikon file statis: letakkan `tiktok.*` / `youtube.*` di `public/chat-icons/` (deteksi berurutan `svg → png → webp → ico`). Tanpa file, otomatis kembali ke teks tag `[TT]`/`[YT]`. Ikon dirender inline lewat `ChatFormat.renderText()` di overlay dan preview editor; Running Text / Scroll Text memakai fallback teks tag (`ChatFormat.stripIcons()`). `GET /api/platform-connector` menyertakan `chatIcons` hasil `discoverChatIcons()`.
+- Dokumentasi dirapikan: dokumen internal dipindah ke `docs/` (`docs/audit-2026-11-15.md`, `docs/plans/multi-platform-chat.md`) sehingga root repo hanya berisi dokumen kanonik.
+
+### Audit hardening (`docs/audit-2026-11-15.md` temuan 1–18)
 
 - Upload `/uploads/*` disajikan dengan `Content-Security-Policy: sandbox` + `X-Content-Type-Options: nosniff`, dan tipe file divalidasi lewat whitelist MIME/ekstensi (bukan dipercaya dari klien).
 - Auth dipusatkan di satu `onBeforeHandle` untuk semua route POST/PUT/PATCH/DELETE; route GET arsip tetap memeriksa secret sendiri. Batas body global 12 MB, `POST /api/scenes` dibatasi 5 MB dan memakai skema `{ scene, originalId? }`.

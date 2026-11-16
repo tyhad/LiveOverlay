@@ -1,8 +1,12 @@
-# PLAN — Multi-Platform Chat, Chat Notification, Chat Stack, dan Arsip Chat
+# Multi-Platform Chat — catatan plan
 
-> Dokumen ini ditulis untuk **AI coding agent** yang mengeksekusi perubahan di repo `tyhad/LiveOverlay` (v1.1.0).
-> Baca urut: §0 → §1 → §2, lalu kerjakan §5 fase demi fase. Setiap fase punya *acceptance criteria* dan harus lulus tes sebelum lanjut.
-> Nomor baris di dokumen ini **perkiraan** dari commit `1af00e6`; cari ulang dengan `grep`, jangan percaya buta.
+**Status:** selesai. Fase C1–C7 sudah diimplementasikan dan dirilis di v1.2.0
+(lihat [`CHANGELOG.md`](../../CHANGELOG.md)); perilaku aktual didokumentasikan di [`README.md`](../../README.md).
+
+Dokumen ini disimpan sebagai catatan historis: keputusan produk dan model data/API yang disepakati sebelum
+implementasi. Bagian §0 (aturan main agent), §2 (kondisi kode), dan §5 (daftar tugas per fase) menggambarkan
+kondisi saat plan ditulis (commit `1af00e6`) dan **sudah tidak berlaku** — nomor baris serta daftar tugasnya
+jangan dipakai sebagai acuan; cari langsung di kode.
 
 ---
 

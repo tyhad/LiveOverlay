@@ -319,6 +319,20 @@
   }
   .timer-toggle input { width: 16px; height: 16px; }
 
+  /* Chat Notification review */
+  .review-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .review-head h2 { margin: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+  #review-state { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; padding: 3px 9px; border-radius: 999px; background: rgba(16,185,129,.18); color: var(--ok); }
+  #review-state.reviewing { background: rgba(255,255,255,.08); color: var(--text-dim); }
+  .review-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .review-btn {
+    min-height: 64px; padding: 12px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 14px; font-weight: 800;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .review-btn:active:not(:disabled) { transform: scale(.96); background: var(--indigo); }
+  .review-btn:disabled { opacity: .4; cursor: not-allowed; }
+
   /* Chat Archive */
   .hidden { display: none !important; }
   .archive-panel {
@@ -498,6 +512,19 @@
     <div id="status-dot" title="Sinkronisasi control-state"></div>
   </header>
 
+  <!-- Review chat notification: juga DI LUAR #app supaya tombol tidak ikut di-render ulang. -->
+  <section id="chat-review-panel" class="archive-panel hidden">
+    <div class="review-head">
+      <h2>Chat Review</h2>
+      <span id="review-state">LIVE</span>
+    </div>
+    <div class="review-row">
+      <button id="review-up" class="review-btn" type="button">▲ Lebih lama</button>
+      <button id="review-down" class="review-btn" type="button">▼ Lebih baru</button>
+    </div>
+    <p id="review-meta" class="archive-status"></p>
+  </section>
+
   <!-- Panel arsip sengaja DI LUAR #app: render() control-state berjalan tiap detik
        dan tidak boleh menghapus form/daftar sesi yang sedang dipakai. -->
   <section id="chat-archive-panel" class="archive-panel hidden">
@@ -636,6 +663,7 @@
             if (tb?.source === 'eventState' && tb.group) eventStates.add(tb.group)
             if (tb?.source === 'timer' && tb.group) timers.add(tb.group)
             if (tb?.source === 'text' && tb.group) texts.add(tb.group)
+            if (tb?.source === 'chat' && tb.field === 'notif') chatNotif = true
             const sb = el.stateBinding
             if (sb?.source === 'counter' && sb.group) counters.add(sb.group)
             if (sb?.source === 'eventState' && sb.group) eventStates.add(sb.group)
@@ -1294,6 +1322,65 @@
       }
     }
 
+    // ─── Chat Notification review ───────────────────────────────────────────
+    let chatReviewStarted = false
+    function applyChatReviewVisibility() {
+      const panel = document.getElementById('chat-review-panel')
+      if (panel) panel.classList.toggle('hidden', usedGroups.chatNotif !== true)
+      if (usedGroups.chatNotif !== true || chatReviewStarted) return
+      chatReviewStarted = true
+      initChatReview()
+    }
+
+    function renderChatReview(notif) {
+      if (!notif) return
+      const state = document.getElementById('review-state')
+      const meta = document.getElementById('review-meta')
+      const up = document.getElementById('review-up')
+      const down = document.getElementById('review-down')
+      const total = Math.max(0, Number(notif.reviewTotal) || 0)
+      const reviewing = notif.reviewing === true
+      state.textContent = reviewing ? 'REVIEW' : 'LIVE'
+      state.classList.toggle('reviewing', reviewing)
+      up.disabled = total === 0 || (reviewing && notif.reviewIndex <= 0)
+      down.disabled = !reviewing
+      meta.textContent = reviewing
+        ? `Chat ${Number(notif.reviewIndex) + 1} / ${total} · antre ${Number(notif.queueLength) || 0}`
+        : `Chat terbaru · antre ${Number(notif.queueLength) || 0}`
+    }
+
+    async function stepChatReview(direction) {
+      try {
+        const res = await fetch('/api/chat/notif/step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ direction }),
+        })
+        if (!res.ok) throw new Error('bad status')
+        renderChatReview((await res.json()).notif)
+      } catch (err) {
+        console.error('Chat review step failed:', err)
+      }
+    }
+
+    async function syncChatReview() {
+      try {
+        const res = await fetch('/api/chat/notif')
+        if (res.ok) renderChatReview(await res.json())
+      } catch (err) {
+        console.error('Chat review sync failed:', err)
+      }
+    }
+
+    function initChatReview() {
+      document.getElementById('review-up').addEventListener('click', () => stepChatReview('up'))
+      document.getElementById('review-down').addEventListener('click', () => stepChatReview('down'))
+      syncChatReview()
+      setInterval(() => {
+        if (!document.getElementById('chat-review-panel').classList.contains('hidden')) syncChatReview()
+      }, 1000)
+    }
+
     let chatArchiveStarted = false
     function applyChatArchiveVisibility() {
       const panel = document.getElementById('chat-archive-panel')
@@ -1330,6 +1417,7 @@
 
       scanned = true
       applyChatArchiveVisibility()
+      applyChatReviewVisibility()
       await syncControlState()
       setInterval(syncControlState, POLL_MS)
       // Tick lokal buat display timer yang sedang running, tanpa nunggu poll 1 detik
@@ -1340,6 +1428,7 @@
       setInterval(async () => {
         usedGroups = await scanUsedGroups()
         applyChatArchiveVisibility()
+        applyChatReviewVisibility()
         render()
       }, 8000)
     }

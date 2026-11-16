@@ -804,6 +804,24 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
     return { ...chatHub.since(Number(query.since), Number(query.limit)), notif: chatNotifQueue.getSnapshot(), status: { tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') } }
   })
   .get('/api/chat/status', () => ({ tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') }))
+  // Review chat notification dari Control Panel: snapshot saja, tanpa item feed.
+  .get('/api/chat/notif', () => chatNotifQueue.getSnapshot())
+  .post(
+    '/api/chat/notif/step',
+    ({ body, set }) => {
+      const direction = body.direction === 'up' || body.direction === 'down' ? body.direction : null
+      if (!direction) {
+        set.status = 400
+        return { success: false, message: '"direction" must be "up" or "down"' }
+      }
+      return { success: true, notif: chatNotifQueue.step(direction) }
+    },
+    {
+      body: t.Object({
+        direction: t.String(),
+      }),
+    }
+  )
   // Dev-only helper for manual C6 acceptance: inject a synthetic chat into the
   // same hub/notification/archive pipeline the real connectors use.
   .post(

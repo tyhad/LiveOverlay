@@ -17,6 +17,11 @@ export interface NotifSnapshot {
   platform: ChatPlatform | ''
   showUntil: number
   queueLength: number
+  /** Mode review dari Control Panel: antrean live di-pause sementara. */
+  reviewing: boolean
+  /** Posisi history saat reviewing (0-based); -1 kalau tidak reviewing. */
+  reviewIndex: number
+  reviewTotal: number
 }
 
 export interface PlatformStatus {

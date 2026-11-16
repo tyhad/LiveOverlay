@@ -98,7 +98,7 @@
     // snapshot server supaya beberapa browser source selalu sinkron.
     const CHAT_BUFFER_LIMIT = 50
     const CHAT_FEED_INTERVAL_MS = 500
-    const EMPTY_NOTIF = Object.freeze({ state: 'idle', seq: 0, author: '', message: '', platform: '', showUntil: 0, queueLength: 0 })
+    const EMPTY_NOTIF = Object.freeze({ state: 'idle', seq: 0, author: '', message: '', platform: '', showUntil: 0, queueLength: 0, reviewing: false })
     let chatEvents = []
     let chatFeedSeq = 0
     let chatNotif = { ...EMPTY_NOTIF }
@@ -489,12 +489,36 @@
         platform,
         showUntil: Number(snapshot?.showUntil) || 0,
         queueLength: Math.max(0, Number(snapshot?.queueLength) || 0),
+        reviewing: snapshot?.reviewing === true,
       }
     }
 
     function getEffectiveNotifState() {
       if (suppressedNotifSeq !== null) return 'idle'
       return chatNotif.state === 'showing' ? 'showing' : 'idle'
+    }
+
+    /** Seq notif untuk elemen chat notification saat mode review; null kalau tidak review. */
+    function getNotifReviewSeq(el) {
+      if (!chatNotif.reviewing) return null
+      const isNotif = (el.textBinding?.source === 'chat' && el.textBinding?.field === 'notif') || el.stateBinding?.source === 'chatNotif'
+      return isNotif ? chatNotif.seq : null
+    }
+
+    /** Putar ulang animasi kemunculan notif: transition idle→showing kalau diatur, selain itu enter. */
+    function replayNotifAppearance(node, el, config, target) {
+      const fallbackState = el.stateBinding?.fallbackState || 'idle'
+      if (config.transition.sequence.length > 0 && el.stateTargets?.[fallbackState]) {
+        AnimationEngine.setStateBaseline(node, el, getElementStateTarget(el, fallbackState))
+        const timeline = AnimationEngine.buildTransitionTimeline(el.id, node, config, el, target)
+        if (timeline) {
+          // Transition membunuh timeline loop; lanjutkan lagi setelah muncul.
+          timeline.eventCallback('onComplete', () => AnimationEngine.buildLoopTimeline(el.id, node, config, el, target))
+          return
+        }
+      }
+      AnimationEngine.setStateBaseline(node, el, target)
+      AnimationEngine.buildEnterTimeline(el.id, node, config, el, target)
     }
 
     function getLatestChat() {
@@ -871,7 +895,15 @@
           applyRecordVisibility(existing, el)
           const nextVisible = target._visible !== false
 
-          if (existing.currentState !== activeState) {
+          const reviewSeq = getNotifReviewSeq(el)
+          if (existing.currentState === activeState && reviewSeq !== existing.reviewSeq) {
+            // Review step ▲/▼: state tetap "showing", jadi putar ulang animasi kemunculan
+            // supaya pergantian chat terlihat beranimasi, bukan teks yang lompat.
+            applyElementBox(existing.node, el, hasChildren)
+            replayNotifAppearance(existing.node, el, nextAnimConfig, target)
+            existing.animationSignature = nextAnimSignature
+            existing.boxSignature = nextBoxSignature
+          } else if (existing.currentState !== activeState) {
             // Update dulu: finishTransition() memakai currentState untuk mendeteksi transition yang sudah digantikan,
             // dan pada jalur tanpa transition callback ini dipanggil sinkron.
             existing.currentState = activeState
@@ -913,6 +945,7 @@
             // tapi overflow tetap perlu disinkronkan kalau status "punya child" berubah.
             existing.node.style.overflow = hasChildren ? 'visible' : 'hidden'
           }
+          existing.reviewSeq = reviewSeq
           return
         }
 
@@ -923,7 +956,7 @@
         applyElementBox(div, el, hasChildren)
         container.appendChild(div)
         div.style.visibility = el.hidden ? 'hidden' : ''
-        renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature, boxSignature: nextBoxSignature })
+        renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature, boxSignature: nextBoxSignature, reviewSeq: getNotifReviewSeq(el) })
         applyElementContent(div, el)
         const state = getElementActiveState(el)
         const initialTarget = getElementStateTarget(el, state)

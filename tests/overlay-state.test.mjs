@@ -251,3 +251,33 @@ test('reload tidak memicu notif lama; chat baru berikutnya tetap tampil', () => 
   assert.equal(o.rec().currentState, 'showing')
   assert.equal(o.node().textContent, 'baru: baru masuk')
 })
+
+test('review ▲/▼ memutar ulang animasi kemunculan walau state tetap showing', () => {
+  const o = bootOverlay()
+  const scene = () => chatScene({
+    textBinding: { enabled: true, source: 'chat', field: 'notif' },
+    stateBinding: { enabled: true, source: 'chatNotif', fallbackState: 'idle' },
+    stateTargets: { showing: { x: 100 }, idle: { x: 300 } },
+    animation: {
+      enter: { sequence: [{ type: 'to', properties: { opacity: 1 }, duration: 0.1, ease: 'none' }], loop: false },
+      transition: { sequence: [{ type: 'to', properties: ['x'], duration: 1, ease: 'none' }] },
+    },
+  })
+
+  o.feed({ seq: 2, items: [chatEvent(2, 'tiktok', 'bob', 'dua')], notif: { state: 'showing', seq: 2, author: 'bob', message: 'dua', platform: 'tiktok', showUntil: 1, queueLength: 0 } }, true)
+  o.render(scene())
+  o.feed({ seq: 3, items: [chatEvent(3, 'tiktok', 'cara', 'tiga')], notif: { state: 'showing', seq: 3, author: 'cara', message: 'tiga', platform: 'tiktok', showUntil: 2, queueLength: 0 } })
+  o.render(scene())
+  o.tl()?.progress(1)
+  const live = o.tl()
+
+  o.feed({ seq: 3, items: [], notif: { state: 'showing', seq: 2, author: 'bob', message: 'dua', platform: 'tiktok', showUntil: 0, queueLength: 0, reviewing: true, reviewIndex: 0, reviewTotal: 2 } })
+  o.render(scene())
+
+  assert.equal(o.rec().currentState, 'showing')
+  assert.equal(o.node().textContent, 'bob: dua')
+  const replayed = o.tl()
+  assert.notEqual(replayed, live, 'transition kemunculan harus dibangun ulang saat review step')
+  replayed.progress(1)
+  assert.equal(o.x(), 0) // delta x ke target showing (x=100, baseline 100)
+})

@@ -157,6 +157,16 @@ test('binding chat baru (source chat / chatNotif) tidak dibuang dan lines dinorm
   assert.equal(migrated.stateBinding.source, 'chatNotif')
 })
 
+test('normalizeChatBindings memindahkan template notif lama ke dua baris (idempoten)', () => {
+  const el = { ...base, textBinding: { enabled: true, source: 'chat', field: 'notif', template: '{platformTag} {author}: {message}' } }
+  const out = normalizeChatBindings(el)
+  assert.equal(out.textBinding.template, '{platformTag} {author}\\n{message}')
+  assert.equal(normalizeChatBindings(out).textBinding.template, '{platformTag} {author}\\n{message}')
+  // Template stack/kustom tidak disentuh.
+  const stack = { ...base, textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 3, template: '{author}: {message}' } }
+  assert.equal(normalizeChatBindings(stack).textBinding.template, '{author}: {message}')
+})
+
 test('normalizeChatBindings mengembalikan referensi yang sama untuk elemen non-chat', () => {
   const el = { ...base, textBinding: { enabled: true, source: 'clock', format: 'HH:mm' } }
   assert.equal(normalizeChatBindings(el), el)

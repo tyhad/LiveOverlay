@@ -25,7 +25,7 @@ function bootOverlay() {
   w.setInterval = () => 0
   w.setTimeout = () => 0
   const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n')
-  w.eval(inline + '\nwindow.__h={renderScene,renderedElements,applyChatFeed,getElementActiveState,resolveChatText,setControl:(v)=>{controlState=v},chatState:()=>({seq:chatFeedSeq,events:chatEvents.slice(),notif:chatNotif,effectiveNotif:getEffectiveNotifState()})}')
+  w.eval(inline + '\nwindow.__h={renderScene,renderedElements,applyChatFeed,getElementActiveState,resolveChatText,setControl:(v)=>{controlState=v},setChatIcons:(v)=>{chatIcons=v},chatState:()=>({seq:chatFeedSeq,events:chatEvents.slice(),notif:chatNotif,effectiveNotif:getEffectiveNotifState()})}')
   const h = w.__h
   const api = {
     w,
@@ -176,7 +176,7 @@ test('chat notification: snapshot showing → idle mengubah state aktif elemen',
   })
   o.render(scene())
   assert.equal(o.rec().currentState, 'showing')
-  assert.equal(o.node().textContent, 'alice: halo')
+  assert.equal(o.node().textContent, 'alice\nhalo')
 
   o.feed({
     seq: 1,
@@ -186,7 +186,7 @@ test('chat notification: snapshot showing → idle mengubah state aktif elemen',
   o.render(scene())
   assert.equal(o.rec().currentState, 'idle')
   // Teks terakhir dipertahankan saat idle supaya animasi keluar tidak kosong.
-  assert.equal(o.node().textContent, 'alice: halo')
+  assert.equal(o.node().textContent, 'alice\nhalo')
 })
 
 test('scene lama dengan latestChatAuthor/latestChatMessage tetap render dari chat terbaru', () => {
@@ -249,7 +249,23 @@ test('reload tidak memicu notif lama; chat baru berikutnya tetap tampil', () => 
   })
   o.render(scene())
   assert.equal(o.rec().currentState, 'showing')
-  assert.equal(o.node().textContent, 'baru: baru masuk')
+  assert.equal(o.node().textContent, 'baru\nbaru masuk')
+})
+
+test('platformTag jadi ikon inline kalau file ikon tersedia, platform lain tetap teks tag', () => {
+  const o = bootOverlay()
+  o.w.__h.setChatIcons({ tiktok: '/chat-icons/tiktok.ico', youtube: '' })
+  o.feed({
+    seq: 2,
+    items: [chatEvent(1, 'tiktok', 'alice', 'satu'), chatEvent(2, 'youtube', 'bob', 'dua')],
+    notif: idleNotif,
+  })
+  o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 5, template: '{platformTag} {author}: {message}' } }))
+
+  const icons = o.node().querySelectorAll('img')
+  assert.equal(icons.length, 1)
+  assert.equal(icons[0].getAttribute('src'), '/chat-icons/tiktok.ico')
+  assert.equal(o.node().textContent, ' alice: satu\n[YT] bob: dua')
 })
 
 test('review ▲/▼ memutar ulang animasi kemunculan walau state tetap showing', () => {
@@ -275,7 +291,7 @@ test('review ▲/▼ memutar ulang animasi kemunculan walau state tetap showing'
   o.render(scene())
 
   assert.equal(o.rec().currentState, 'showing')
-  assert.equal(o.node().textContent, 'bob: dua')
+  assert.equal(o.node().textContent, 'bob\ndua')
   const replayed = o.tl()
   assert.notEqual(replayed, live, 'transition kemunculan harus dibangun ulang saat review step')
   replayed.progress(1)

@@ -885,13 +885,16 @@
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
                 <datalist id="chat-template-presets">
                   <option value="{platformTag} {author}: {message}">{platformTag} author: message (stack)</option>
-                  <option value="{author}: {message}">{author}: message (notification)</option>
+                  <option value="{author}\n{message}">author, baris baru message (notification)</option>
+                  <option value="{platformTag} {author}\n{message}">icon + author, baris baru message</option>
                   <option value="{platformTag} {message}">{platformTag} message</option>
                   <option value="{author}">{author}</option>
                 </datalist>
               </div>
               <p class="text-[10px] text-slate-500">Placeholder: <code>{platformTag}</code>, <code>{platform}</code>,
-                <code>{author}</code>, <code>{message}</code>. Stack menampilkan N chat terakhir (lama → baru).</p>
+                <code>{author}</code>, <code>{message}</code>. Tulis <code>\n</code> untuk baris baru. Ikon platform
+                otomatis dipakai kalau ada file di <code>public/chat-icons/tiktok.*</code> /
+                <code>youtube.*</code>; kalau tidak ada, <code>{platformTag}</code> jadi teks tag.</p>
             </div>
 
             <div id="f1data-binding-group" class="hidden space-y-2">
@@ -1826,6 +1829,7 @@
     let editorChatInitialized = false
     let editorChatNotif = { state: 'idle', seq: 0, author: '', message: '', platform: '' }
     let editorChatTags = { ...DEFAULT_CHAT_TAGS }
+    let editorChatIcons = { tiktok: '', youtube: '' }
     let editorPlatformStatus = { tiktok: null, youtube: null }
 
     function formatEditorChatLine(event, template) {
@@ -1835,9 +1839,9 @@
         message: String(event?.message || ''),
       }
       if (window.ChatFormat?.formatChat) {
-        return window.ChatFormat.formatChat(safe, template, { tags: editorChatTags })
+        return window.ChatFormat.formatChat(safe, template, { tags: editorChatTags, icons: editorChatIcons })
       }
-      return String(template || '{author}: {message}').replace(/\{(platformTag|platform|author|message)\}/g, (_, key) => {
+      return String(template || '{author}: {message}').replace(/\\n/g, '\n').replace(/\{(platformTag|platform|author|message)\}/g, (_, key) => {
         if (key === 'platformTag') return editorChatTags[safe.platform] || DEFAULT_CHAT_TAGS[safe.platform] || ''
         return safe[key] || ''
       })
@@ -1845,7 +1849,7 @@
 
     function resolveEditorChatText(binding) {
       const field = binding?.field === 'notif' ? 'notif' : 'stack'
-      const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}: {message}')
+      const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
       if (field === 'stack') {
         const rawLines = Number(binding?.lines)
         const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
@@ -2210,7 +2214,9 @@
       if (!previewEl || !statusEl || !el) return
 
       const binding = ensureTextBinding(el)
-      previewEl.textContent = resolveElementText(el) || '-'
+      const previewText = resolveElementText(el) || '-'
+      if (window.ChatFormat?.renderText) window.ChatFormat.renderText(previewEl, previewText, { tags: editorChatTags, icons: editorChatIcons })
+      else previewEl.textContent = previewText
       statusEl.textContent = formatBindingStatus(binding)
       updateBindingControls()
     }
@@ -2714,7 +2720,9 @@
           } else {
             textP.style.textShadow = 'none'
           }
-          textP.textContent = resolveElementText(el)
+          const text = resolveElementText(el) || ''
+          if (window.ChatFormat?.renderText) window.ChatFormat.renderText(textP, text, { tags: editorChatTags, icons: editorChatIcons })
+          else textP.textContent = text
           div.appendChild(textP)
 
           if (el.marquee?.enabled) {
@@ -3727,7 +3735,7 @@
           if (!['stack', 'notif'].includes(binding.field)) binding.field = 'stack'
           if (!Number.isFinite(Number(binding.lines))) binding.lines = 5
           if (!binding.template) {
-            binding.template = binding.field === 'notif' ? '{author}: {message}' : '{platformTag} {author}: {message}'
+            binding.template = binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}'
           }
         } else if (newSource === 'platform') {
           const validFields = ['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube', ...Object.keys(DEPRECATED_PLATFORM_FIELDS)]
@@ -3986,7 +3994,7 @@
         const binding = ensureTextBinding(el)
         binding.field = e.target.value === 'notif' ? 'notif' : 'stack'
         if (!binding.template) {
-          binding.template = binding.field === 'notif' ? '{author}: {message}' : '{platformTag} {author}: {message}'
+          binding.template = binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}'
         }
         if (!Number.isFinite(Number(binding.lines))) binding.lines = 5
         document.getElementById('prop-chat-template').value = binding.template
@@ -4726,6 +4734,13 @@
       await savePlatformConnectorConfig()
     }
 
+    function applyChatIcons(data) {
+      const icons = data?.chatIcons
+      if (!icons || typeof icons !== 'object') return
+      editorChatIcons.tiktok = String(icons.tiktok || '')
+      editorChatIcons.youtube = String(icons.youtube || '')
+    }
+
     async function loadPlatformConnectorStatus() {
       try {
         const res = await fetch('/api/platform-connector')
@@ -4736,6 +4751,7 @@
           if (tags.tiktokTag) editorChatTags.tiktok = tags.tiktokTag
           if (tags.youtubeTag) editorChatTags.youtube = tags.youtubeTag
         }
+        applyChatIcons(data)
         renderConnectorStatus(data)
       } catch (err) {
         console.warn('Failed to load platform connector status:', err)
@@ -4774,6 +4790,7 @@
         if (res.ok) {
           const data = await res.json()
           applyConnectorConfigToForm(data.configV2)
+          applyChatIcons(data)
           renderConnectorStatus(data)
         }
       } catch (err) {

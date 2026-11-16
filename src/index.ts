@@ -39,6 +39,24 @@ const ASSET_MIME_TYPES = new Map([
   ['image/webp', 'webp'],
   ['image/gif', 'gif'],
 ])
+const CHAT_ICON_DIRECTORY = 'public/chat-icons'
+const CHAT_ICON_EXTENSIONS = ['svg', 'png', 'webp', 'ico']
+
+/** Ikon platform opsional: taruh file di public/chat-icons/<platform>.<ext>.
+ *  Kalau tidak ada, `{platformTag}` tetap memakai teks tag dari config. */
+async function discoverChatIcons(): Promise<Record<string, string>> {
+  const icons: Record<string, string> = {}
+  for (const platform of ['tiktok', 'youtube']) {
+    for (const ext of CHAT_ICON_EXTENSIONS) {
+      const filename = `${platform}.${ext}`
+      if (await Bun.file(`${CHAT_ICON_DIRECTORY}/${filename}`).exists()) {
+        icons[platform] = `/chat-icons/${filename}`
+        break
+      }
+    }
+  }
+  return icons
+}
 
 const chatNotifQueue = new NotifQueue()
 const chatArchive = new ChatArchiveManager()
@@ -956,6 +974,7 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
     const configV2 = await loadPlatformConfigFile(PLATFORM_CONFIG_FILE)
     return {
       configV2,
+      chatIcons: await discoverChatIcons(),
       statusV2: { tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') },
     }
   })

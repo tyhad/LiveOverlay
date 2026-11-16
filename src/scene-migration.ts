@@ -217,6 +217,12 @@ function isLegacyAnimation(animation: unknown): animation is AnyRecord {
   )
 }
 
+/** Default notif lama (satu baris) -> author di atas, message di baris baru. */
+const LEGACY_NOTIF_TEMPLATES: Record<string, string> = {
+  '{author}: {message}': '{author}\\n{message}',
+  '{platformTag} {author}: {message}': '{platformTag} {author}\\n{message}',
+}
+
 /**
  * Fase C5 — normalisasi binding chat TANPA membuang data scene lama/baru.
  * `textBinding.source === 'chat'` dan `stateBinding.source === 'chatNotif'` bukan
@@ -242,6 +248,9 @@ export function normalizeChatBindings<T>(element: T): T {
         normalized.lines = Number.isFinite(rawLines) && rawLines > 0
           ? Math.min(30, Math.max(1, Math.round(rawLines)))
           : 5
+      } else {
+        const legacy = LEGACY_NOTIF_TEMPLATES[String(text.template || '')]
+        if (legacy) normalized.template = legacy
       }
       next = { ...next, textBinding: normalized }
     }

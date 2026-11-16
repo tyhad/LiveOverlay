@@ -104,6 +104,7 @@
     let chatNotif = { ...EMPTY_NOTIF }
     let chatPlatformStatus = { tiktok: null, youtube: null }
     let chatTags = { tiktok: '[TT]', youtube: '[YT]' }
+    let chatIcons = { tiktok: '', youtube: '' }
     let chatFeedInitialized = false
     // Saat halaman di-load ulang, snapshot notif yang masih "showing" adalah chat lama.
     // Tandai seq-nya dan tampilkan sebagai idle sampai chat BARU masuk, supaya reload
@@ -212,7 +213,8 @@
       } else {
         textEl.style.textShadow = 'none'
       }
-      textEl.textContent = text
+      if (window.ChatFormat?.renderText) window.ChatFormat.renderText(textEl, text, { tags: chatTags, icons: chatIcons })
+      else textEl.textContent = text
     }
 
     function applyMarqueeText(node, el, text) {
@@ -220,6 +222,9 @@
       const speed = cfg.speed || 80
       const gap = cfg.gap ?? 60
       const style = el.style || {}
+      // Ikon platform tidak didukung di marquee (pengukuran teks pakai canvas),
+      // jadi marker diganti teks tag supaya tidak muncul karakter kosong.
+      if (window.ChatFormat?.stripIcons) text = window.ChatFormat.stripIcons(text, { tags: chatTags })
       const textWidth = measureTextWidth(text, style)
 
       const record = renderedElements.get(el.id)
@@ -301,6 +306,8 @@
       const yoyo = !!cfg.yoyo
       const yoyoDelay = Math.max(0, cfg.yoyoDelay ?? 1)
       const style = el.style || {}
+      // Ikon platform tidak didukung di scroll; marker diganti teks tag.
+      if (window.ChatFormat?.stripIcons) text = window.ChatFormat.stripIcons(text, { tags: chatTags })
 
       const record = renderedElements.get(el.id)
       const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur, getEffectiveTextColor(el)].join('|')
@@ -457,9 +464,9 @@
         message: String(event?.message || ''),
       }
       if (window.ChatFormat?.formatChat) {
-        return window.ChatFormat.formatChat(safe, template, { tags: chatTags })
+        return window.ChatFormat.formatChat(safe, template, { tags: chatTags, icons: chatIcons })
       }
-      return String(template || '{author}: {message}').replace(/\{(platformTag|platform|author|message)\}/g, (_, key) => {
+      return String(template || '{author}: {message}').replace(/\\n/g, '\n').replace(/\{(platformTag|platform|author|message)\}/g, (_, key) => {
         if (key === 'platformTag') return chatTags[safe.platform] || ''
         return safe[key] || ''
       })
@@ -530,7 +537,7 @@
 
     function resolveChatText(binding) {
       const field = binding?.field === 'notif' ? 'notif' : 'stack'
-      const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}: {message}')
+      const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
       if (field === 'stack') {
         const rawLines = Number(binding?.lines)
         const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
@@ -990,6 +997,16 @@
           const youtubeTag = String(nextTags.youtubeTag || '').trim()
           if (tiktokTag) chatTags.tiktok = tiktokTag
           if (youtubeTag) chatTags.youtube = youtubeTag
+        }
+        if (data?.chatIcons && typeof data.chatIcons === 'object') {
+          const nextIcons = {
+            tiktok: String(data.chatIcons.tiktok || ''),
+            youtube: String(data.chatIcons.youtube || ''),
+          }
+          if (nextIcons.tiktok !== chatIcons.tiktok || nextIcons.youtube !== chatIcons.youtube) {
+            chatIcons = nextIcons
+            if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
+          }
         }
       } catch (err) {
         console.error('Failed to sync platform connector config:', err)

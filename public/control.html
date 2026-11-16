@@ -318,6 +318,191 @@
     color: var(--text-dim);
   }
   .timer-toggle input { width: 16px; height: 16px; }
+
+  /* Chat Notification review */
+  .review-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .review-head h2 { margin: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+  #review-state { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; padding: 3px 9px; border-radius: 999px; background: rgba(16,185,129,.18); color: var(--ok); }
+  #review-state.reviewing { background: rgba(255,255,255,.08); color: var(--text-dim); }
+  .review-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .review-btn {
+    min-height: 64px; padding: 12px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 14px; font-weight: 800;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .review-btn:active:not(:disabled) { transform: scale(.96); background: var(--indigo); }
+  .review-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Chat Archive */
+  .hidden { display: none !important; }
+  .archive-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    max-width: 720px;
+    margin: 0 auto 16px;
+  }
+  .archive-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .archive-head h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .archive-sub { margin: 3px 0 0; font-size: 11px; color: var(--text-dim); }
+  .archive-active {
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  .archive-active b { color: var(--text); }
+  .archive-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .archive-label {
+    margin-right: auto;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+  }
+  .archive-sessions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 190px;
+    overflow: auto;
+  }
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .session-item.selected { border-color: var(--indigo-2); box-shadow: 0 0 0 2px rgba(142,152,132,.25); }
+  .session-item small { color: var(--text-dim); font-size: 10px; }
+  .session-item .session-badge {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .session-item .session-badge.active { background: rgba(16,185,129,.18); color: var(--ok); }
+  .session-item .session-badge.interrupted { background: rgba(255,35,87,.16); color: var(--danger); }
+  .archive-details { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px; }
+  .archive-details summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .archive-details summary::-webkit-details-marker { display: none; }
+  .archive-details[open] summary { color: var(--text); margin-bottom: 10px; }
+  .archive-selected { font-size: 10px; color: var(--indigo-2); font-weight: 600; }
+  .archive-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .archive-field label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .archive-field input,
+  .archive-field select {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .archive-field.archive-check { display: flex; align-items: flex-end; }
+  .archive-field.archive-check label { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text); margin: 0 0 7px; }
+  .archive-field.archive-check input { width: 16px; height: 16px; padding: 0; }
+  .archive-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .archive-btn {
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .archive-btn.primary { background: var(--indigo); border-color: var(--indigo-2); }
+  .archive-btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .archive-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .archive-btn:active:not(:disabled) { transform: scale(.97); }
+  .archive-preview {
+    margin: 10px 0 0;
+    min-height: 58px;
+    max-height: 220px;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--text-dim);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 10px;
+  }
+  .archive-align-row { display: flex; gap: 8px; margin-top: 8px; }
+  .archive-align-row input {
+    flex: 1; min-width: 0; padding: 9px 10px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: 12px; font-family: inherit;
+  }
+  .archive-align-row button {
+    padding: 9px 12px; border-radius: 10px; border: none;
+    background: var(--indigo); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer;
+  }
+  .archive-status { margin: 8px 0 0; font-size: 11px; color: var(--text-dim); }
+  @media (max-width: 520px) {
+    .archive-grid { grid-template-columns: 1fr; }
+  }
 </style>
 <link rel="stylesheet" href="/design.css" />
 </head>
@@ -327,23 +512,123 @@
     <div id="status-dot" title="Sinkronisasi control-state"></div>
   </header>
 
+  <!-- Review chat notification: juga DI LUAR #app supaya tombol tidak ikut di-render ulang. -->
+  <section id="chat-review-panel" class="archive-panel hidden">
+    <div class="review-head">
+      <h2>Chat Review</h2>
+      <span id="review-state">LIVE</span>
+    </div>
+    <div class="review-row">
+      <button id="review-up" class="review-btn" type="button">▲ Lebih lama</button>
+      <button id="review-down" class="review-btn" type="button">▼ Lebih baru</button>
+    </div>
+    <p id="review-meta" class="archive-status"></p>
+  </section>
+
+  <!-- Panel arsip sengaja DI LUAR #app: render() control-state berjalan tiap detik
+       dan tidak boleh menghapus form/daftar sesi yang sedang dipakai. -->
+  <section id="chat-archive-panel" class="archive-panel hidden">
+    <div class="archive-head">
+      <div>
+        <h2>Chat Archive</h2>
+        <p class="archive-sub">Rekaman chat per sesi dan export subtitle (SRT/VTT/CSV/JSON).</p>
+      </div>
+      <button id="archive-refresh-btn" class="archive-btn" title="Muat ulang daftar sesi">↻</button>
+    </div>
+
+    <div id="archive-active-summary" class="archive-active">Memuat sesi arsip…</div>
+
+    <div class="archive-label-row">
+      <span class="archive-label">Daftar sesi</span>
+      <button id="archive-new-btn" class="archive-btn primary">Sesi baru</button>
+      <button id="archive-end-btn" class="archive-btn danger hidden">End session aktif</button>
+      <button id="archive-delete-btn" class="archive-btn danger" disabled>Hapus sesi</button>
+    </div>
+    <div id="archive-sessions" class="archive-sessions">
+      <div class="archive-status">Memuat…</div>
+    </div>
+
+    <details class="archive-details" open>
+      <summary>
+        <span>Export</span>
+        <span id="archive-selected-label" class="archive-selected">—</span>
+      </summary>
+      <div class="archive-grid">
+        <div class="archive-field">
+          <label for="archive-format">Format</label>
+          <select id="archive-format">
+            <option value="srt">SRT</option>
+            <option value="vtt">VTT</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
+        <div class="archive-field">
+          <label for="archive-offset">Offset (detik)</label>
+          <input id="archive-offset" type="number" step="0.1" value="0" />
+        </div>
+        <div class="archive-field">
+          <label for="archive-mode">Mode</label>
+          <select id="archive-mode">
+            <option value="stack">Stack (N baris)</option>
+            <option value="single">Single (1 chat/cue)</option>
+          </select>
+        </div>
+        <div class="archive-field">
+          <label for="archive-lines">Lines</label>
+          <input id="archive-lines" type="number" min="1" max="30" step="1" value="5" />
+        </div>
+        <div class="archive-field">
+          <label for="archive-ttl">TTL per chat (detik)</label>
+          <input id="archive-ttl" type="number" min="1" max="120" step="1" value="8" />
+        </div>
+        <div class="archive-field archive-check">
+          <label><input id="archive-tags" type="checkbox" checked /> Tag [TT] / [YT]</label>
+        </div>
+      </div>
+      <div class="archive-actions">
+        <button id="archive-preview-btn" class="archive-btn">Preview 3 cue</button>
+        <button id="archive-download-btn" class="archive-btn primary">Download</button>
+      </div>
+      <pre id="archive-preview" class="archive-preview">Pilih sesi lalu klik “Preview 3 cue”.</pre>
+    </details>
+
+    <details class="archive-details">
+      <summary>Samakan dengan chat</summary>
+      <div class="archive-field">
+        <label for="archive-align-chat">Chat yang muncul di video</label>
+        <select id="archive-align-chat"></select>
+      </div>
+      <div class="archive-align-row">
+        <input id="archive-align-time" type="text" inputmode="numeric" placeholder="Waktu di video, mis. 12:34" />
+        <button id="archive-align-btn">Hitung offset</button>
+      </div>
+      <p class="archive-status" id="archive-align-status">Offset hasil hitungan otomatis masuk ke kolom Offset di
+        atas.</p>
+    </details>
+  </section>
+
   <main id="app">
     <div class="empty-state">Memuat binding dari scene…</div>
   </main>
 
+  <script src="/text-binding.js"></script>
   <script>
+    const { computeTimerDisplayMs, formatTimerMs } = window.TextBinding
     const nativeFetch = window.fetch.bind(window)
     window.fetch = async (input, init = {}) => {
-      const method = (init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase()
       const response = await nativeFetch(input, init)
-      if (response.status !== 401 || method === 'GET' || !String(input).includes('/api/')) return response
+      // Archive GET endpoints are also protected (they contain viewer usernames).
+      if (response.status !== 401 || !String(input).includes('/api/')) return response
 
       const token = sessionStorage.getItem('liveoverlay-secret') || window.prompt('Masukkan secret key LiveOverlay')
       if (!token) return response
       sessionStorage.setItem('liveoverlay-secret', token)
       const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined))
       headers.set('X-Secret-Token', token)
-      return nativeFetch(input, { ...init, headers })
+      const retry = await nativeFetch(input, { ...init, headers })
+      if (retry.status === 401) sessionStorage.removeItem('liveoverlay-secret')
+      return retry
     }
 
     const POLL_MS = 1000
@@ -365,9 +650,10 @@
       const eventStates = new Set()
       const timers = new Set()
       const texts = new Set()
+      let chatNotif = false
       try {
         const res = await fetch('/api/scenes')
-        if (!res.ok) return { counters, eventStates, timers, texts }
+        if (!res.ok) return { counters, eventStates, timers, texts, chatNotif }
         const data = await res.json()
         const scenes = Array.isArray(data.scenes) ? data.scenes : []
         scenes.forEach(scene => {
@@ -377,15 +663,17 @@
             if (tb?.source === 'eventState' && tb.group) eventStates.add(tb.group)
             if (tb?.source === 'timer' && tb.group) timers.add(tb.group)
             if (tb?.source === 'text' && tb.group) texts.add(tb.group)
+            if (tb?.source === 'chat' && tb.field === 'notif') chatNotif = true
             const sb = el.stateBinding
             if (sb?.source === 'counter' && sb.group) counters.add(sb.group)
             if (sb?.source === 'eventState' && sb.group) eventStates.add(sb.group)
+            if (sb?.enabled && sb.source === 'chatNotif') chatNotif = true
           })
         })
       } catch (err) {
         console.error('Failed to scan scenes for control groups:', err)
       }
-      return { counters, eventStates, timers, texts }
+      return { counters, eventStates, timers, texts, chatNotif }
     }
 
     async function syncControlState() {
@@ -519,30 +807,6 @@
     // di-tick tiap 250ms lokal (setInterval) supaya display mulus di antara poll 1 detik,
     // tanpa perlu polling super cepat ke server.
     let timerTickHandle = null
-
-    function computeTimerElapsedMs(timer) {
-      if (!timer) return 0
-      if (timer.isRunning && typeof timer.startedAtMs === 'number') {
-        return Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
-      }
-      return timer.pausedAccumMs || 0
-    }
-    function computeTimerDisplayMs(timer) {
-      const elapsed = computeTimerElapsedMs(timer)
-      if (timer?.mode === 'countdown') {
-        const remaining = (timer.durationMs || 0) - elapsed
-        if (remaining <= 0 && !timer.continueBelowZero) return 0
-        return remaining
-      }
-      return elapsed
-    }
-    function formatTimerMs(ms) {
-      const sign = ms < 0 ? '-' : ''
-      const abs = Math.abs(Math.round(ms / 1000))
-      const mm = Math.floor(abs / 60).toString().padStart(2, '0')
-      const ss = (abs % 60).toString().padStart(2, '0')
-      return `${sign}${mm}:${ss}`
-    }
 
     /** Parse durasi ketikan manual. Format:
      *   "50"       -> 50 menit (angka polos = menit, kompatibel dengan versi lama)
@@ -762,11 +1026,398 @@
       }
     }
 
+    // ─── Chat Archive panel ─────────────────────────────────────────────────
+    const archiveState = { sessions: [], selectedId: null, activeId: null, followActive: true, deferredActiveId: null }
+    let archiveChats = []
+
+    function formatBytes(bytes) {
+      const n = Number(bytes) || 0
+      if (n < 1024) return `${n} B`
+      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+      return `${(n / (1024 * 1024)).toFixed(2)} MB`
+    }
+
+    function archiveSelectedSession() {
+      return archiveState.sessions.find(s => s.id === archiveState.selectedId) || null
+    }
+
+    function updateArchiveSessionUI() {
+      const active = archiveState.sessions.find(s => s.isActive) || null
+      archiveState.activeId = active ? active.id : null
+
+      const summary = document.getElementById('archive-active-summary')
+      if (summary) {
+        summary.innerHTML = active
+          ? `Sesi aktif: <b>${esc(active.id)}</b> · ${active.chatCount.toLocaleString()} chat · ${formatBytes(active.bytes)}`
+          : 'Tidak ada sesi aktif. Chat baru akan otomatis membuka sesi berikutnya.'
+      }
+
+      const endBtn = document.getElementById('archive-end-btn')
+      if (endBtn) endBtn.classList.toggle('hidden', !active)
+
+      const deleteBtn = document.getElementById('archive-delete-btn')
+      if (deleteBtn) {
+        const selected = archiveSelectedSession()
+        deleteBtn.disabled = !selected || Boolean(selected.isActive)
+      }
+
+      const label = document.getElementById('archive-selected-label')
+      if (label) label.textContent = archiveState.selectedId || '—'
+    }
+
+    function renderArchiveSessions() {
+      const container = document.getElementById('archive-sessions')
+      if (!container) return
+      if (archiveState.sessions.length === 0) {
+        container.innerHTML = '<div class="archive-status">Belum ada sesi arsip.</div>'
+      } else {
+        container.innerHTML = archiveState.sessions.map(session => {
+          const started = new Date(session.startedAt).toLocaleString()
+          const badge = session.isActive ? 'aktif' : session.interrupted ? 'interrupted' : 'selesai'
+          const badgeClass = session.isActive ? 'active' : session.interrupted ? 'interrupted' : ''
+          return `
+            <button class="session-item ${session.id === archiveState.selectedId ? 'selected' : ''}"
+              data-archive-session="${esc(session.id)}">
+              <span>
+                <b>${esc(session.id)}</b><br/>
+                <small>${esc(started)} · ${session.chatCount.toLocaleString()} chat · ${formatBytes(session.bytes)}</small>
+              </span>
+              <span class="session-badge ${badgeClass}">${badge}</span>
+            </button>`
+        }).join('')
+      }
+      updateArchiveSessionUI()
+    }
+
+    async function loadArchiveChats() {
+      const select = document.getElementById('archive-align-chat')
+      if (!select) return
+      const session = archiveSelectedSession()
+      if (!session) {
+        archiveChats = []
+        select.innerHTML = '<option value="">Pilih sesi dulu</option>'
+        return
+      }
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/chats?limit=500&offset=0`)
+        if (!res.ok) throw new Error('gagal memuat chat')
+        const data = await res.json()
+        const previousValue = select.value
+        archiveChats = Array.isArray(data.chats) ? data.chats : []
+        select.innerHTML = archiveChats.length === 0
+          ? '<option value="">Sesi ini belum punya chat</option>'
+          : archiveChats.map(chat => {
+              const text = `${chat.author}: ${chat.message}`.replace(/\s+/g, ' ').slice(0, 80)
+              const platform = String(chat.platform || '').toUpperCase()
+              return `<option value="${chat.seq}">#${chat.seq} [${esc(platform)}] ${esc(text)}</option>`
+            }).join('')
+        // Keep the chat the user picked while new chats arrive every refresh.
+        if (previousValue && archiveChats.some(chat => String(chat.seq) === previousValue)) {
+          select.value = previousValue
+        }
+        const status = document.getElementById('archive-align-status')
+        if (status && Number(data.total) > archiveChats.length) {
+          status.textContent = `Menampilkan ${archiveChats.length} dari ${data.total} chat pertama.`
+        }
+      } catch (err) {
+        select.innerHTML = '<option value="">Gagal memuat chat</option>'
+      }
+    }
+
+    async function selectArchiveSession(id) {
+      archiveState.selectedId = id || null
+      archiveState.deferredActiveId = null
+      archiveState.followActive = Boolean(archiveState.sessions.find(s => s.id === id)?.isActive)
+      renderArchiveSessions()
+      const preview = document.getElementById('archive-preview')
+      if (preview) preview.textContent = 'Pilih sesi lalu klik “Preview 3 cue”.'
+      const status = document.getElementById('archive-align-status')
+      if (status) {
+        status.textContent = 'Offset hasil hitungan otomatis masuk ke kolom Offset di atas.'
+      }
+      await loadArchiveChats()
+    }
+
+    async function loadArchiveSessions() {
+      const container = document.getElementById('archive-sessions')
+      try {
+        const res = await fetch('/api/chat/archive')
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        archiveState.sessions = Array.isArray(data.sessions) ? data.sessions : []
+        const active = archiveState.sessions.find(s => s.isActive)
+        const previousActiveId = archiveState.activeId
+
+        // Follow the active session, but keep the previous one selected for one
+        // refresh cycle so chats archived right before the rollover are shown first.
+        if (archiveState.deferredActiveId) {
+          archiveState.selectedId = archiveState.deferredActiveId
+          archiveState.deferredActiveId = null
+        } else if (archiveState.followActive && active) {
+          const rolledOver = previousActiveId && previousActiveId !== active.id
+          if (rolledOver && archiveState.selectedId === previousActiveId) {
+            archiveState.deferredActiveId = active.id
+          } else {
+            archiveState.selectedId = active.id
+          }
+        }
+        if (!archiveState.sessions.some(s => s.id === archiveState.selectedId)) {
+          archiveState.selectedId = active ? active.id : (archiveState.sessions[0]?.id || null)
+          archiveState.deferredActiveId = null
+        }
+
+        renderArchiveSessions()
+        // Refresh the chat list too: chats archived since the last poll must show
+        // before the panel moves on to a newer session.
+        await loadArchiveChats()
+      } catch (err) {
+        if (container) container.innerHTML = `<div class="archive-status">Gagal memuat arsip: ${esc(err.message)}</div>`
+      }
+    }
+
+    function archiveExportQuery(format) {
+      const params = new URLSearchParams()
+      params.set('format', format)
+      params.set('offset', String(Number(document.getElementById('archive-offset').value) || 0))
+      params.set('mode', document.getElementById('archive-mode').value === 'single' ? 'single' : 'stack')
+      params.set('lines', String(Math.max(1, Math.min(30, parseInt(document.getElementById('archive-lines').value, 10) || 5))))
+      params.set('ttl', String(Math.max(1, Math.min(120, parseInt(document.getElementById('archive-ttl').value, 10) || 8))))
+      params.set('tags', document.getElementById('archive-tags').checked ? '1' : '0')
+      return params
+    }
+
+    function previewCueText(text, format) {
+      if (format === 'json') {
+        try {
+          const data = JSON.parse(text)
+          const chats = Array.isArray(data.chats) ? data.chats : []
+          if (chats.length === 0) return 'Tidak ada chat pada sesi ini.'
+          return chats.slice(0, 3)
+            .map(c => `t=${Number(c.t_rel_sec).toFixed(2)}s [${String(c.platform || '').toUpperCase()}] ${c.author}: ${c.message}`)
+            .join('\n')
+        } catch {
+          return text.slice(0, 600)
+        }
+      }
+      if (format === 'csv') {
+        return text.replace(/\r/g, '').split('\n').slice(0, 4).join('\n') || 'Tidak ada data CSV.'
+      }
+      const blocks = text.replace(/\r/g, '').split(/\n\n+/).map(b => b.trim()).filter(b => b.includes('-->'))
+      if (blocks.length === 0) return 'Tidak ada cue pada rentang/offset ini.'
+      return blocks.slice(0, 3).join('\n\n')
+    }
+
+    async function previewArchive() {
+      const session = archiveSelectedSession()
+      const preview = document.getElementById('archive-preview')
+      if (!session) { if (preview) preview.textContent = 'Pilih sesi dulu.'; return }
+      if (preview) preview.textContent = 'Memuat preview…'
+      const format = document.getElementById('archive-format').value
+      const params = archiveExportQuery(format)
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/export?${params.toString()}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const text = await res.text()
+        if (preview) preview.textContent = previewCueText(text, format)
+      } catch (err) {
+        if (preview) preview.textContent = `Gagal memuat preview: ${err.message}`
+      }
+    }
+
+    async function downloadArchive() {
+      const session = archiveSelectedSession()
+      if (!session) { alert('Pilih sesi dulu.'); return }
+      const format = document.getElementById('archive-format').value
+      const params = archiveExportQuery(format)
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/export?${params.toString()}`)
+        if (!res.ok) {
+          let message = `HTTP ${res.status}`
+          try { message = (await res.json()).message || message } catch {}
+          throw new Error(message)
+        }
+        const blob = await res.blob()
+        const disposition = res.headers.get('content-disposition') || ''
+        const match = /filename="?([^";]+)"?/i.exec(disposition)
+        const filename = match ? match[1] : `chat-${session.id}.${format}`
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      } catch (err) {
+        alert(`Gagal mengunduh: ${err.message}`)
+      }
+    }
+
+    async function endArchiveSession() {
+      const active = archiveState.sessions.find(s => s.isActive)
+      if (!active) return
+      if (!window.confirm(`Akhiri sesi arsip ${active.id}? Chat berikutnya akan membuka sesi baru.`)) return
+      try {
+        const res = await fetch('/api/chat/archive/session/end', { method: 'POST' })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        await loadArchiveSessions()
+      } catch (err) {
+        alert(`Gagal mengakhiri sesi: ${err.message}`)
+      }
+    }
+
+    async function startArchiveSession() {
+      const active = archiveState.sessions.find(s => s.isActive)
+      const question = active
+        ? `Mulai sesi baru? Sesi aktif ${active.id} akan ditutup.`
+        : 'Mulai sesi arsip baru?'
+      if (!window.confirm(question)) return
+      try {
+        const res = await fetch('/api/chat/archive/session/start', { method: 'POST' })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        archiveState.selectedId = data.sessionId || null
+        archiveState.followActive = true
+        archiveState.deferredActiveId = null
+        await loadArchiveSessions()
+      } catch (err) {
+        alert(`Gagal memulai sesi: ${err.message}`)
+      }
+    }
+
+    async function deleteArchiveSession() {
+      const session = archiveSelectedSession()
+      if (!session || session.isActive) return
+      if (!window.confirm(`Hapus sesi ${session.id}? Chat di dalamnya akan hilang permanen.`)) return
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}`, { method: 'DELETE' })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        archiveState.selectedId = null
+        await loadArchiveSessions()
+      } catch (err) {
+        alert(`Gagal menghapus sesi: ${err.message}`)
+      }
+    }
+
+    async function alignArchive() {
+      const session = archiveSelectedSession()
+      const status = document.getElementById('archive-align-status')
+      if (!session) { if (status) status.textContent = 'Pilih sesi dulu.'; return }
+      const chatSeq = Number(document.getElementById('archive-align-chat').value)
+      const videoTime = document.getElementById('archive-align-time').value.trim()
+      if (!chatSeq) { if (status) status.textContent = 'Pilih chat yang muncul di video.'; return }
+      if (!videoTime) { if (status) status.textContent = 'Isi waktu kemunculan di video (mis. 12:34).'; return }
+      try {
+        const res = await fetch(`/api/chat/archive/${encodeURIComponent(session.id)}/align?chatSeq=${encodeURIComponent(chatSeq)}&videoTime=${encodeURIComponent(videoTime)}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`)
+        document.getElementById('archive-offset').value = String(data.offsetSec)
+        if (status) {
+          status.textContent = `Offset ${data.offsetSec}s diterapkan. Preview/download berikutnya memakai offset ini.`
+        }
+      } catch (err) {
+        if (status) status.textContent = `Gagal menghitung offset: ${err.message}`
+      }
+    }
+
+    // ─── Chat Notification review ───────────────────────────────────────────
+    let chatReviewStarted = false
+    function applyChatReviewVisibility() {
+      const panel = document.getElementById('chat-review-panel')
+      if (panel) panel.classList.toggle('hidden', usedGroups.chatNotif !== true)
+      if (usedGroups.chatNotif !== true || chatReviewStarted) return
+      chatReviewStarted = true
+      initChatReview()
+    }
+
+    function renderChatReview(notif) {
+      if (!notif) return
+      const state = document.getElementById('review-state')
+      const meta = document.getElementById('review-meta')
+      const up = document.getElementById('review-up')
+      const down = document.getElementById('review-down')
+      const total = Math.max(0, Number(notif.reviewTotal) || 0)
+      const reviewing = notif.reviewing === true
+      state.textContent = reviewing ? 'REVIEW' : 'LIVE'
+      state.classList.toggle('reviewing', reviewing)
+      up.disabled = total === 0 || (reviewing && notif.reviewIndex <= 0)
+      down.disabled = !reviewing
+      meta.textContent = reviewing
+        ? `Chat ${Number(notif.reviewIndex) + 1} / ${total} · antre ${Number(notif.queueLength) || 0}`
+        : `Chat terbaru · antre ${Number(notif.queueLength) || 0}`
+    }
+
+    async function stepChatReview(direction) {
+      try {
+        const res = await fetch('/api/chat/notif/step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ direction }),
+        })
+        if (!res.ok) throw new Error('bad status')
+        renderChatReview((await res.json()).notif)
+      } catch (err) {
+        console.error('Chat review step failed:', err)
+      }
+    }
+
+    async function syncChatReview() {
+      try {
+        const res = await fetch('/api/chat/notif')
+        if (res.ok) renderChatReview(await res.json())
+      } catch (err) {
+        console.error('Chat review sync failed:', err)
+      }
+    }
+
+    function initChatReview() {
+      document.getElementById('review-up').addEventListener('click', () => stepChatReview('up'))
+      document.getElementById('review-down').addEventListener('click', () => stepChatReview('down'))
+      syncChatReview()
+      setInterval(() => {
+        if (!document.getElementById('chat-review-panel').classList.contains('hidden')) syncChatReview()
+      }, 1000)
+    }
+
+    let chatArchiveStarted = false
+    function applyChatArchiveVisibility() {
+      const panel = document.getElementById('chat-archive-panel')
+      const visible = usedGroups.chatNotif === true
+      if (panel) panel.classList.toggle('hidden', !visible)
+      if (!visible || chatArchiveStarted) return
+      chatArchiveStarted = true
+      initChatArchive()
+    }
+
+    function initChatArchive() {
+      document.getElementById('archive-refresh-btn').addEventListener('click', loadArchiveSessions)
+      document.getElementById('archive-new-btn').addEventListener('click', startArchiveSession)
+      document.getElementById('archive-end-btn').addEventListener('click', endArchiveSession)
+      document.getElementById('archive-delete-btn').addEventListener('click', deleteArchiveSession)
+      document.getElementById('archive-preview-btn').addEventListener('click', previewArchive)
+      document.getElementById('archive-download-btn').addEventListener('click', downloadArchive)
+      document.getElementById('archive-align-btn').addEventListener('click', alignArchive)
+      document.getElementById('archive-sessions').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-archive-session]')
+        if (btn) selectArchiveSession(btn.dataset.archiveSession)
+      })
+      document.getElementById('archive-format').addEventListener('change', () => {
+        const preview = document.getElementById('archive-preview')
+        if (preview) preview.textContent = 'Klik “Preview 3 cue” untuk melihat hasil format ini.'
+      })
+      loadArchiveSessions()
+      setInterval(loadArchiveSessions, 5000)
+    }
+
     async function init() {
       const groups = await scanUsedGroups()
       usedGroups = groups
 
       scanned = true
+      applyChatArchiveVisibility()
+      applyChatReviewVisibility()
       await syncControlState()
       setInterval(syncControlState, POLL_MS)
       // Tick lokal buat display timer yang sedang running, tanpa nunggu poll 1 detik
@@ -776,6 +1427,8 @@
       // (tanpa perlu reload manual Control Panel) tetap ke-detect.
       setInterval(async () => {
         usedGroups = await scanUsedGroups()
+        applyChatArchiveVisibility()
+        applyChatReviewVisibility()
         render()
       }, 8000)
     }

@@ -3,15 +3,20 @@ import { staticPlugin } from '@elysiajs/static'
 import { mkdir, readdir, unlink } from 'node:fs/promises'
 import { readFileSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
-import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector'
+import { ConnectorManager } from './connectors/manager'
 import { Database } from 'bun:sqlite'
 import { ControlStateStore, validateControlName, type ControlStateData } from './control-state'
-import { migrateLegacyElement } from './scene-migration'
+import { migrateLegacyElement, normalizeChatBindings } from './scene-migration'
+import { ChatHub } from './chat-hub'
+import { NotifQueue } from './notif-queue'
+import type { PlatformStatus, ChatEvent } from './chat-types'
+import { loadPlatformConfigFile, savePlatformConfigFile } from './platform-config-store'
+import type { PlatformConfigV2 } from './platform-config'
+import { ChatArchiveManager } from './chat-archive'
+import { SceneStore, createDefaultScene, writeFileAtomic, type SceneData } from './scene-store'
 
-const SETTINGS_FILE = 'settings.json'
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
 const F1_TEMPLATES_FILE = 'f1-text-templates.json'
-const EXAMPLE_SETTINGS_FILE = 'settings.example.json'
 const SCENES_FILE = 'scenes.json'
 const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
@@ -22,6 +27,10 @@ const SETTINGS_SECRET = process.env.SETTINGS_SECRET
 const PORT = Number(process.env.PORT || 3000)
 const HOST = process.env.HOST || '127.0.0.1'
 const MAX_ASSET_SIZE = 10 * 1024 * 1024
+const MAX_SCENE_BODY_BYTES = 5 * 1024 * 1024
+// Upper bound for any request (asset uploads allow 10 MB multipart). Scenes have
+// their own smaller check in the route.
+const MAX_REQUEST_BODY_BYTES = 12 * 1024 * 1024
 const DEFAULT_PLATFORM_POLL_INTERVAL_MS = 30_000
 const ASSET_MIME_TYPES = new Map([
   ['image/svg+xml', 'svg'],
@@ -30,320 +39,38 @@ const ASSET_MIME_TYPES = new Map([
   ['image/webp', 'webp'],
   ['image/gif', 'gif'],
 ])
+const CHAT_ICON_DIRECTORY = 'public/chat-icons'
+const CHAT_ICON_EXTENSIONS = ['svg', 'png', 'webp', 'ico']
 
-interface Settings {
-  tiktokUsername: string
-  runningText: string
+/** Ikon platform opsional: taruh file di public/chat-icons/<platform>.<ext>.
+ *  Kalau tidak ada, `{platformTag}` tetap memakai teks tag dari config. */
+async function discoverChatIcons(): Promise<Record<string, string>> {
+  const icons: Record<string, string> = {}
+  for (const platform of ['tiktok', 'youtube']) {
+    for (const ext of CHAT_ICON_EXTENSIONS) {
+      const filename = `${platform}.${ext}`
+      if (await Bun.file(`${CHAT_ICON_DIRECTORY}/${filename}`).exists()) {
+        icons[platform] = `/chat-icons/${filename}`
+        break
+      }
+    }
+  }
+  return icons
 }
+
+const chatNotifQueue = new NotifQueue()
+const chatArchive = new ChatArchiveManager()
+// Di-set dari config v2 sebelum connector mulai. Saat false, chat tetap tampil
+// di overlay tetapi tidak ditulis ke chat-archive/.
+let chatArchiveEnabled = false
+const chatHub = new ChatHub({
+  notif: chatNotifQueue,
+  onChat: (event: ChatEvent) => {
+    if (chatArchiveEnabled) chatArchive.appendChat(event)
+  },
+})
 
 type PlatformType = 'tiktok' | 'youtube'
-
-interface PlatformConnectorConfig {
-  enabled: boolean
-  platform: PlatformType
-  /** TikTok: channel username e.g. "@creator". YouTube: not used for connect (use videoId or channelId). */
-  tiktokUsername?: string
-  /** YouTube: specific live video ID. If empty, the connector will search for the live broadcast of the channel. */
-  youtubeVideoId?: string
-  /** YouTube: channel ID (UCxxxxxx) used to find current live broadcast when youtubeVideoId is empty. */
-  youtubeChannelId?: string
-  /** YouTube Data API v3 key. Required for YouTube connector. */
-  youtubeApiKey?: string
-  /** Poll interval in ms. Min 10s, max 300s. Default 30s. */
-  pollIntervalMs?: number
-  chatDisplayDurationMs?: number
-}
-
-interface PlatformConnectorStatus {
-  enabled: boolean
-  platform: PlatformType
-  running: boolean
-  lastFetchedAt: string | null
-  lastSuccessAt: string | null
-  lastError: string | null
-}
-
-interface GradientStyle {
-  enabled?: boolean
-  from?: string
-  to?: string
-  angle?: number
-}
-
-interface ElementStyle {
-  text?: string
-  fontSize?: number
-  fontFamily?: string
-  fontWeight?: string
-  color?: string
-  textAlign?: 'left' | 'center' | 'right'
-  verticalAlign?: 'top' | 'center' | 'bottom'
-  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'
-  letterSpacing?: number
-  lineHeight?: number
-  textShadow?: string
-  backgroundColor?: string
-  gradient?: GradientStyle
-  borderRadius?: number
-  borderWidth?: number
-  borderColor?: string
-  borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none'
-  padding?: number
-  shadowColor?: string
-  shadowBlur?: number
-  shadowOffsetX?: number
-  shadowOffsetY?: number
-}
-
-/**
- * Properti elemen yang bisa jadi target animasi. Sengaja dibatasi (bukan semua
- * CSS property) — lihat Vision.md §3.3.1 dan public/animation-engine.js.
- */
-interface AnimatableProperties {
-  x?: number
-  y?: number
-  opacity?: number
-  scale?: number
-  rotation?: number
-  rotationX?: number
-  rotationY?: number
-  perspective?: number
-}
-
-/**
- * Satu step animasi dalam sequence (Q0, Q1, Q2, ...). Dieksekusi berurutan.
- *   - 'to': animasi dari state elemen saat ini menuju `properties`.
- *   - 'from': animasi dari `properties` menuju state elemen saat ini (state akhir
- *     tidak berubah secara kanonis — dipakai untuk efek entrance seperti fadeIn/slideUp
- *     tanpa mengubah x/y/opacity tersimpan elemen, supaya WYSIWYG di editor tetap akurat).
- *   - 'fromTo': kedua state (`from` & `to`) dispesifikasikan eksplisit.
- */
-interface AnimationStep {
-  id?: string
-  /** 'delay' adalah step khusus: cuma menunggu, tanpa animasi properti apapun
-   *  (lihat `duration`). Dibuat sebagai step tersendiri (bukan field nempel di
-   *  tiap step) supaya bisa disisipkan/dipindah/diduplikat bebas di posisi
-   *  manapun dalam sequence. */
-  type: 'to' | 'from' | 'fromTo' | 'delay'
-  properties?: AnimatableProperties
-  from?: AnimatableProperties
-  to?: AnimatableProperties
-  duration: number
-  /** @deprecated Field lama, digantikan step 'delay' tersendiri. Masih dibaca oleh
-   *  animation-engine.js untuk migrasi otomatis data lama, tapi jangan dipakai lagi
-   *  untuk data baru. */
-  delay?: number
-  ease?: string
-  repeat?: number
-  yoyo?: boolean
-}
-
-interface AnimationConfig {
-  enter: {
-    sequence: AnimationStep[]
-    loop?: boolean
-  }
-  transition: {
-    sequence: TransitionStep[]
-  }
-}
-
-type StateTarget = Partial<AnimatableProperties>
-type TransitionProperty = keyof AnimatableProperties
-
-interface TransitionStep {
-  id?: string
-  type: 'to' | 'delay'
-  properties?: TransitionProperty[]
-  duration: number
-  ease?: string
-}
-
-type PlatformTextBindingField =
-  | 'platform'
-  | 'username'
-  | 'displayName'
-  | 'viewerCount'
-  | 'followerCount'
-  | 'likeCount'
-  | 'latestChatAuthor'
-  | 'latestChatMessage'
-  | 'isLive'
-
-interface PlatformTextBinding {
-  enabled?: boolean
-  source: 'platform'
-  field: PlatformTextBindingField
-  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
-/** fieldPath examples: "driverStandingsText.abbrMarquee", "constructorStandingsText.fullMultiline",
- *  "startingGridText.marquee", "scheduleText.nowMultiline". */
-interface F1TextBinding {
-  enabled?: boolean
-  source: 'f1data'
-  fieldPath?: string
-  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
-/** Infrastruktur Control Panel (fondasi #5/#6) — teks yang dibind ke sebuah Counter
- *  di control-state.json. `group` = nama grup counter (auto-create kalau belum ada).
- *  (`name` = alias lama, masih dibaca overlay untuk scene lama.) */
-interface CounterTextBinding {
-  enabled?: boolean
-  source: 'counter'
-  group: string
-  /** @deprecated alias lama untuk `group` */
-  name?: string
-  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
-/** Infrastruktur Control Panel (fondasi #5/#6) — teks yang dibind ke sebuah Event State
- *  (enum single-active) di control-state.json. `group` = nama grup event state. */
-interface EventStateTextBinding {
-  enabled?: boolean
-  source: 'eventState'
-  group: string
-  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
-/** Infrastruktur Control Panel — teks yang dibind ke sebuah Timer (countdown/count up)
- *  di control-state.json. `group` = nama grup timer. `format`: 'mm:ss' (default,
- *  meluap ke menit kalau >1 jam), 'hh:mm:ss', atau 'seconds' (total detik bulat). */
-interface TimerTextBinding {
-  enabled?: boolean
-  source: 'timer'
-  group: string
-  format?: 'mm:ss' | 'hh:mm:ss' | 'seconds'
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
-/** Teks berbasis jam lokal. `format`: token dddd, ddd, YYYY, YY, MMMM, MMM, MM, M,
- *  DD, D, HH, H, hh, h, mm, m, ss, s, A, atau a. Default timezone `Asia/Jakarta`
- *  dan format `HH:mm:ss`. */
-interface ClockTextBinding {
-  enabled?: boolean
-  source: 'clock'
-  timezone?: string
-  format?: string
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
-/** Control Panel — teks bebas (single/multiline) yang ditulis di /control dan bisa di-bind ke
- *  banyak elemen teks sekaligus lewat nama grup yang sama. `group` = nama grup teks. */
-interface TextControlBinding {
-  enabled?: boolean
-  source: 'text'
-  group: string
-  format?: 'raw' | 'number' | 'uppercase' | 'lowercase'
-  prefix?: string
-  suffix?: string
-  fallback?: string
-}
-
-type TextBinding = TextControlBinding | PlatformTextBinding | F1TextBinding | CounterTextBinding | EventStateTextBinding | TimerTextBinding | ClockTextBinding
-
-/** Infrastruktur Control Panel (fondasi #5/#6) — kontrol visibility elemen berdasarkan
- *  nilai Counter (dibanding dengan `matchValue` pakai `comparator`) atau Event State (elemen
- *  tampil kalau eventState grup tsb bernilai `matchValue`). Terpisah dari `hidden` (manual toggle
- *  di Editor); kalau keduanya ada, `hidden=true` selalu menang (override manual tetap final).
- */
-interface StateBinding {
-  enabled?: boolean
-  source: 'counter' | 'eventState'
-  group: string
-  fallbackState?: string
-}
-
-interface MarqueeConfig {
-  enabled?: boolean
-  speed?: number
-  gap?: number
-  direction?: 'rtl' | 'ltr'
-}
-
-interface ScrollConfig {
-  enabled?: boolean
-  speed?: number
-  gap?: number
-  direction?: 'up' | 'down'
-  yoyo?: boolean
-  yoyoDelay?: number
-}
-
-interface SceneElement {
-  id: string
-  type: 'text' | 'shape' | 'badge' | 'image'
-  name: string
-  x: number
-  y: number
-  width: number
-  height: number
-  rotation?: number
-  opacity?: number
-  scale?: number
-  zIndex?: number
-  hidden?: boolean
-  locked?: boolean
-  src?: string
-  objectFit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down'
-  style: ElementStyle
-  animation?: AnimationConfig
-  textBinding?: TextBinding
-  stateBinding?: StateBinding
-  /** @deprecated Skema lama. Dimigrasi otomatis ke stateBinding/stateTargets saat scene dimuat; hanya tersisa
-   *  kalau comparator-nya tidak bisa dipetakan ke state diskret (gt/gte/lt/lte/neq) — dipertahankan agar data tidak hilang. */
-  visibilityBinding?: Record<string, unknown>
-  stateTargets?: Record<string, StateTarget>
-  /** Urutan tampil state di editor (hanya kosmetik; key angka di objek selalu terurut naik). */
-  stateOrder?: string[]
-  marquee?: MarqueeConfig
-  scroll?: ScrollConfig
-  /**
-   * Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
-   * Kalau terisi & merujuk ke elemen lain yang valid (bukan diri sendiri, dan parent itu
-   * sendiri BUKAN child dari elemen lain — scope sengaja dibatasi 1 level nesting),
-   * elemen ini jadi "child": x/y jadi relatif terhadap parent (bukan lagi absolut
-   * terhadap kanvas), dan otomatis ikut posisi+animasi parent lewat DOM/container
-   * nesting di renderer (index.html/overlay.html). Kalau referensi tidak valid,
-   * elemen diperlakukan sebagai top-level (fallback graceful, tidak crash).
-   */
-  parentId?: string | null
-}
-
-interface SceneData {
-  id: string
-  name: string
-  canvas: {
-    width: number
-    height: number
-    backgroundColor?: string
-  }
-  elements: SceneElement[]
-}
-
-interface SceneStoreLoadResult {
-  scenes: SceneData[]
-  source: 'scenes' | 'legacy' | 'example-scenes' | 'example-scene' | 'default'
-  scenesFileExists: boolean
-  scenesFileCorrupt: boolean
-}
 
 interface ChatMessage {
   id: string
@@ -713,13 +440,33 @@ const EMPTY_GRID_TEXT: F1StartingGridText = {
 }
 
 let f1Db: Database | null = null
+let f1DbMtimeMs: number | null = null
 let f1DbInitError: string | null = null
 
 function getF1Db(): Database | null {
-  if (f1Db) return f1Db
-  if (f1DbInitError) return null
+  let mtimeMs: number
+  try {
+    mtimeMs = statSync(F1_DB_PATH).mtimeMs
+  } catch {
+    if (f1Db) {
+      try { f1Db.close() } catch {}
+    }
+    f1Db = null
+    f1DbMtimeMs = null
+    return null
+  }
+  if (f1Db && f1DbMtimeMs === mtimeMs) return f1Db
+
+  // Fetcher menulis file baru lalu rename; handle lama akan menunjuk file lama,
+  // jadi buka ulang setiap mtime berubah (dan biarkan error lama tidak menetap).
+  if (f1Db) {
+    try { f1Db.close() } catch {}
+  }
+  f1Db = null
   try {
     f1Db = new Database(F1_DB_PATH, { readonly: true })
+    f1DbMtimeMs = mtimeMs
+    f1DbInitError = null
     return f1Db
   } catch (err) {
     f1DbInitError = err instanceof Error ? err.message : 'Failed to open F1GStats database'
@@ -828,175 +575,7 @@ function getF1DataSnapshot(): F1DataSnapshot {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DEFAULT_SETTINGS: Settings = {
-  tiktokUsername: '@creator',
-  runningText: 'Welcome to my stream! Jangan lupa follow & share ✨',
-}
-
-async function getSettings(): Promise<Settings> {
-  const file = Bun.file(SETTINGS_FILE)
-  if (await file.exists()) {
-    try {
-      const text = await file.text()
-      return JSON.parse(text)
-    } catch {
-      // Fallback if parsing fails
-    }
-  }
-
-  const exampleFile = Bun.file(EXAMPLE_SETTINGS_FILE)
-  let initialData = DEFAULT_SETTINGS
-  if (await exampleFile.exists()) {
-    try {
-      initialData = JSON.parse(await exampleFile.text())
-    } catch {
-      initialData = DEFAULT_SETTINGS
-    }
-  }
-
-  await Bun.write(SETTINGS_FILE, JSON.stringify(initialData, null, 2))
-  return initialData
-}
-
-async function saveSettings(data: Partial<Settings>): Promise<Settings> {
-  const current = await getSettings()
-  const updated: Settings = {
-    tiktokUsername: data.tiktokUsername ?? current.tiktokUsername,
-    runningText: data.runningText ?? current.runningText,
-  }
-  await Bun.write(SETTINGS_FILE, JSON.stringify(updated, null, 2))
-  return updated
-}
-
-function createDefaultScene(id = 'default', name = 'Live Streaming Scene'): SceneData {
-  return {
-    id,
-    name,
-    canvas: {
-      width: 1920,
-      height: 1080,
-      backgroundColor: 'transparent',
-    },
-    elements: [],
-  }
-}
-
-function normalizeSceneId(value: string, fallback: string): string {
-  return String(value || fallback)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '') || fallback
-}
-
-function normalizeScene(scene: Partial<SceneData>, index = 0): SceneData {
-  const safeIndex = index >= 0 ? index : 0
-  const fallbackId = safeIndex === 0 ? 'default' : `scene-${safeIndex + 1}`
-  const id = normalizeSceneId(scene.id || scene.name || fallbackId, fallbackId)
-  const name = String(scene.name || (safeIndex === 0 ? 'Live Streaming Scene' : `Scene ${safeIndex + 1}`)).trim() || `Scene ${safeIndex + 1}`
-  const canvas = scene.canvas || {} as Partial<SceneData['canvas']>
-  const elements = Array.isArray(scene.elements) ? scene.elements : []
-
-  return {
-    ...(scene as SceneData),
-    id,
-    name,
-    canvas: {
-      width: Number(canvas.width) || 1920,
-      height: Number(canvas.height) || 1080,
-      backgroundColor: canvas.backgroundColor || 'transparent',
-    },
-    elements: (elements as SceneElement[]).map(migrateLegacyElement),
-  }
-}
-
-async function readSceneStore(): Promise<SceneStoreLoadResult> {
-  const scenesFile = Bun.file(SCENES_FILE)
-  if (await scenesFile.exists()) {
-    try {
-      const parsed = JSON.parse(await scenesFile.text())
-      if (Array.isArray(parsed)) {
-        return {
-          scenes: parsed.map((scene, index) => normalizeScene(scene, index)),
-          source: 'scenes',
-          scenesFileExists: true,
-          scenesFileCorrupt: false,
-        }
-      }
-    } catch {
-      return { scenes: [createDefaultScene()], source: 'default', scenesFileExists: true, scenesFileCorrupt: true }
-    }
-  }
-  return {
-    scenes: [createDefaultScene()],
-    source: 'default',
-    scenesFileExists: false,
-    scenesFileCorrupt: false,
-  }
-}
-
-async function persistSceneStore(scenes: SceneData[]): Promise<SceneData[]> {
-  const normalized = scenes.length > 0
-    ? scenes.map((scene, index) => normalizeScene(scene, index))
-    : [createDefaultScene()]
-
-  await Bun.write(SCENES_FILE, JSON.stringify(normalized, null, 2))
-  return normalized
-}
-
-async function getScenes(): Promise<SceneData[]> {
-  const result = await readSceneStore()
-  if (!result.scenesFileExists) {
-    await persistSceneStore(result.scenes)
-  }
-  return result.scenes
-}
-
-async function getSceneById(sceneId?: string): Promise<SceneData | null> {
-  const scenes = await getScenes()
-  if (!sceneId) return scenes[0] || createDefaultScene()
-  const normalizedId = normalizeSceneId(sceneId, scenes[0]?.id || 'default')
-  return scenes.find((scene) => scene.id === normalizedId) || null
-}
-
-async function saveScene(scene: SceneData, originalId?: string): Promise<SceneData> {
-  const store = await readSceneStore()
-  if (store.scenesFileCorrupt) {
-    throw { message: `Cannot save scene while ${SCENES_FILE} is corrupt. Repair or remove the file first.`, status: 409 }
-  }
-
-  const scenes = store.scenes
-  const normalizedOriginalId = originalId ? normalizeSceneId(originalId, '') : ''
-  const normalized = normalizeScene(scene, scenes.findIndex((item) => item.id === normalizedOriginalId || item.id === scene.id))
-  const conflictingScene = scenes.find((item) => item.id === normalized.id && item.id !== normalizedOriginalId)
-
-  if (conflictingScene) {
-    throw { message: `Scene ID "${normalized.id}" already exists. Use a different identifier.`, status: 409 }
-  }
-
-  const targetId = normalizedOriginalId || normalized.id
-  const nextScenes = scenes.some((item) => item.id === targetId)
-    ? scenes.map((item) => (item.id === targetId ? normalized : item))
-    : [...scenes, normalized]
-  await persistSceneStore(nextScenes)
-  return normalized
-}
-
-async function deleteScene(sceneId: string): Promise<SceneData[]> {
-  const store = await readSceneStore()
-  if (store.scenesFileCorrupt) {
-    throw { message: `Cannot delete scene while ${SCENES_FILE} is corrupt. Repair or remove the file first.`, status: 409 }
-  }
-
-  const scenes = store.scenes
-  const normalizedId = normalizeSceneId(sceneId, '')
-  if (!normalizedId) {
-    throw { message: 'Scene identifier is required', status: 400 }
-  }
-
-  const nextScenes = scenes.filter((scene) => scene.id !== normalizedId)
-  return await persistSceneStore(nextScenes.length > 0 ? nextScenes : [createDefaultScene()])
-}
+const sceneStore = new SceneStore(SCENES_FILE)
 
 const DEFAULT_LIVE_STATS: LiveStatsData = {
   platform: 'TikTok Live',
@@ -1047,12 +626,18 @@ function normalizeLiveStats(data: LiveStatsUpdate | Partial<LiveStatsData>): Liv
   }
 }
 
+let liveStatsMemoryCache: LiveStatsData | null = null
+let liveStatsDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
 async function getLiveStats(): Promise<LiveStatsData> {
+  if (liveStatsMemoryCache) return liveStatsMemoryCache
+
   const file = Bun.file(LIVE_STATS_FILE)
   if (await file.exists()) {
     try {
       const text = await file.text()
-      return normalizeLiveStats(JSON.parse(text))
+      liveStatsMemoryCache = normalizeLiveStats(JSON.parse(text))
+      return liveStatsMemoryCache
     } catch {
       // Fallback if parsing fails
     }
@@ -1062,14 +647,16 @@ async function getLiveStats(): Promise<LiveStatsData> {
   if (await exampleFile.exists()) {
     try {
       const initialStats = normalizeLiveStats(JSON.parse(await exampleFile.text()))
-      await Bun.write(LIVE_STATS_FILE, JSON.stringify(initialStats, null, 2))
+      await writeFileAtomic(LIVE_STATS_FILE, JSON.stringify(initialStats, null, 2))
+      liveStatsMemoryCache = initialStats
       return initialStats
     } catch {
       // Fallback
     }
   }
 
-  await Bun.write(LIVE_STATS_FILE, JSON.stringify(DEFAULT_LIVE_STATS, null, 2))
+  await writeFileAtomic(LIVE_STATS_FILE, JSON.stringify(DEFAULT_LIVE_STATS, null, 2))
+  liveStatsMemoryCache = DEFAULT_LIVE_STATS
   return DEFAULT_LIVE_STATS
 }
 
@@ -1102,7 +689,21 @@ async function saveLiveStats(data: LiveStatsUpdate): Promise<LiveStatsData> {
     ].slice(-25)
   }
 
-  await Bun.write(LIVE_STATS_FILE, JSON.stringify(updated, null, 2))
+  liveStatsMemoryCache = updated
+
+  if (!liveStatsDebounceTimer) {
+    liveStatsDebounceTimer = setTimeout(async () => {
+      liveStatsDebounceTimer = null
+      if (liveStatsMemoryCache) {
+        try {
+          await writeFileAtomic(LIVE_STATS_FILE, JSON.stringify(liveStatsMemoryCache, null, 2))
+        } catch {
+          // Best effort
+        }
+      }
+    }, 2000)
+  }
+
   return updated
 }
 
@@ -1112,7 +713,7 @@ const controlStateStore = new ControlStateStore({
     if (!(await file.exists())) return null
     return JSON.parse(await file.text())
   },
-  save: async (state) => { await Bun.write(CONTROL_STATE_FILE, JSON.stringify(state, null, 2)) },
+  save: async (state) => { await writeFileAtomic(CONTROL_STATE_FILE, JSON.stringify(state, null, 2)) },
 })
 
 function rejectInvalidControlName(name: string, set: { status?: unknown }): boolean {
@@ -1151,454 +752,48 @@ async function deleteAsset(assetId: string): Promise<boolean> {
 
 // ─── Platform Live Stats Connector ───────────────────────────────────────────
 
-const DEFAULT_PLATFORM_CONFIG: PlatformConnectorConfig = {
-  enabled: false,
-  platform: 'tiktok',
-  tiktokUsername: '',
-  youtubeVideoId: '',
-  youtubeChannelId: '',
-  youtubeApiKey: '',
-  pollIntervalMs: DEFAULT_PLATFORM_POLL_INTERVAL_MS,
-  chatDisplayDurationMs: 4000,
-}
-
-let platformConnectorStatus: PlatformConnectorStatus = {
-  enabled: false,
-  platform: 'tiktok',
-  running: false,
-  lastFetchedAt: null,
-  lastSuccessAt: null,
-  lastError: null,
-}
-
-let youtubeChatPageToken: string | null = null
-
-let platformPollTimer: ReturnType<typeof setTimeout> | null = null
-let tiktokConn: TikTokLiveConnection | null = null
-let tiktokConnUsername: string = ''
-let tiktokBackoffAttempt = 0
-let tiktokReconnectTimer: ReturnType<typeof setTimeout> | null = null
-let intentionalDisconnect = false
-
-let cachedYouTubeVideoId: string | null = null
-let cachedYouTubeChannelId: string | null = null
-let cachedYouTubeSubCount: number | null = null
-let cachedYouTubeSubLastFetched: number = 0
-let youtubeBackoffAttempt = 0
-let cachedYouTubeHandle: string | null = null
-
-async function getPlatformConfig(): Promise<PlatformConnectorConfig> {
-  const file = Bun.file(PLATFORM_CONFIG_FILE)
-  if (await file.exists()) {
-    try {
-      const parsed = JSON.parse(await file.text())
-      return {
-        ...DEFAULT_PLATFORM_CONFIG,
-        ...parsed,
-        pollIntervalMs: Math.max(10_000, Math.min(300_000, Number(parsed.pollIntervalMs) || DEFAULT_PLATFORM_POLL_INTERVAL_MS)),
-        chatDisplayDurationMs: Math.max(1_500, Math.min(15_000, Number(parsed.chatDisplayDurationMs) || 4000)),
-      }
-    } catch {
-      // Fallback to default
+const connectorManager = new ConnectorManager({
+  chatHub,
+  onStatsUpdate: async (stats) => {
+    await saveLiveStats(stats)
+    // Satu file arsip per stream: tutup sesi begitu semua platform berhenti live,
+    // supaya stream berikutnya tidak menumpang startedAt stream sebelumnya.
+    const anyLive = currentPlatformStatus('tiktok').isLive || currentPlatformStatus('youtube').isLive
+    if (stats.isLive === false && !anyLive && chatArchive.getActiveSessionId()) {
+      await chatArchive.endSession()
     }
-  }
-  return { ...DEFAULT_PLATFORM_CONFIG }
+  },
+})
+
+function currentPlatformStatus(platform: PlatformType): PlatformStatus {
+  return connectorManager.getPlatformStatus(platform)
 }
 
-async function savePlatformConfig(data: Partial<PlatformConnectorConfig>): Promise<PlatformConnectorConfig> {
-  const current = await getPlatformConfig()
-  const updated: PlatformConnectorConfig = {
-    ...current,
-    ...data,
-    pollIntervalMs: Math.max(10_000, Math.min(300_000, Number(data.pollIntervalMs ?? current.pollIntervalMs) || DEFAULT_PLATFORM_POLL_INTERVAL_MS)),
-    chatDisplayDurationMs: Math.max(1_500, Math.min(15_000, Number(data.chatDisplayDurationMs ?? current.chatDisplayDurationMs) || 4000)),
+function schedulePlatformConnectors(config: PlatformConfigV2): void {
+  chatNotifQueue.configure(config.notif)
+  const anyEnabled = config.tiktok.enabled || config.youtube.enabled
+  chatArchiveEnabled = Boolean(config.archive.enabled)
+  // D4: sesi arsip hidup selama minimal satu connector aktif dan arsip tidak
+  // dimatikan lewat toggle editor. Stop Semua / archive off menutup sesi aktif
+  // supaya daftar sesi di /control menandainya selesai.
+  if (!chatArchiveEnabled || !anyEnabled) {
+    if (chatArchive.getActiveSessionId()) void chatArchive.endSession()
+  } else if (!chatArchive.getActiveSessionId()) {
+    void chatArchive.startSession()
   }
-  await Bun.write(PLATFORM_CONFIG_FILE, JSON.stringify(updated, null, 2))
-  return updated
+  connectorManager.applyConfig(config)
 }
 
-/** Fetch YouTube channel subscriber count (cached for 5 minutes). */
-async function fetchYouTubeChannelDetails(channelId: string, apiKey: string): Promise<{ subscriberCount?: number; handle?: string }> {
-  const now = Date.now()
-  if (cachedYouTubeSubCount !== null && now - cachedYouTubeSubLastFetched < 300_000) {
-    return { subscriberCount: cachedYouTubeSubCount, handle: cachedYouTubeHandle ?? undefined }
-  }
-  try {
-    const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${encodeURIComponent(channelId)}&key=${encodeURIComponent(apiKey)}`
-    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
-    if (res.ok) {
-      const data = await res.json() as {
-        items?: {
-          snippet?: { customUrl?: string }
-          statistics?: { subscriberCount?: string }
-        }[]
-      }
-      const item = data.items?.[0]
-      const subCount = Number(item?.statistics?.subscriberCount)
-      const handle = item?.snippet?.customUrl
-      if (Number.isFinite(subCount)) {
-        cachedYouTubeSubCount = subCount
-        cachedYouTubeSubLastFetched = now
-      }
-      if (handle) cachedYouTubeHandle = handle
-      return { subscriberCount: Number.isFinite(subCount) ? subCount : undefined, handle: handle ?? undefined }
-    }
-  } catch {
-    // Best-effort
-  }
-  return { subscriberCount: cachedYouTubeSubCount ?? undefined, handle: cachedYouTubeHandle ?? undefined }
-}
-
-/** Fetch YouTube live stats via Data API v3 and push to live-stats store. */
-async function fetchYouTubeStats(config: PlatformConnectorConfig): Promise<void> {
-  const apiKey = config.youtubeApiKey?.trim()
-  if (!apiKey) throw new Error('YouTube API key is required')
-
-  let videoId = config.youtubeVideoId?.trim() || ''
-  const channelId = config.youtubeChannelId?.trim() || ''
-
-  // If no explicit video ID, resolve & cache video ID for channel to save quota
-  if (!videoId) {
-    if (!channelId) throw new Error('Either YouTube Video ID or Channel ID is required')
-
-    if (cachedYouTubeChannelId === channelId && cachedYouTubeVideoId) {
-      videoId = cachedYouTubeVideoId
-    } else {
-      // 100 quota units call
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${encodeURIComponent(channelId)}&eventType=live&type=video&key=${encodeURIComponent(apiKey)}`
-      const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(10_000) })
-      if (!searchRes.ok) {
-        const errBody = await searchRes.text()
-        throw new Error(`YouTube search API ${searchRes.status}: ${errBody.slice(0, 200)}`)
-      }
-      const searchData = await searchRes.json() as { items?: { id?: { videoId?: string } }[] }
-      videoId = searchData.items?.[0]?.id?.videoId || ''
-      if (!videoId) {
-        cachedYouTubeVideoId = null
-        youtubeChatPageToken = null
-        throw new Error('No active live broadcast found for this channel')
-      }
-      cachedYouTubeVideoId = videoId
-      cachedYouTubeChannelId = channelId
-    }
-  }
-
-  // Fetch video details (1 quota unit)
-  const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails,statistics&id=${encodeURIComponent(videoId)}&key=${encodeURIComponent(apiKey)}`
-  const videoRes = await fetch(videoUrl, { signal: AbortSignal.timeout(10_000) })
-  if (!videoRes.ok) {
-    cachedYouTubeVideoId = null
-    youtubeChatPageToken = null
-    const errBody = await videoRes.text()
-    throw new Error(`YouTube videos API ${videoRes.status}: ${errBody.slice(0, 200)}`)
-  }
-
-  const videoData = await videoRes.json() as {
-    items?: {
-      snippet?: { channelTitle?: string; title?: string; channelId?: string }
-      liveStreamingDetails?: {
-        concurrentViewers?: string
-        activeLiveChatId?: string
-        actualEndTime?: string
-      }
-      statistics?: { likeCount?: string }
-    }[]
-  }
-  const item = videoData.items?.[0]
-  if (!item || item.liveStreamingDetails?.actualEndTime) {
-    cachedYouTubeVideoId = null
-    youtubeChatPageToken = null
-    throw new Error(`Video ${videoId} is no longer live`)
-  }
-
-  const snippet = item.snippet || {}
-  const lsd = item.liveStreamingDetails || {}
-  const viewerCount = Number(lsd.concurrentViewers) || 0
-  const activeChannelId = snippet.channelId || channelId
-  const likeCount = Number(item.statistics?.likeCount)
-
-  // Fetch subscriber count & handle if channel ID available (cached)
-  let followerCount: number | undefined = undefined
-  let channelHandle: string | undefined = undefined
-  if (activeChannelId) {
-    const details = await fetchYouTubeChannelDetails(activeChannelId, apiKey)
-    followerCount = details.subscriberCount
-    channelHandle = details.handle
-  }
-
-  // Fetch latest chat messages if liveChatId exists
-  let latestChatAuthor = ''
-  let latestChatMessage = ''
-  const chatMessages: { id: string; author: string; message: string; receivedAt: string }[] = []
-
-  const liveChatId = lsd.activeLiveChatId
-  if (liveChatId) {
-    try {
-      const chatUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${encodeURIComponent(liveChatId)}&part=snippet,authorDetails&maxResults=25${youtubeChatPageToken ? `&pageToken=${encodeURIComponent(youtubeChatPageToken)}` : ''}&key=${encodeURIComponent(apiKey)}`
-      const chatRes = await fetch(chatUrl, { signal: AbortSignal.timeout(10_000) })
-      if (chatRes.ok) {
-        const chatData = await chatRes.json() as {
-          nextPageToken?: string
-          items?: {
-            id?: string
-            snippet?: { displayMessage?: string; publishedAt?: string }
-            authorDetails?: { displayName?: string }
-          }[]
-        }
-        youtubeChatPageToken = chatData.nextPageToken || youtubeChatPageToken
-        const items = chatData.items || []
-        items.forEach((msg) => {
-          const author = msg.authorDetails?.displayName || 'viewer'
-          const message = msg.snippet?.displayMessage || ''
-          const receivedAt = msg.snippet?.publishedAt || new Date().toISOString()
-          chatMessages.push({ id: msg.id || `chat_${Date.now()}`, author, message, receivedAt })
-        })
-        const last = chatMessages.at(-1)
-        if (last) {
-          latestChatAuthor = last.author
-          latestChatMessage = last.message
-        }
-      }
-    } catch {
-      // Best effort
-    }
-  }
-
-  await saveLiveStats({
-    platform: 'YouTube Live',
-    username: channelHandle || snippet.channelTitle || activeChannelId || videoId,
-    displayName: snippet.channelTitle || snippet.title || videoId,
-    viewerCount,
-    isLive: true,
-    ...(followerCount !== undefined ? { followerCount } : {}),
-    ...(Number.isFinite(likeCount) ? { likeCount } : {}),
-    latestChatAuthor,
-    latestChatMessage,
-    chatMessages: chatMessages.length > 0 ? chatMessages : undefined,
-  })
-}
-
-function parseCompactNumber(value: unknown): number | undefined {
-  const match = String(value ?? '').trim().match(/^([\d.]+)\s*([KkMmBb]?)$/)
-  if (!match) return undefined
-  const num = parseFloat(match[1] || '0')
-  if (!Number.isFinite(num)) return undefined
-  const suffix = (match[2] || '').toUpperCase()
-  const mult = suffix === 'K' ? 1_000 : suffix === 'M' ? 1_000_000 : suffix === 'B' ? 1_000_000_000 : 1
-  return Math.round(num * mult)
-}
-
-/** Manage persistent WebSocket connection for TikTok Live using tiktok-live-connector. */
-function stopTikTokConnector(): void {
-  if (tiktokReconnectTimer) {
-    clearTimeout(tiktokReconnectTimer)
-    tiktokReconnectTimer = null
-  }
-  if (tiktokConn) {
-    intentionalDisconnect = true
-    try { tiktokConn.disconnect() } catch { }
-    tiktokConn = null
-  }
-  tiktokConnUsername = ''
-  tiktokBackoffAttempt = 0
-  platformConnectorStatus.running = false
-}
-
-function startTikTokConnector(rawUsername: string): void {
-  const username = rawUsername.replace(/^@/, '').trim()
-  if (!username) {
-    platformConnectorStatus.lastError = 'TikTok username is required'
-    return
-  }
-
-  // If already connected to the same username and running, do nothing
-  if (tiktokConn && tiktokConnUsername === username && platformConnectorStatus.running) {
-    return
-  }
-
-  // Disconnect existing if changing username or reconnecting
-  if (tiktokConn) {
-    try { tiktokConn.disconnect() } catch { }
-    tiktokConn = null
-  }
-
-  tiktokConnUsername = username
-  platformConnectorStatus.platform = 'tiktok'
-  platformConnectorStatus.enabled = true
-  platformConnectorStatus.running = false
-
-  const conn = new TikTokLiveConnection(username, {})
-  tiktokConn = conn
-
-  conn.on(WebcastEvent.CHAT, async (data: any) => {
-    const author = data.user?.nickname || data.user?.uniqueId || 'viewer'
-    const message = data.content || ''
-    await saveLiveStats({
-      latestChatAuthor: author,
-      latestChatMessage: message,
-    })
-    platformConnectorStatus.lastSuccessAt = new Date().toISOString()
-    platformConnectorStatus.lastError = null
-  })
-
-  conn.on(WebcastEvent.LIKE, async (data: any) => {
-    const likeCount = Number(data.total)
-    if (Number.isFinite(likeCount)) {
-      await saveLiveStats({ likeCount })
-    }
-  })
-
-  conn.on(WebcastEvent.ROOM_USER, async (data: any) => {
-    const viewerCount = Number(data.total)
-    if (Number.isFinite(viewerCount)) {
-      await saveLiveStats({ viewerCount })
-    }
-  })
-
-  conn.on(WebcastEvent.STREAM_END, async () => {
-    intentionalDisconnect = true
-    await saveLiveStats({ isLive: false })
-    platformConnectorStatus.running = false
-  })
-
-  conn.on(ControlEvent.DISCONNECTED, () => {
-    platformConnectorStatus.running = false
-    if (!intentionalDisconnect) {
-      tiktokBackoffAttempt++
-      const delayMs = Math.min(300_000, 5_000 * Math.pow(2, tiktokBackoffAttempt - 1))
-      console.warn(`[tiktok-connector] Unexpected disconnect. Retrying in ${delayMs / 1000}s (attempt ${tiktokBackoffAttempt})...`)
-      if (tiktokReconnectTimer) clearTimeout(tiktokReconnectTimer)
-      tiktokReconnectTimer = setTimeout(() => {
-        intentionalDisconnect = false
-        startTikTokConnector(tiktokConnUsername)
-      }, delayMs)
-    }
-  })
-
-  conn.on(ControlEvent.ERROR, (err: any) => {
-    const msg = err instanceof Error ? err.message : String(err)
-    platformConnectorStatus.lastError = msg
-  })
-
-  intentionalDisconnect = false
-  conn.connect().then(async (state: any) => {
-    platformConnectorStatus.running = true
-    platformConnectorStatus.lastSuccessAt = new Date().toISOString()
-    platformConnectorStatus.lastError = null
-    tiktokBackoffAttempt = 0
-
-    const roomInfoRaw = state?.roomInfo || (conn as any).roomInfo || {}
-    const roomInfo = roomInfoRaw?.data || roomInfoRaw
-    const owner = roomInfo?.owner || {}
-    const followerCount = owner.follow_info?.follower_count ?? undefined
-    const viewerCount = Number.isFinite(roomInfo?.user_count) ? roomInfo.user_count : undefined
-    const likeCount = Number.isFinite(roomInfo?.like_count) ? roomInfo.like_count : undefined
-
-    await saveLiveStats({
-      platform: 'TikTok Live',
-      username: `@${owner.display_id || username}`,
-      displayName: owner.nickname || owner.display_id || username,
-      isLive: true,
-      ...(followerCount !== undefined && Number.isFinite(Number(followerCount)) ? { followerCount: Number(followerCount) } : {}),
-      ...(viewerCount !== undefined && Number.isFinite(viewerCount) ? { viewerCount } : {}),
-      ...(likeCount !== undefined ? { likeCount } : {}),
-    })
-  }).catch((err: any) => {
-    platformConnectorStatus.running = false
-    const msg = err instanceof Error ? err.message : String(err)
-    platformConnectorStatus.lastError = msg
-
-    // Exponential backoff reconnect
-    if (tiktokReconnectTimer) clearTimeout(tiktokReconnectTimer)
-    tiktokBackoffAttempt++
-    const delayMs = Math.min(300_000, 5_000 * Math.pow(2, tiktokBackoffAttempt - 1))
-    console.warn(`[tiktok-connector] Connect failed: ${msg}. Retrying in ${delayMs / 1000}s (attempt ${tiktokBackoffAttempt})...`)
-    tiktokReconnectTimer = setTimeout(() => {
-      startTikTokConnector(username)
-    }, delayMs)
-  })
-}
-
-async function runPlatformConnectorOnce(): Promise<void> {
-  const config = await getPlatformConfig()
-  if (!config.enabled) {
-    stopTikTokConnector()
-    if (platformPollTimer) {
-      clearTimeout(platformPollTimer)
-      platformPollTimer = null
-    }
-    return
-  }
-
-  const now = new Date().toISOString()
-  platformConnectorStatus.lastFetchedAt = now
-
-  if (config.platform === 'tiktok') {
-    startTikTokConnector(config.tiktokUsername || '')
-    return
-  }
-
-  // If switching from TikTok to YouTube, stop TikTok connection
-  stopTikTokConnector()
-
-  try {
-    await fetchYouTubeStats(config)
-    platformConnectorStatus.lastSuccessAt = now
-    platformConnectorStatus.lastError = null
-    platformConnectorStatus.running = true
-    youtubeBackoffAttempt = 0
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    platformConnectorStatus.lastError = msg
-    youtubeBackoffAttempt++
-    console.warn(`[youtube-connector] Error (attempt ${youtubeBackoffAttempt}):`, msg)
-  }
-
-  // Reschedule YouTube poll with exponential backoff on failure
-  if (platformConnectorStatus.enabled && config.platform === 'youtube') {
-    const baseInterval = Math.max(10_000, Math.min(300_000, config.pollIntervalMs || DEFAULT_PLATFORM_POLL_INTERVAL_MS))
-    const nextDelay = youtubeBackoffAttempt > 0
-      ? Math.min(300_000, baseInterval * Math.pow(2, youtubeBackoffAttempt - 1))
-      : baseInterval
-
-    if (platformPollTimer) clearTimeout(platformPollTimer)
-    platformPollTimer = setTimeout(() => runPlatformConnectorOnce(), nextDelay)
-  }
-}
-
-function schedulePlatformPoll(config: PlatformConnectorConfig): void {
-  if (platformPollTimer !== null) {
-    clearTimeout(platformPollTimer)
-    platformPollTimer = null
-  }
-  if (!config.enabled) {
-    stopTikTokConnector()
-    platformConnectorStatus.running = false
-    return
-  }
-
-  if (config.platform === 'tiktok') {
-    startTikTokConnector(config.tiktokUsername || '')
-  } else {
-    stopTikTokConnector()
-    runPlatformConnectorOnce()
-  }
-}
-
-// Initialize platform connector from persisted config on startup
-getPlatformConfig().then((config) => {
-  platformConnectorStatus.platform = config.platform
-  platformConnectorStatus.enabled = config.enabled
-  if (config.enabled) {
-    schedulePlatformPoll(config)
-  }
+// Initialize both connectors independently from persisted config.
+loadPlatformConfigFile(PLATFORM_CONFIG_FILE).then((config) => {
+  schedulePlatformConnectors(config)
 }).catch((err) => {
   console.warn('[platform-connector] Failed to load config on startup:', err)
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const app = new Elysia()
+const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } })
   .onBeforeHandle(({ request, headers, set }) => {
     if (!SETTINGS_SECRET || !['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)) return
 
@@ -1609,6 +804,13 @@ const app = new Elysia()
       return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
     }
   })
+  .onAfterHandle(({ request, set }) => {
+    // Uploaded files are same-origin; an SVG with <script> must never execute.
+    if (new URL(request.url).pathname.startsWith('/uploads/')) {
+      set.headers['Content-Security-Policy'] = 'sandbox'
+      set.headers['X-Content-Type-Options'] = 'nosniff'
+    }
+  })
   .get('/', () => Bun.file('public/index.html'))
   .get('/control', () => Bun.file('public/control.html'))
   .get('/api/health', () => ({
@@ -1616,117 +818,193 @@ const app = new Elysia()
     timestamp: new Date().toISOString(),
     message: 'LiveOverlay Studio Backend Ready',
   }))
+  .get('/api/chat/feed', ({ query }) => {
+    return { ...chatHub.since(Number(query.since), Number(query.limit)), notif: chatNotifQueue.getSnapshot(), status: { tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') } }
+  })
+  .get('/api/chat/status', () => ({ tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') }))
+  // Review chat notification dari Control Panel: snapshot saja, tanpa item feed.
+  .get('/api/chat/notif', () => chatNotifQueue.getSnapshot())
+  .post(
+    '/api/chat/notif/step',
+    ({ body, set }) => {
+      const direction = body.direction === 'up' || body.direction === 'down' ? body.direction : null
+      if (!direction) {
+        set.status = 400
+        return { success: false, message: '"direction" must be "up" or "down"' }
+      }
+      return { success: true, notif: chatNotifQueue.step(direction) }
+    },
+    {
+      body: t.Object({
+        direction: t.String(),
+      }),
+    }
+  )
+  // Dev-only helper for manual C6 acceptance: inject a synthetic chat into the
+  // same hub/notification/archive pipeline the real connectors use.
+  .post(
+    '/api/chat/dev-inject',
+    ({ body, set }) => {
+      if (process.env.NODE_ENV === 'production' && process.env.CHAT_DEV_INJECT !== '1') {
+        set.status = 404
+        return { success: false, message: 'Not found' }
+      }
+
+      const platform = body.platform === 'youtube' ? 'youtube' : 'tiktok'
+      const message = String(body.message || '').trim()
+      if (!message) {
+        set.status = 400
+        return { success: false, message: '"message" is required' }
+      }
+
+      const event = chatHub.push({
+        id: `dev-${Date.now()}-${crypto.randomUUID()}`,
+        platform,
+        author: String(body.author || 'tester').trim() || 'tester',
+        message,
+      })
+      return { success: true, event, notif: chatNotifQueue.getSnapshot() }
+    },
+    {
+      body: t.Object({
+        platform: t.Optional(t.String()),
+        author: t.Optional(t.String()),
+        message: t.String(),
+      }),
+    }
+  )
+  // ─── Chat Archive Endpoints ───────────────────────────────────────────────
+  .get('/api/chat/archive', async ({ headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    return { sessions: await chatArchive.listSessions() }
+  })
+  .post('/api/chat/archive/session/end', async ({ set }) => {
+    const sessionId = chatArchive.getActiveSessionId()
+    if (!sessionId) {
+      set.status = 404
+      return { success: false, message: 'No active archive session' }
+    }
+    await chatArchive.endSession()
+    return { success: true, sessionId }
+  })
+  .post('/api/chat/archive/session/start', async () => {
+    if (chatArchive.getActiveSessionId()) await chatArchive.endSession()
+    const sessionId = await chatArchive.startSession()
+    return { success: true, sessionId }
+  })
+  .delete('/api/chat/archive/:id', async ({ params, set }) => {
+    if (params.id === chatArchive.getActiveSessionId()) {
+      set.status = 400
+      return { success: false, message: 'Cannot delete the active session' }
+    }
+    const deleted = await chatArchive.deleteSession(params.id)
+    if (!deleted) {
+      set.status = 404
+      return { success: false, message: 'Session not found' }
+    }
+    return { success: true, sessionId: params.id }
+  })
+  .get('/api/chat/archive/:id/chats', async ({ params, query, headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    try {
+      const offset = Math.max(0, Number(query.offset) || 0)
+      const limit = Math.max(1, Math.min(500, Number(query.limit) || 50))
+      return await chatArchive.getSessionChats(params.id, offset, limit)
+    } catch (err: any) {
+      set.status = 404
+      return { success: false, message: err.message }
+    }
+  })
+  .get('/api/chat/archive/:id/align', async ({ params, query, headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    const chatSeq = Number(query.chatSeq)
+    const videoTime = String(query.videoTime || '')
+    if (!chatSeq || !videoTime) {
+      set.status = 400
+      return { success: false, message: 'chatSeq and videoTime are required' }
+    }
+    try {
+      return await chatArchive.calculateAlignment(params.id, chatSeq, videoTime)
+    } catch (err: any) {
+      set.status = 404
+      return { success: false, message: err.message }
+    }
+  })
+  .get('/api/chat/archive/:id/export', async ({ params, query, headers, set }) => {
+    if (SETTINGS_SECRET) {
+      const token = (headers['authorization'] || headers['x-secret-token'])?.replace(/^Bearer\s+/i, '')
+      if (token !== SETTINGS_SECRET) { set.status = 401; return { success: false, message: 'Unauthorized' } }
+    }
+    try {
+      const result = await chatArchive.exportSession(params.id, {
+        format: (query.format as any) || 'srt',
+        offset: Number(query.offset) || 0,
+        mode: (query.mode as any) || 'stack',
+        lines: Number(query.lines) || 5,
+        ttl: Number(query.ttl) || 8,
+        tags: query.tags === undefined ? true : Number(query.tags) !== 0,
+      })
+      set.headers = {
+        'Content-Type': result.contentType,
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      }
+      return new Response(result.content, {
+        headers: {
+          'Content-Type': result.contentType,
+          'Content-Disposition': `attachment; filename="${result.filename}"`,
+        },
+      })
+    } catch (err: any) {
+      set.status = 404
+      return { success: false, message: err.message }
+    }
+  })
   // NOTE: /api/settings is intentionally removed — it was dead code from the
   // pre-scene-system era. Use /api/live-stats and /api/scenes instead.
   .get('/api/platform-connector', async () => {
-    const config = await getPlatformConfig()
+    const configV2 = await loadPlatformConfigFile(PLATFORM_CONFIG_FILE)
     return {
-      config,
-      status: {
-        ...platformConnectorStatus,
-        platform: config.platform,
-        enabled: config.enabled,
-      },
+      configV2,
+      chatIcons: await discoverChatIcons(),
+      statusV2: { tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') },
     }
   })
   .post(
     '/api/platform-connector',
-    async ({ body, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
-      }
-
-      const updated = await savePlatformConfig({
-        enabled: body.enabled ?? undefined,
-        platform: (body.platform as PlatformType) ?? undefined,
-        tiktokUsername: body.tiktokUsername ?? undefined,
-        youtubeVideoId: body.youtubeVideoId ?? undefined,
-        youtubeChannelId: body.youtubeChannelId ?? undefined,
-        youtubeApiKey: body.youtubeApiKey ?? undefined,
-        pollIntervalMs: body.pollIntervalMs ?? undefined,
-        chatDisplayDurationMs: body.chatDisplayDurationMs ?? undefined,
-      })
-
-      platformConnectorStatus.platform = updated.platform
-      platformConnectorStatus.enabled = updated.enabled
-
-      // Restart the poll cycle with the new config
-      schedulePlatformPoll(updated)
+    async ({ body }) => {
+      const configV2 = await savePlatformConfigFile(PLATFORM_CONFIG_FILE, body as any)
+      schedulePlatformConnectors(configV2)
 
       return {
         success: true,
         message: 'Platform connector config saved',
-        config: updated,
-        status: {
-          ...platformConnectorStatus,
-          platform: updated.platform,
-          enabled: updated.enabled,
-        },
+        statusV2: connectorManager.getStatus(),
+        configV2,
       }
     },
     {
       body: t.Object({
-        enabled: t.Optional(t.Boolean()),
-        platform: t.Optional(t.String()),
-        tiktokUsername: t.Optional(t.String()),
-        youtubeVideoId: t.Optional(t.String()),
-        youtubeChannelId: t.Optional(t.String()),
-        youtubeApiKey: t.Optional(t.String()),
-        pollIntervalMs: t.Optional(t.Numeric()),
-        chatDisplayDurationMs: t.Optional(t.Numeric()),
+        tiktok: t.Optional(t.Any()),
+        youtube: t.Optional(t.Any()),
+        stats: t.Optional(t.Any()),
+        notif: t.Optional(t.Any()),
+        chatFormat: t.Optional(t.Any()),
+        archive: t.Optional(t.Any()),
       }),
     }
   )
-  .post('/api/platform-connector/start', async ({ headers, set }) => {
-    if (SETTINGS_SECRET) {
-      const authHeader = headers['authorization'] || headers['x-secret-token']
-      const token = authHeader?.replace(/^Bearer\s+/i, '')
-      if (token !== SETTINGS_SECRET) {
-        set.status = 401
-        return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-      }
-    }
-
-    const config = await savePlatformConfig({ enabled: true })
-    platformConnectorStatus.platform = config.platform
-    platformConnectorStatus.enabled = true
-    platformConnectorStatus.lastError = null
-    schedulePlatformPoll(config)
-
-    return {
-      success: true,
-      message: `Platform connector started (${config.platform})`,
-      status: { ...platformConnectorStatus },
-    }
-  })
-  .post('/api/platform-connector/stop', async ({ headers, set }) => {
-    if (SETTINGS_SECRET) {
-      const authHeader = headers['authorization'] || headers['x-secret-token']
-      const token = authHeader?.replace(/^Bearer\s+/i, '')
-      if (token !== SETTINGS_SECRET) {
-        set.status = 401
-        return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-      }
-    }
-
-    await savePlatformConfig({ enabled: false })
-    platformConnectorStatus.enabled = false
-    schedulePlatformPoll({ ...DEFAULT_PLATFORM_CONFIG, enabled: false })
-
-    return {
-      success: true,
-      message: 'Platform connector stopped',
-      status: { ...platformConnectorStatus },
-    }
-  })
 
   .get('/api/scenes', async () => {
-    const scenes = await getScenes()
+    const scenes = await sceneStore.getScenes()
     return {
       scenes,
       activeSceneId: scenes[0]?.id || null,
@@ -1734,7 +1012,7 @@ const app = new Elysia()
     }
   })
   .get('/api/scenes/:id', async ({ params, set }) => {
-    const scene = await getSceneById(params.id)
+    const scene = await sceneStore.getById(params.id)
     if (!scene) {
       set.status = 404
       return { success: false, message: 'Scene not found' }
@@ -1915,16 +1193,7 @@ const app = new Elysia()
   })
   .post(
     '/api/assets',
-    async ({ request, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
-      }
-
+    async ({ request, set }) => {
       const formData = await request.formData()
       const uploadedFile = formData.get('file')
       if (!(uploadedFile instanceof File)) {
@@ -1959,16 +1228,7 @@ const app = new Elysia()
   )
   .delete(
     '/api/assets/:id',
-    async ({ params, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
-      }
-
+    async ({ params, set }) => {
       const deleted = await deleteAsset(params.id)
       if (!deleted) {
         set.status = 404
@@ -1981,16 +1241,7 @@ const app = new Elysia()
 
   .post(
     '/api/live-stats',
-    async ({ body, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
-      }
-
+    async ({ body }) => {
       const updated = await saveLiveStats(body)
       return {
         success: true,
@@ -2024,19 +1275,15 @@ const app = new Elysia()
   )
   .post(
     '/api/scenes',
-    async ({ body, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
+    async ({ body, request, set }) => {
+      if (Number(request.headers.get('content-length')) > MAX_SCENE_BODY_BYTES) {
+        set.status = 413
+        return { success: false, message: 'Scene payload must be at most 5 MB' }
       }
 
       try {
         const payload = body as { scene?: SceneData; originalId?: string }
-        const updated = await saveScene((payload.scene || body) as SceneData, payload.originalId)
+        const updated = await sceneStore.save((payload.scene || body) as SceneData, payload.originalId)
         return {
           success: true,
           message: 'Scene saved successfully',
@@ -2046,22 +1293,19 @@ const app = new Elysia()
         set.status = error?.status || 500
         return { success: false, message: error?.message || 'Failed to save scene' }
       }
+    },
+    {
+      body: t.Object({
+        scene: t.Any(),
+        originalId: t.Optional(t.String()),
+      }),
     }
   )
   .delete(
     '/api/scenes/:id',
-    async ({ params, headers, set }) => {
-      if (SETTINGS_SECRET) {
-        const authHeader = headers['authorization'] || headers['x-secret-token']
-        const token = authHeader?.replace(/^Bearer\s+/i, '')
-        if (token !== SETTINGS_SECRET) {
-          set.status = 401
-          return { success: false, message: 'Unauthorized: Invalid or missing secret token' }
-        }
-      }
-
+    async ({ params, set }) => {
       try {
-        const scenes = await deleteScene(params.id)
+        const scenes = await sceneStore.delete(params.id)
         return {
           success: true,
           message: 'Scene deleted successfully',
@@ -2088,3 +1332,11 @@ const app = new Elysia()
   })
 
 console.log(`🦊 LiveOverlay Studio running at http://${app.server?.hostname}:${app.server?.port}`)
+
+// Flush chat archive on graceful shutdown so no lines are lost
+const handleShutdown = async () => {
+  await chatArchive.flush()
+  process.exit(0)
+}
+process.once('SIGINT', () => void handleShutdown())
+process.once('SIGTERM', () => void handleShutdown())

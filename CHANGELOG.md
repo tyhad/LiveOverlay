@@ -4,7 +4,103 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ---
 
-## [Unreleased] - State Binding & Animation Enter/Transition
+## [Unreleased]
+
+### Chat notification review, notif dua baris, dan ikon platform
+
+- `/control` mendapat panel **Chat Review** (di luar `#app`, hanya tampil kalau ada State Binding `chatNotif` yang enabled): tombol ▲/▼ menelusuri 100 notifikasi terakhir, badge **LIVE/REVIEW**, status posisi & antrean, dan antrean live otomatis dipause selama review. State review disimpan di server (`GET /api/chat/notif`, `POST /api/chat/notif/step`) supaya semua Browser Source OBS menampilkan notifikasi yang sama.
+- Overlay memutar ulang animasi kemunculan elemen (`idle → showing`, atau enter animation kalau transition belum diatur) setiap kali review berpindah notifikasi, lalu loop di-resume seperti semula.
+- Template **Chat Notification** default menjadi dua baris `{author}\n{message}` (author di atas, message di bawah). Template satu baris lama dimigrasi otomatis & idempoten di `normalizeChatBindings`; `\n` pada template dirender sebagai baris baru oleh `public/chat-format.js`.
+- `{platformTag}` bisa diganti ikon file statis: letakkan `tiktok.*` / `youtube.*` di `public/chat-icons/` (deteksi berurutan `svg → png → webp → ico`). Tanpa file, otomatis kembali ke teks tag `[TT]`/`[YT]`. Ikon dirender inline lewat `ChatFormat.renderText()` di overlay dan preview editor; Running Text / Scroll Text memakai fallback teks tag (`ChatFormat.stripIcons()`). `GET /api/platform-connector` menyertakan `chatIcons` hasil `discoverChatIcons()`.
+- Dokumentasi dirapikan: dokumen internal dipindah ke `docs/` (`docs/audit-2026-11-15.md`, `docs/plans/multi-platform-chat.md`) sehingga root repo hanya berisi dokumen kanonik.
+
+### Audit hardening (`docs/audit-2026-11-15.md` temuan 1–18)
+
+- Upload `/uploads/*` disajikan dengan `Content-Security-Policy: sandbox` + `X-Content-Type-Options: nosniff`, dan tipe file divalidasi lewat whitelist MIME/ekstensi (bukan dipercaya dari klien).
+- Auth dipusatkan di satu `onBeforeHandle` untuk semua route POST/PUT/PATCH/DELETE; route GET arsip tetap memeriksa secret sendiri. Batas body global 12 MB, `POST /api/scenes` dibatasi 5 MB dan memakai skema `{ scene, originalId? }`.
+- Penyimpanan scene dipindah ke `src/scene-store.ts`: tulis atomik (`writeFileAtomic`), cache parse berbasis mtime untuk polling overlay tiap 2 detik, dan `scenes.json` korup tidak pernah ditimpa (save/delete mengembalikan 409).
+- `ChatArchiveManager` memvalidasi format ID sesi sebelum menyentuh file, meng-cache metadata sesi berdasarkan mtime/size, dan export stack memakai sliding window (bukan filter O(n²)).
+- TikTok menyambung ulang setelah `STREAM_END` (backoff yang sudah ada), dan kedua connector menghentikan timer/koneksi lama saat config-nya dikosongkan.
+- Koneksi SQLite F1 dibuka ulang saat mtime `f1gstats.sqlite` berubah, supaya hasil fetcher baru terbaca tanpa restart server.
+- Route settings/konektor versi lama yang tidak dipakai dihapus, termasuk `settings.example.json`. `bun run test` sekarang menjalankan `tsc --noEmit` lebih dulu.
+- Helper halaman bersama diekstrak ke `public/text-binding.js` (dipakai editor dan overlay). Test baru: `tests/scene-store.test.mjs`, `tests/text-binding.test.mjs`, plus test reconnect TikTok.
+
+### Chat archive controls
+
+- Endpoint baru: `POST /api/chat/archive/session/start` (tutup sesi aktif lalu mulai sesi baru) dan `DELETE /api/chat/archive/:id` (hapus sesi selesai; sesi aktif ditolak 400, ID divalidasi, traversal 404).
+- `/control` → Chat Archive mendapat tombol **Sesi baru** dan **Hapus sesi**. `startSession()` menaikkan detik nama file kalau sesi baru dimulai di detik yang sama, jadi file sesi lama tidak pernah ditimpa/di-append.
+- Daftar chat ikut dimuat ulang tiap polling 5 detik; saat sesi berganti, sesi lama dipertahankan satu siklus supaya chat yang telat masuk sempat tampil, baru berpindah ke sesi baru. Pilihan chat untuk alignment tidak hilang saat refresh.
+- Panel Chat Archive hanya tampil (dan polling-nya hanya jalan) kalau ada **State Binding → Chat Notification** yang enabled di salah satu scene; visibility dicek ulang tiap 8 detik.
+- Utility `.hidden` ditambahkan di Control Panel, sekaligus membetulkan tombol "End session aktif" yang sebelumnya tidak pernah benar-benar tersembunyi.
+
+## [1.2.0] - 2026-11-15 - Multi-platform Chat & State Binding
+
+### Multi-platform chat (C1-C7 complete)
+
+#### C7 — Stress test, dokumentasi, rilis
+
+- Added `tests/stress-chat.mjs`, an integrated stress test that drives ChatHub → NotifQueue → ChatArchive with 6 000 chats from both platforms. It simulates 10 minutes of virtual time as 120 bursts of 50 chats/second, and asserts:
+  - all 6 000 chats reach the archive in order with no loss;
+  - the server ring buffer stays bounded at 500;
+  - the notification queue never exceeds `maxQueue` (20);
+  - feed polling (`since`) keeps a reasonable latency (p95 under 50 ms; measured ~0.02 ms locally);
+  - no crash or unhandled failure.
+- Added `bun run test:stress`; the stress test is also part of `bun run test`.
+- Updated `README.md` with multi-platform chat usage: how to bind **Chat Stack** and **Chat Notification**, how to animate notifications with State Binding `chatNotif`, where archives are stored (`chat-archive/YYYYMMDD-HHmmss.jsonl`), how to preview/download SRT/VTT/CSV/JSON from `/control`, and the dev-only `POST /api/chat/dev-inject` flow. Project structure, scripts, LAN/secret notes, and known limitations were refreshed.
+- Updated `Vision.md` §3.3 to record that live chat is exposed through text binding (`chat`) while animated notifications use State Binding `chatNotif` (no separate animation system).
+- Updated `issue.md` to mark C1–C7 complete and document the stress test coverage.
+- Bumped `package.json` to **1.2.0** and added `platform-config.v1.bak.json` to `.gitignore` so migration backups never get committed.
+
+#### C6 — Editor & /control UI
+
+- Editor connector panel now shows **two independent blocks** (TikTok and YouTube), each with its own enable toggle, fields, status dot/label, and error line. YouTube also shows today's `quotaUnitsUsedToday` and a hint to fill `videoId` to save quota. Saving uses the v2 config shape (`tiktok`, `youtube`, `stats`, `notif`, `chatFormat`, `archive`) instead of the legacy single-platform payload.
+- Added chat notification settings to the editor: `displayMs`, `gapMs` (documented as ≥ 300 ms and ideally ≥ the out-animation duration), `maxQueue`, plus editable TikTok/YouTube platform tags and the archive toggle. "Start Semua"/"Stop Semua" enable/disable both connectors in one click. Turning archive off (or stopping all connectors) now closes the active archive session per D4, and no chats are written while archive is off.
+- Text Binding gained `source: 'chat'` with **Chat Stack** (`field: 'stack'`, `lines`, `template`) and **Chat Notification (Author + Message)** (`field: 'notif'`, `template`). Placeholders `{platformTag}`, `{platform}`, `{author}`, `{message}` use the shared `public/chat-format.js`; the editor polls `/api/chat/feed` every 1.5 s so both bindings preview live.
+- Per D1, the platform dropdown now exposes only **Status/Viewers TikTok** and **Status/Viewers YouTube**. Deprecated fields (`username`, `followers`, `likes`, `latestChat*`, etc.) still render for old scenes and are inserted as a temporary "Lama" option instead of being silently lost. Per-platform status/viewers are read from the chat feed status, and `PlatformStatus` now carries `viewerCount`.
+- State Binding source gained **Chat Notification** (`chatNotif`) with `idle` / `showing` states. The editor hides the unused group name, suggests both state names, and provides a one-click preset (`showing` opacity 1, `idle` opacity 0) so Enter/Transition can be configured immediately. Both states remain manually previewable in the canvas.
+- `/control` got a standalone **Chat Archive** panel outside `#app`: session list with active/interrupted badges, active-session chat count and size, **End session**, export form (format, offset, mode, lines, ttl, tags), and a **samakan dengan chat** helper (pick a chat + video time → server `offsetSec` is written into the offset field). "Preview 3 cue" renders the first three cues/rows before download.
+- Control-page secret handling now also retries archive **GET** requests on 401, not only POST/PUT/PATCH/DELETE, because archive GETs contain viewer usernames.
+- Added dev-only `POST /api/chat/dev-inject` (`NODE_ENV !== 'production'` or `CHAT_DEV_INJECT=1`) accepting `{ platform, author, message }`. It feeds the same ChatHub → NotifQueue → archive pipeline as real connectors, for the C6 manual acceptance test.
+
+#### C5 — Overlay: Chat Stack + Notification
+
+- Overlay now polls the server-owned feed (`GET /api/chat/feed?since=&limit=`) every ±500 ms instead of keeping a local chat queue. The local buffer stores the last 50 chats and server sequence IDs keep ordering identical across multiple browser sources (portrait + landscape).
+- New text binding `source: 'chat'`:
+  - `field: 'stack'` renders the last N chats (default 5, clamped 1–30) oldest→newest joined with `\n`, so the newest line is at the bottom. Uses the same multiline render path as `f1data`.
+  - `field: 'notif'` renders the current `NotifSnapshot` as a single `author: message` string (default template `{author}: {message}`).
+  - Custom `template` supports `{platformTag}`, `{platform}`, `{author}`, `{message}`; formatting uses the shared `public/chat-format.js`. Platform tags are read from `chatFormat` in config v2 (`[TT]` / `[YT]` by default).
+- New State Binding source `source: 'chatNotif'` with states `idle` / `showing`; `group` is unused. Animations still use the existing State Binding + Enter/Transition system — no new animation engine.
+- Removed the old overlay-local queue (`chatDisplayQueue`, `tickChatDisplay`, `restartChatDisplayTimer`). Legacy `latestChatAuthor` / `latestChatMessage` bindings still work and now read the latest feed chat (fallback: notification snapshot → live stats).
+- Feed application is coalesced through `requestAnimationFrame` so a 50 chats/second burst produces at most one render per frame, not one render per message.
+- First feed load takes the tail for the stack but suppresses a snapshot that is already `showing`, so reloading OBS/browser source never replays an old notification; the next new chat (`seq` changes) shows normally.
+- Scene normalization now preserves and lightly validates new bindings: `normalizeChatBindings()` in `src/scene-migration.ts` keeps `source: 'chat'` / `'chatNotif'` and clamps stack `lines` to 1–30 instead of dropping unknown sources.
+- Tests added to `tests/overlay-state.test.mjs` (stack order/tags/default + custom template, notif `showing`→`idle`, legacy latest-chat fields, two overlays staying in sync, and reload suppression) and `tests/scene-migration.test.mjs` (chat bindings survive normalization).
+
+#### C4 — Chat Archive & Export
+
+- Implemented `ChatArchiveManager` (`src/chat-archive.ts`): append-only JSONL sessions in `chat-archive/`, one file per session named `YYYYMMDD-HHmmss.jsonl`. Each file opens with a `session` header line and closes with `session_end`.
+- Flush is debounced (≥100 items **or** 1 s) and serialised via a promise chain to prevent concurrent `appendFile` calls from dropping messages during bursts.
+- Tolerant line parser: corrupt or truncated lines (e.g., after a crash) are silently skipped when reading a session; `listSessions()` marks files without a `session_end` line as `interrupted: true`.
+- Archive auto-starts when the first platform connector is enabled (via `schedulePlatformConnectors`) and flushes cleanly on SIGINT/SIGTERM.
+- Export engine: SRT, VTT (HTML-escaped `& < >`), CSV (injection-protected: cells starting with `= + - @` get a `'` prefix), JSON — with **stack** mode (sweep over cue boundaries, min 300 ms cue duration) and **single** mode, configurable `ttl`, `lines`, `offset`, and `tags` filter.
+- Video-sync alignment helper: given a `chatSeq` and a `videoTime` string (`[HH:]MM:SS[.mmm]`), returns `offsetSec` to align archive timestamps to video playback.
+- `chat-archive/` added to `.gitignore`.
+- New API endpoints (all archive GET endpoints guarded by `SETTINGS_SECRET`):
+  - `GET /api/chat/archive` — list sessions with metadata
+  - `POST /api/chat/archive/session/end` — end active session
+  - `GET /api/chat/archive/:id/chats?limit=&offset=` — paginated chat lines
+  - `GET /api/chat/archive/:id/align?chatSeq=&videoTime=` — alignment helper
+  - `GET /api/chat/archive/:id/export?format=&offset=&mode=&lines=&ttl=&tags=` — download file (sets `Content-Disposition`)
+- Acceptance criteria verified by test: 6 000 chats → exactly 6 000 lines in JSONL; SRT export timestamps are strictly ascending with no negative cues.
+
+- Added a server-owned chat feed with bounded deduplication and monotonic sequence IDs; chat bursts no longer write `live-stats.json` per TikTok message (in-memory cached and debounced by >= 2s).
+- Added the notification queue state machine (`idle`/`showing`), including a minimum 300 ms gap so state-bound animations can retrigger reliably.
+- Added the v1-to-v2 platform-config migration foundation, retaining legacy TikTok/YouTube credentials and notification duration.
+- Platform config files now migrate on first load: the original is retained as `platform-config.v1.bak.json`, while legacy API clients continue receiving their existing single-platform shape during the UI transition.
+- Refactored TikTok connector into a modular class (`src/connectors/tiktok.ts`) with independent state, reconnection backoff, and direct forwarding to ChatHub.
+- Implemented dedicated YouTube connector (`src/connectors/youtube.ts`) separating chat polling loop from stats poll loop; chat loop continuously obeys `pollingIntervalMillis`, uses pagination (`nextPageToken`), dedupes items, and tracks daily quota units used (`quotaUnitsUsedToday`), with 5-minute backoff on 403 quota errors without crashing.
+- Introduced `ConnectorManager` (`src/connectors/manager.ts`) managing both connectors concurrently. TikTok and YouTube can be enabled simultaneously without conflict.
+- Extended `/api/platform-connector/start` and `/api/platform-connector/stop` to accept optional `{ platform: 'tiktok' | 'youtube' }` for granular per-platform control while maintaining legacy backward-compatible behavior.
 
 Model animasi dipisah antara **target visual per state** dan **timing perpindahan**.
 
@@ -27,12 +123,14 @@ Keterbatasan migrasi `exitSequence` (diberi warning di log): bila satu properti 
 **Perubahan perilaku yang perlu diketahui**: dulu elemen dibuat ulang saat binding kembali true sehingga animasi *enter* diputar lagi. Sekarang enter hanya dimainkan saat elemen pertama muncul, dan kembali ke state tampil memainkan transition (terbalik dari exit).
 
 ### Pengujian
-- `tests/animation-engine.test.mjs`: 44 assertion (bertambah: transition, arah per state, loop setelah pindah state).
-- `tests/overlay-state.test.mjs` (baru): 7 tes integrasi `overlay.html` di jsdom — fallback state tak terdaftar, visibilitas per state, arah transition, hidden manual menang, loop lanjut setelah transition.
-- `tests/scene-migration.test.mjs` (baru): 11 tes migrasi.
-- `bun run test` sekarang menjalankan keempat file. `overlay-state` memakai `node --test` karena jsdom gagal di runner Bun (`'addEventListener' called on an object that is not a valid instance of EventTarget`); script `test:overlay` tersedia untuk menjalankannya sendiri.
+- `tests/animation-engine.test.mjs`: 44 assertion (transition, arah per state, loop setelah pindah state).
+- `tests/overlay-state.test.mjs`: 13 tes integrasi `overlay.html` di jsdom — fallback state, visibilitas per state, arah transition, hidden manual, loop setelah transition, stack chat, notif `chatNotif`, field chat lama, dua overlay sinkron, dan reload tanpa notif lama.
+- `tests/scene-migration.test.mjs`: 13 tes migrasi + normalisasi binding chat.
+- Suite chat: `chat-hub`, `notif-queue`, `platform-config`, `tiktok-connector`, `youtube-connector`, `connector-manager`, dan `chat-archive` (termasuk 6 000 chat tanpa kehilangan).
+- `tests/stress-chat.mjs` (C7): 6 000 chat dari dua platform dalam 10 menit virtual, burst 50 chat/detik; verifikasi arsip lengkap, ring buffer 500, `maxQueue`, dan latensi feed.
+- `bun run test` menjalankan seluruh suite di atas. `overlay-state` memakai `node --test` karena jsdom gagal di runner Bun (`'addEventListener' called on an object that is not a valid instance of EventTarget`); script `test:overlay` dan `test:stress` tersedia untuk menjalankannya sendiri.
 
-## [Unreleased] - UI Refactor & Design System Cleanup
+### UI Refactor & Design System Cleanup
 
 - Menambahkan design tokens berdasarkan referensi desain lokal pribadi untuk warna Studio Canvas, Sage Olive, typography Manrope, dan shadow neumorphic; sumber kebenaran token di repo adalah `public/design.css`.
 - Memisahkan styling editor ke `public/editor.css` dengan scope `.editor-page`.

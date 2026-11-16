@@ -6,7 +6,7 @@
 
 ## Status Fase
 
-**v1.1.0 — Visi v1.0 tercapai.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
+**v1.2.0 — Visi v1.0 tercapai + chat multi-platform.** Semua pilar fitur inti di `Vision.md` §3 sudah selesai & terverifikasi. Detail lengkap tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
 
 | Fase | Nama | Status |
 |---|---|---|
@@ -19,6 +19,7 @@
 | 9 | Element Binding/Grouping (Parent-Child) | ✅ Selesai |
 | 10 | Text, 3D, Current Time, dan Control Panel | ✅ Selesai |
 | 11 | State Binding & Animation Enter/Transition | ✅ Selesai (termasuk migrasi scene lama) |
+| C1–C7 | Multi-platform Chat (TikTok + YouTube, archive/export, editor & `/control` UI, stress test) | ✅ Selesai (v1.2.0) |
 
 ---
 
@@ -34,7 +35,13 @@
 
 ## Technical Debt
 
-> ⚠️ **Race condition di `persistSceneStore()`** — dua `Bun.write()` berurutan tanpa lock; kalau dua save scene terjadi nyaris bersamaan berpotensi `scenes.json` sempat inkonsisten. Belum jadi masalah nyata di penggunaan saat ini, tapi diwaspadai kalau pola pemakaian berubah.
+### Ringkasan implementasi terakhir (selesai)
+
+Item di bawah sudah selesai dan disimpan sebagai ringkasan singkat; detail tiap fase ada di [`CHANGELOG.md`](./CHANGELOG.md).
+
+- C1–C7 complete (v1.2.0): ChatHub/feed API, server-owned notification queue, platform config v2 migration (with v1 backup), modular TikTok & YouTube connectors (`src/connectors/`), independent YouTube chat loop (`pollingIntervalMillis`, pagination, quota tracking), per-platform start/stop endpoints, connector manager, **C4 chat archive** (append-only JSONL sessions, flush-safe via promise chain, tolerant parser, export SRT/VTT/CSV/JSON with stack/single mode, alignment helper, 7 API endpoints incl. session start/delete), **C5 overlay bindings** (server-owned feed polling, local 50-chat stack buffer, `source: 'chat'` stack/notif text bindings, `source: 'chatNotif'` state binding, reload suppression), **C6 editor & /control UI** (dual TikTok/YouTube connector blocks, chat stack/notif binding UI with live editor preview, notification/tag/archive settings, Chat Notification state preset, Chat Archive panel with new-session/delete/end-session/export/preview/alignment helper, panel auto-hidden unless an enabled `chatNotif` state binding exists, dev-only `POST /api/chat/dev-inject`), and **C7 stress test & release** (integrated 6 000-chat stress test, README/Vision/CHANGELOG updates, v1.2.0 version bump).
+- Follow-up setelah rilis: panel **Chat Review** di `/control` (▲/▼ menelusuri 100 notifikasi terakhir, state di server supaya semua Browser Source sinkron, animasi diputar ulang tiap pindah), template notif default dua baris dengan migrasi otomatis, dan ikon platform file statis di `public/chat-icons/`.
+- Audit hardening (`docs/audit-2026-11-15.md` 1–18, commit `980e011`): upload CSP/nosniff + MIME whitelist, central auth hook + body limits, `SceneStore` atomic writes and corrupt-file guard, archive ID validation and metadata cache, connector reconnect/timer cleanup, F1 SQLite reopen on mtime change, shared `public/text-binding.js`, and test/typecheck coverage.
 
 > ⚠️ **File `f1gstats.sqlite` bisa ter-lock** oleh proses lain (server LiveOverlay yang masih jalan) saat fetcher F1GStats coba overwrite file itu; di Windows ini gagal keras (`The process cannot access the file`). SOP manual: stop server LiveOverlay dulu sebelum re-run fetcher. Belum perlu jadi item kerja aktif.
 
@@ -45,11 +52,21 @@
 
 `tests/animation-engine.test.mjs` — regression test permanen untuk `public/animation-engine.js`, jalan via `bun run test`. 44 assertion, simulasi browser via `jsdom` + GSAP asli.
 
-`tests/overlay-state.test.mjs` — 7 tes integrasi `overlay.html` utuh di jsdom (fallback state, visibilitas per state, arah transition, hidden manual, loop setelah transition). **Jalan via `node --test`, bukan `bun test`**: jsdom gagal di runner Bun (`EventTarget` tidak valid), jadi `bun run test` memanggil Node untuk file ini (butuh Node.js terpasang). Bisa dijalankan sendiri dengan `bun run test:overlay`.
+`tests/overlay-state.test.mjs` — 15 tes integrasi `overlay.html` utuh di jsdom (fallback state, visibilitas per state, arah transition, hidden manual, loop setelah transition, Chat Stack, Chat Notification `chatNotif`, notif dua baris, ikon platform inline, replay animasi saat review ▲/▼, field chat lama, dua overlay sinkron, dan reload tanpa notif lama). **Jalan via `node --test`, bukan `bun test`**: jsdom gagal di runner Bun (`EventTarget` tidak valid), jadi `bun run test` memanggil Node untuk file ini (butuh Node.js terpasang). Bisa dijalankan sendiri dengan `bun run test:overlay`.
 
-`tests/scene-migration.test.mjs` — 11 tes untuk `src/scene-migration.ts` (migrasi `visibilityBinding`, `exitSequence`, dan `animation.sequence` lama; idempoten; data yang tak bisa dimigrasi tidak dibuang).
+`tests/scene-migration.test.mjs` — 14 tes untuk `src/scene-migration.ts` (migrasi `visibilityBinding`, `exitSequence`, dan `animation.sequence` lama; idempoten; data yang tak bisa dimigrasi tidak dibuang; binding `chat`/`chatNotif` tidak hilang; migrasi template notif satu baris → dua baris).
+
+`tests/scene-store.test.mjs` — 5 tes untuk `src/scene-store.ts`: baca/tulis scene, cache mtime, file korup tidak ditimpa, dan operasi save/delete saat corrupt.
+
+`tests/text-binding.test.mjs` — 4 tes untuk helper bersama `public/text-binding.js` (format timer, teks, dan warna).
+
+`tests/chat-archive.test.mjs` — arsip append/flush, parser toleran, export SRT/VTT/CSV/JSON, alignment, dan siklus sesi (restart tidak memakai file lama, delete hanya untuk sesi selesai).
+
+`tests/chat-hub.test.mjs` — feed chat: urutan, dedupe, dan reset. `tests/notif-queue.test.mjs` — state machine notifikasi dan navigasi review (▲/▼, pause antrean live, batas riwayat). `tests/platform-config.test.mjs` — migrasi config v1 → v2. `tests/connector-manager.test.mjs`, `tests/tiktok-connector.test.mjs`, `tests/youtube-connector.test.mjs` — koordinasi dua platform, event chat TikTok, dan loop chat YouTube (`pollingIntervalMillis`, pagination, quota).
 
 `tests/control-state.test.mjs` — 4 tes untuk serialisasi mutasi, nama reserved, timer pause/resume/restart, dan persistence load/save.
+
+`tests/stress-chat.mjs` — stress test terintegrasi ChatHub → NotifQueue → ChatArchive: 6 000 chat dari dua platform, 50 chat/detik dalam 120 burst (10 menit virtual). Memastikan arsip lengkap, ring buffer tetap 500, antrean notif tidak melewati `maxQueue`, latensi feed wajar, dan proses tidak crash. Jalan via `bun run test:stress` dan juga termasuk `bun run test`.
 
 **Belum tercakup**: testing UI/DOM penuh dan integrasi browser end-to-end. Detail cakupan di `CHANGELOG.md`.
 

@@ -8,6 +8,8 @@
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="/animation-engine.js"></script>
+  <script src="/chat-format.js"></script>
+  <script src="/text-binding.js"></script>
   <!-- Google Fonts for Stream Overlays -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,6 +61,11 @@
   </div>
 
   <script>
+    // Pure text-binding helpers live in /text-binding.js (shared with the editor).
+    const {
+      getSceneCanvasSize, getValueAtPath, formatBoundValue, getFontStack,
+      formatClockTime, computeTimerDisplayMs, formatTimerMs, getEffectiveParentId,
+    } = window.TextBinding
     const viewport = document.getElementById('overlay-viewport')
     const overlayParams = new URLSearchParams(window.location.search)
     const overlaySceneId = overlayParams.get('scene') || overlayParams.get('id') || 'default'
@@ -84,25 +91,27 @@
     // (300-500ms) dari syncScene/syncLiveStats (2 detik) karena butuh terasa instan saat dipencet live.
     let controlState = { counters: {}, eventStates: {}, timers: {}, texts: {} }
     let lastControlStateHash = ''
-    let displayedChat = { author: '', message: '' }
-    let chatDisplayQueue = []
-    let displayedChatIds = new Set()
-    let chatDisplayDurationMs = 4000
-    let chatDisplayTimer = null
-    let isFirstStatsSync = true
+
+    // ─── Chat feed (Fase C5) ────────────────────────────────────────────────
+    // Server adalah satu-satunya sumber urutan chat & notifikasi. Overlay cuma
+    // menyimpan tail lokal untuk binding Chat Stack; state notif dibaca dari
+    // snapshot server supaya beberapa browser source selalu sinkron.
+    const CHAT_BUFFER_LIMIT = 50
+    const CHAT_FEED_INTERVAL_MS = 500
+    const EMPTY_NOTIF = Object.freeze({ state: 'idle', seq: 0, author: '', message: '', platform: '', showUntil: 0, queueLength: 0, reviewing: false })
+    let chatEvents = []
+    let chatFeedSeq = 0
+    let chatNotif = { ...EMPTY_NOTIF }
+    let chatPlatformStatus = { tiktok: null, youtube: null }
+    let chatTags = { tiktok: '[TT]', youtube: '[YT]' }
+    let chatIcons = { tiktok: '', youtube: '' }
+    let chatFeedInitialized = false
+    // Saat halaman di-load ulang, snapshot notif yang masih "showing" adalah chat lama.
+    // Tandai seq-nya dan tampilkan sebagai idle sampai chat BARU masuk, supaya reload
+    // OBS/browser source tidak memutar ulang animasi notif yang sudah lewat.
+    let suppressedNotifSeq = null
+    let chatRenderPending = false
     const renderedElements = new Map()
-
-    function getSceneCanvasSize(scene) {
-      return {
-        width: Number(scene?.canvas?.width) || 1920,
-        height: Number(scene?.canvas?.height) || 1080,
-      }
-    }
-
-    function getValueAtPath(data, path) {
-      if (!path) return data
-      return path.split(/[.[\]]+/).filter(Boolean).reduce((curr, key) => (curr && typeof curr === 'object' ? curr[key] : undefined), data)
-    }
 
     // PERF: cache signature terakhir supaya tidak menulis ulang style yang identik
     // tiap poll (setiap 2 detik) — style-write yang tidak berubah tetap memicu
@@ -136,23 +145,6 @@
     // Animasi state elemen ditangani oleh AnimationEngine
     // (public/animation-engine.js) via animation.enter/transition.
     // Lihat renderScene() di bawah untuk titik integrasinya.
-
-    function formatBoundValue(value, format) {
-      if (value === undefined || value === null || value === '') return ''
-      if (format === 'number') {
-        const numeric = Number(value)
-        return Number.isFinite(numeric) ? new Intl.NumberFormat().format(numeric) : String(value)
-      }
-      if (format === 'uppercase') return String(value).toUpperCase()
-      if (format === 'lowercase') return String(value).toLowerCase()
-      return String(value)
-    }
-
-    function getFontStack(family) {
-      const base = family || 'Inter, sans-serif'
-      if (base.includes('Noto Color Emoji') || base.includes('Segoe UI Emoji')) return base
-      return `${base}, 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif`
-    }
 
     const measureCtx = document.createElement('canvas').getContext('2d')
 
@@ -221,7 +213,8 @@
       } else {
         textEl.style.textShadow = 'none'
       }
-      textEl.textContent = text
+      if (window.ChatFormat?.renderText) window.ChatFormat.renderText(textEl, text, { tags: chatTags, icons: chatIcons })
+      else textEl.textContent = text
     }
 
     function applyMarqueeText(node, el, text) {
@@ -229,6 +222,9 @@
       const speed = cfg.speed || 80
       const gap = cfg.gap ?? 60
       const style = el.style || {}
+      // Ikon platform tidak didukung di marquee (pengukuran teks pakai canvas),
+      // jadi marker diganti teks tag supaya tidak muncul karakter kosong.
+      if (window.ChatFormat?.stripIcons) text = window.ChatFormat.stripIcons(text, { tags: chatTags })
       const textWidth = measureTextWidth(text, style)
 
       const record = renderedElements.get(el.id)
@@ -310,6 +306,8 @@
       const yoyo = !!cfg.yoyo
       const yoyoDelay = Math.max(0, cfg.yoyoDelay ?? 1)
       const style = el.style || {}
+      // Ikon platform tidak didukung di scroll; marker diganti teks tag.
+      if (window.ChatFormat?.stripIcons) text = window.ChatFormat.stripIcons(text, { tags: chatTags })
 
       const record = renderedElements.get(el.id)
       const sig = [text, el.width, el.height, speed, gap, direction, yoyo, yoyoDelay, style.fontSize, style.fontFamily, style.fontWeight, style.letterSpacing, style.padding, style.textAlign, style.textTransform, style.textShadowColor, style.textShadowOffsetX, style.textShadowOffsetY, style.textShadowBlur, getEffectiveTextColor(el)].join('|')
@@ -456,133 +454,197 @@
       }
     }
 
-    function formatClockTime(timezone, formatStr, prefix = '', suffix = '') {
-      const tz = timezone || 'Asia/Jakarta'
-      const fmt = formatStr || 'HH:mm:ss'
-      const now = new Date()
+    // ─── Chat helpers ───────────────────────────────────────────────────────
+    // Formatter dipakai bersama editor & overlay (public/chat-format.js). Fallback
+    // kecil di sini cuma jaring pengaman kalau file bersama gagal dimuat.
+    function formatChatLine(event, template) {
+      const safe = {
+        platform: event?.platform || '',
+        author: String(event?.author || ''),
+        message: String(event?.message || ''),
+      }
+      if (window.ChatFormat?.formatChat) {
+        return window.ChatFormat.formatChat(safe, template, { tags: chatTags, icons: chatIcons })
+      }
+      return String(template || '{author}: {message}').replace(/\\n/g, '\n').replace(/\{(platformTag|platform|author|message)\}/g, (_, key) => {
+        if (key === 'platformTag') return chatTags[safe.platform] || ''
+        return safe[key] || ''
+      })
+    }
 
-      try {
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: tz,
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          weekday: 'long',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        })
-        const parts = formatter.formatToParts(now)
-        const p = {}
-        for (const part of parts) {
-          p[part.type] = part.value
+    function normalizeChatEvent(event) {
+      const seq = Number(event?.seq)
+      if (!Number.isFinite(seq)) return null
+      return {
+        seq,
+        id: String(event.id || ''),
+        platform: event.platform === 'youtube' ? 'youtube' : 'tiktok',
+        author: String(event.author || ''),
+        message: String(event.message || ''),
+        ts: Number(event.ts) || 0,
+      }
+    }
+
+    function normalizeNotifSnapshot(snapshot) {
+      const state = snapshot?.state === 'showing' ? 'showing' : 'idle'
+      const platform = snapshot?.platform === 'youtube' ? 'youtube' : (snapshot?.platform === 'tiktok' ? 'tiktok' : '')
+      return {
+        state,
+        seq: Number(snapshot?.seq) || 0,
+        author: String(snapshot?.author || ''),
+        message: String(snapshot?.message || ''),
+        platform,
+        showUntil: Number(snapshot?.showUntil) || 0,
+        queueLength: Math.max(0, Number(snapshot?.queueLength) || 0),
+        reviewing: snapshot?.reviewing === true,
+      }
+    }
+
+    function getEffectiveNotifState() {
+      if (suppressedNotifSeq !== null) return 'idle'
+      return chatNotif.state === 'showing' ? 'showing' : 'idle'
+    }
+
+    /** Seq notif untuk elemen chat notification saat mode review; null kalau tidak review. */
+    function getNotifReviewSeq(el) {
+      if (!chatNotif.reviewing) return null
+      const isNotif = (el.textBinding?.source === 'chat' && el.textBinding?.field === 'notif') || el.stateBinding?.source === 'chatNotif'
+      return isNotif ? chatNotif.seq : null
+    }
+
+    /** Putar ulang animasi kemunculan notif: transition idle→showing kalau diatur, selain itu enter. */
+    function replayNotifAppearance(node, el, config, target) {
+      const fallbackState = el.stateBinding?.fallbackState || 'idle'
+      if (config.transition.sequence.length > 0 && el.stateTargets?.[fallbackState]) {
+        AnimationEngine.setStateBaseline(node, el, getElementStateTarget(el, fallbackState))
+        const timeline = AnimationEngine.buildTransitionTimeline(el.id, node, config, el, target)
+        if (timeline) {
+          // Transition membunuh timeline loop; lanjutkan lagi setelah muncul.
+          timeline.eventCallback('onComplete', () => AnimationEngine.buildLoopTimeline(el.id, node, config, el, target))
+          return
         }
+      }
+      AnimationEngine.setStateBaseline(node, el, target)
+      AnimationEngine.buildEnterTimeline(el.id, node, config, el, target)
+    }
 
-        let hour24 = parseInt(p.hour || '0', 10)
-        if (hour24 === 24) hour24 = 0
-        const hour12 = hour24 % 12 || 12
-        const ampm = hour24 >= 12 ? 'PM' : 'AM'
+    function getLatestChat() {
+      const event = chatEvents[chatEvents.length - 1]
+      if (event) return { author: event.author, message: event.message }
+      if (chatNotif.author || chatNotif.message) return { author: chatNotif.author, message: chatNotif.message }
+      return { author: liveStats.latestChatAuthor || '', message: liveStats.latestChatMessage || '' }
+    }
 
-        const monthNameFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' })
-        const monthShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'short' })
-        const weekdayShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
+    function resolveChatText(binding) {
+      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
+      if (field === 'stack') {
+        const rawLines = Number(binding?.lines)
+        const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
+        return chatEvents
+          .slice(-lineCount)
+          .map((event) => formatChatLine(event, template))
+          .filter((line) => line.trim() !== '')
+          .join('\n')
+      }
+      if (!chatNotif.author && !chatNotif.message) return ''
+      return formatChatLine({ platform: chatNotif.platform, author: chatNotif.author, message: chatNotif.message }, template)
+    }
 
-        const monthName = monthNameFormatter.format(now)
-        const monthShort = monthShortFormatter.format(now)
-        const weekdayShort = weekdayShortFormatter.format(now)
+    function scheduleChatRender() {
+      if (!currentScene || chatRenderPending) return
+      chatRenderPending = true
+      const run = () => {
+        chatRenderPending = false
+        if (currentScene) renderScene(currentScene)
+      }
+      // rAF menggabungkan burst chat dalam satu frame, jadi 50 chat/detik tetap
+      // menghasilkan paling banyak satu render per frame (bukan per pesan).
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run)
+      else run()
+    }
 
-        const strHH = String(hour24).padStart(2, '0')
-        const strH = String(hour24)
-        const strhh = String(hour12).padStart(2, '0')
-        const strh = String(hour12)
-        const strmm = String(p.minute || '00').padStart(2, '0')
-        const strm = String(parseInt(p.minute || '0', 10))
-        const strss = String(p.second || '00').padStart(2, '0')
-        const strs = String(parseInt(p.second || '0', 10))
-        const strYYYY = p.year || '2026'
-        const strYY = strYYYY.slice(-2)
-        const strMM = p.month || '01'
-        const strM = String(parseInt(strMM, 10))
-        const strDD = p.day || '01'
-        const strD = String(parseInt(strDD, 10))
-        const strdddd = p.weekday || ''
-        const strddd = weekdayShort
+    /**
+     * Terapkan payload GET /api/chat/feed. `isInitial` dipakai untuk load pertama:
+     * tail lama tetap masuk buffer stack, tetapi notif yang sedang showing dianggap
+     * idle supaya reload tidak memutar ulang notif lama.
+     */
+    function applyChatFeed(payload, isInitial = false) {
+      if (!payload || typeof payload !== 'object') return false
+      let changed = false
+      const resetRequired = payload.resetRequired === true
+      const incoming = Array.isArray(payload.items) ? payload.items : []
 
-        const replacements = {
-          dddd: strdddd,
-          ddd: strddd,
-          YYYY: strYYYY,
-          yyyy: strYYYY,
-          YY: strYY,
-          yy: strYY,
-          MMMM: monthName,
-          MMM: monthShort,
-          MM: strMM,
-          M: strM,
-          DD: strDD,
-          dd: strDD,
-          D: strD,
-          d: strD,
-          HH: strHH,
-          H: strH,
-          hh: strhh,
-          h: strh,
-          mm: strmm,
-          m: strm,
-          ss: strss,
-          s: strs,
-          A: ampm,
-          a: ampm.toLowerCase(),
+      if (resetRequired) {
+        chatEvents = []
+        changed = true
+      }
+
+      const known = new Set(chatEvents.map((event) => event.seq))
+      const lastKnownSeq = chatEvents.length > 0 ? chatEvents[chatEvents.length - 1].seq : 0
+      const nextEvents = incoming
+        .map(normalizeChatEvent)
+        .filter(Boolean)
+        .sort((a, b) => a.seq - b.seq)
+
+      for (const event of nextEvents) {
+        if (known.has(event.seq)) continue
+        if (!resetRequired && event.seq <= lastKnownSeq) continue
+        chatEvents.push(event)
+        known.add(event.seq)
+        changed = true
+      }
+
+      if (chatEvents.length > CHAT_BUFFER_LIMIT) {
+        chatEvents = chatEvents.slice(-CHAT_BUFFER_LIMIT)
+        changed = true
+      }
+
+      const nextSeq = Number(payload.seq)
+      if (Number.isFinite(nextSeq) && nextSeq > chatFeedSeq) {
+        chatFeedSeq = nextSeq
+        changed = true
+      }
+
+      if (payload.notif) {
+        const nextNotif = normalizeNotifSnapshot(payload.notif)
+        const previousSignature = JSON.stringify(chatNotif)
+        if (isInitial) {
+          suppressedNotifSeq = nextNotif.state === 'showing' ? nextNotif.seq : null
+        } else if (suppressedNotifSeq !== null) {
+          // Chat baru (seq berbeda) atau notif sudah kembali idle -> suppression selesai.
+          if (nextNotif.seq !== suppressedNotifSeq || nextNotif.state === 'idle') suppressedNotifSeq = null
         }
-
-        const regex = /dddd|ddd|YYYY|yyyy|YY|yy|MMMM|MMM|MM|M|DD|dd|D|d|HH|H|hh|h|mm|m|ss|s|A|a/g
-        const result = fmt.replace(regex, (match) => replacements[match] !== undefined ? replacements[match] : match)
-
-        return `${prefix}${result}${suffix}`
-      } catch (e) {
-        return `${prefix}${now.toLocaleTimeString()}${suffix}`
+        chatNotif = nextNotif
+        if (JSON.stringify(chatNotif) !== previousSignature) changed = true
       }
+
+      if (payload.status && typeof payload.status === 'object') {
+        const previousStatus = JSON.stringify(chatPlatformStatus)
+        chatPlatformStatus = payload.status
+        if (JSON.stringify(chatPlatformStatus) !== previousStatus) changed = true
+      }
+      if (isInitial) chatFeedInitialized = true
+      if (changed) scheduleChatRender()
+      return changed
     }
 
-    // Infrastruktur Control Panel — Timer (Countdown & Count Up). Server cuma nyimpen
-    // checkpoint (startedAtMs, pausedAccumMs, isRunning); elapsed dihitung live di sini
-    // (client-side) supaya tampilan bisa tick tiap detik tanpa perlu polling super cepat.
-    function computeTimerElapsedMs(timer) {
-      if (!timer) return 0
-      if (timer.isRunning && typeof timer.startedAtMs === 'number') {
-        return Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
+    /** D1: status/viewers per platform, diambil dari status feed (bukan liveStats tunggal). */
+    function getPlatformStatusField(field) {
+      const map = {
+        statusTiktok: ['tiktok', 'isLive'],
+        statusYoutube: ['youtube', 'isLive'],
+        viewerTiktok: ['tiktok', 'viewerCount'],
+        viewerYoutube: ['youtube', 'viewerCount'],
       }
-      return timer.pausedAccumMs || 0
-    }
-
-    function computeTimerDisplayMs(timer) {
-      const elapsed = computeTimerElapsedMs(timer)
-      if (timer?.mode === 'countdown') {
-        const remaining = (timer.durationMs || 0) - elapsed
-        if (remaining <= 0 && !timer.continueBelowZero) return 0
-        return remaining
+      const target = map[field]
+      if (!target) return undefined
+      const status = chatPlatformStatus?.[target[0]]
+      if (target[1] === 'isLive') {
+        if (!status) return ''
+        return status.running && status.isLive ? 'LIVE' : status.enabled ? 'OFFLINE' : 'OFF'
       }
-      return elapsed
-    }
-
-    function formatTimerMs(ms, format) {
-      const sign = ms < 0 ? '-' : ''
-      const abs = Math.abs(Math.round(ms / 1000)) // detik bulat
-      const hh = Math.floor(abs / 3600)
-      const mm = Math.floor((abs % 3600) / 60)
-      const ss = abs % 60
-      const pad = (n) => String(n).padStart(2, '0')
-
-      if (format === 'hh:mm:ss') {
-        return `${sign}${pad(hh)}:${pad(mm)}:${pad(ss)}`
-      }
-      if (format === 'seconds') {
-        return `${sign}${abs}`
-      }
-      // default 'mm:ss' — kalau lebih dari 1 jam, ikut meluap ke menit (tidak dipotong)
-      const totalMinutes = Math.floor(abs / 60)
-      return `${sign}${pad(totalMinutes)}:${pad(ss)}`
+      return Number(status?.viewerCount) || 0
     }
 
     function resolveElementText(el) {
@@ -604,10 +666,16 @@
       } else if (binding.source === 'timer') {
         const timer = controlState.timers?.[binding.group]
         return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
+      } else if (binding.source === 'chat') {
+        const value = resolveChatText(binding) || fallback
+        return `${binding.prefix || ''}${value}${binding.suffix || ''}`
+      } else if (binding.field === 'statusTiktok' || binding.field === 'statusYoutube' ||
+                 binding.field === 'viewerTiktok' || binding.field === 'viewerYoutube') {
+        rawValue = getPlatformStatusField(binding.field)
       } else if (binding.field === 'latestChatAuthor') {
-        rawValue = displayedChat.author
+        rawValue = getLatestChat().author
       } else if (binding.field === 'latestChatMessage') {
-        rawValue = displayedChat.message
+        rawValue = getLatestChat().message
       } else {
         rawValue = liveStats?.[binding.field]
       }
@@ -615,19 +683,6 @@
       const formatted = formatBoundValue(rawValue, binding.format || 'raw')
       const value = formatted || fallback
       return `${binding.prefix || ''}${value}${binding.suffix || ''}`
-    }
-
-    // Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
-    // Scope sengaja 1 level: kalau `parent` itu sendiri sudah jadi child elemen lain,
-    // referensi diabaikan (elemen diperlakukan top-level) supaya tidak ada nested group
-    // berlapis yang belum didukung. Self-reference & parent yang tidak ditemukan juga
-    // diabaikan secara graceful (fallback ke top-level, tidak pernah crash).
-    function getEffectiveParentId(el, byId) {
-      if (!el || !el.parentId) return null
-      const parent = byId.get(el.parentId)
-      if (!parent || parent.id === el.id) return null
-      if (parent.parentId && byId.has(parent.parentId)) return null
-      return parent.id
     }
 
     function applyElementBox(node, el, hasChildren) {
@@ -689,10 +744,20 @@
 
     function getElementActiveState(el) {
       const binding = el?.stateBinding
-      if (!binding?.enabled || !binding.group) return null
-      const raw = binding.source === 'counter'
-        ? controlState.counters?.[binding.group]?.value
-        : controlState.eventStates?.[binding.group]?.value
+      if (!binding?.enabled) return null
+
+      let raw
+      if (binding.source === 'chatNotif') {
+        // `group` sengaja tidak dipakai: seluruh notifikasi chat memakai satu
+        // state machine server-owned. State aktif = idle | showing.
+        raw = getEffectiveNotifState()
+      } else {
+        if (!binding.group) return null
+        raw = binding.source === 'counter'
+          ? controlState.counters?.[binding.group]?.value
+          : controlState.eventStates?.[binding.group]?.value
+      }
+
       const fallback = binding.fallbackState || 'default'
       const key = String(raw ?? fallback)
       // State yang tidak punya target dianggap fallback (kunci dinormalisasi), jadi perpindahan
@@ -837,7 +902,15 @@
           applyRecordVisibility(existing, el)
           const nextVisible = target._visible !== false
 
-          if (existing.currentState !== activeState) {
+          const reviewSeq = getNotifReviewSeq(el)
+          if (existing.currentState === activeState && reviewSeq !== existing.reviewSeq) {
+            // Review step ▲/▼: state tetap "showing", jadi putar ulang animasi kemunculan
+            // supaya pergantian chat terlihat beranimasi, bukan teks yang lompat.
+            applyElementBox(existing.node, el, hasChildren)
+            replayNotifAppearance(existing.node, el, nextAnimConfig, target)
+            existing.animationSignature = nextAnimSignature
+            existing.boxSignature = nextBoxSignature
+          } else if (existing.currentState !== activeState) {
             // Update dulu: finishTransition() memakai currentState untuk mendeteksi transition yang sudah digantikan,
             // dan pada jalur tanpa transition callback ini dipanggil sinkron.
             existing.currentState = activeState
@@ -879,6 +952,7 @@
             // tapi overflow tetap perlu disinkronkan kalau status "punya child" berubah.
             existing.node.style.overflow = hasChildren ? 'visible' : 'hidden'
           }
+          existing.reviewSeq = reviewSeq
           return
         }
 
@@ -889,7 +963,7 @@
         applyElementBox(div, el, hasChildren)
         container.appendChild(div)
         div.style.visibility = el.hidden ? 'hidden' : ''
-        renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature, boxSignature: nextBoxSignature })
+        renderedElements.set(el.id, { node: div, animationSignature: nextAnimSignature, boxSignature: nextBoxSignature, reviewSeq: getNotifReviewSeq(el) })
         applyElementContent(div, el)
         const state = getElementActiveState(el)
         const initialTarget = getElementStateTarget(el, state)
@@ -912,70 +986,45 @@
       })
     }
 
-    function processChatQueue(newLiveStats) {
-      const incoming = Array.isArray(newLiveStats.chatMessages) ? newLiveStats.chatMessages : []
-
-      if (isFirstStatsSync) {
-        incoming.forEach(msg => displayedChatIds.add(msg.id))
-        if (incoming.length > 0) {
-          const last = incoming[incoming.length - 1]
-          displayedChat = { author: last.author, message: last.message }
-        }
-        isFirstStatsSync = false
-        return
-      }
-
-      const queuedIds = new Set(chatDisplayQueue.map(msg => msg.id))
-      incoming.forEach(msg => {
-        if (!displayedChatIds.has(msg.id) && !queuedIds.has(msg.id)) {
-          chatDisplayQueue.push(msg)
-        }
-      })
-
-      const MAX_QUEUE = 15
-      while (chatDisplayQueue.length > MAX_QUEUE) {
-        chatDisplayQueue.shift()
-      }
-    }
-
-    function tickChatDisplay() {
-      if (chatDisplayQueue.length === 0) return
-      const next = chatDisplayQueue.shift()
-      displayedChatIds.add(next.id)
-      displayedChat = { author: next.author, message: next.message }
-
-      if (currentScene) {
-        currentScene.elements.forEach(el => {
-          const field = el.textBinding?.field
-          if (el.textBinding?.enabled && (field === 'latestChatAuthor' || field === 'latestChatMessage')) {
-            const rendered = renderedElements.get(el.id)
-            const textEl = rendered?.node?.firstElementChild
-            if (textEl) {
-              gsap.fromTo(textEl, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' })
-            }
-          }
-        })
-        requestAnimationFrame(() => renderScene(currentScene))
-      }
-    }
-
-    function restartChatDisplayTimer() {
-      if (chatDisplayTimer) clearInterval(chatDisplayTimer)
-      chatDisplayTimer = setInterval(tickChatDisplay, chatDisplayDurationMs)
-    }
-
     async function syncPlatformConnectorConfig() {
       try {
         const res = await fetch('/api/platform-connector')
         if (!res.ok) return
         const data = await res.json()
-        const nextDuration = Math.max(1500, Math.min(15000, Number(data?.config?.chatDisplayDurationMs) || 4000))
-        if (nextDuration !== chatDisplayDurationMs) {
-          chatDisplayDurationMs = nextDuration
-          restartChatDisplayTimer()
+        const nextTags = data?.configV2?.chatFormat
+        if (nextTags && typeof nextTags === 'object') {
+          const tiktokTag = String(nextTags.tiktokTag || '').trim()
+          const youtubeTag = String(nextTags.youtubeTag || '').trim()
+          if (tiktokTag) chatTags.tiktok = tiktokTag
+          if (youtubeTag) chatTags.youtube = youtubeTag
+        }
+        if (data?.chatIcons && typeof data.chatIcons === 'object') {
+          const nextIcons = {
+            tiktok: String(data.chatIcons.tiktok || ''),
+            youtube: String(data.chatIcons.youtube || ''),
+          }
+          if (nextIcons.tiktok !== chatIcons.tiktok || nextIcons.youtube !== chatIcons.youtube) {
+            chatIcons = nextIcons
+            if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
+          }
         }
       } catch (err) {
         console.error('Failed to sync platform connector config:', err)
+      }
+    }
+
+    async function syncChatFeed() {
+      const isInitial = !chatFeedInitialized
+      try {
+        const since = isInitial ? 0 : chatFeedSeq
+        const res = await fetch(`/api/chat/feed?since=${since}&limit=200`)
+        if (!res.ok) return
+        const data = await res.json()
+        // Kalau feed baru tersedia setelah beberapa polling gagal, tetap diperlakukan
+        // sebagai load pertama supaya notif lama tidak diputar ulang.
+        applyChatFeed(data, isInitial)
+      } catch (err) {
+        console.error('Failed to sync chat feed:', err)
       }
     }
 
@@ -1006,7 +1055,6 @@
         if (text !== lastLiveStatsHash || isInitial) {
           lastLiveStatsHash = text
           liveStats = JSON.parse(text)
-          processChatQueue(liveStats)
           if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
         }
       } catch (err) {
@@ -1055,7 +1103,7 @@
       syncScene(true)
       syncControlState(true)
       syncPlatformConnectorConfig()
-      restartChatDisplayTimer()
+      syncChatFeed()
 
       // PERF: offset waktu MULAI tiap interval polling (bukan mengubah frekuensinya),
       // supaya syncScene & syncLiveStats (sama-sama tiap 2 detik) tidak selalu
@@ -1065,6 +1113,9 @@
       setTimeout(() => setInterval(() => syncLiveStats(false), 2000), 300)
       setTimeout(() => setInterval(() => syncF1Data(false), 30000), 600)
       setTimeout(() => setInterval(syncPlatformConnectorConfig, 5000), 900)
+      // Feed chat dipoll ±500ms: cukup responsif untuk notif, jauh lebih murah
+      // daripada polling per pesan. Burst di-throttle saat render lewat rAF.
+      setTimeout(() => setInterval(syncChatFeed, CHAT_FEED_INTERVAL_MS), 200)
       // Mulai dari 500ms; turunkan ke 300ms kalau masih kerasa lag pas dites riil live.
       setTimeout(() => setInterval(() => syncControlState(false), 500), 150)
 

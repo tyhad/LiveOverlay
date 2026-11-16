@@ -2,7 +2,7 @@
 // Jalan lewat `bun test tests/scene-migration.test.mjs` (import langsung ke .ts).
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { migrateLegacyElement } from '../src/scene-migration.ts'
+import { migrateLegacyElement, normalizeChatBindings } from '../src/scene-migration.ts'
 
 const base = { id: 'a', type: 'shape', x: 100, y: 50, width: 100, height: 40, opacity: 0.8 }
 
@@ -139,3 +139,36 @@ test('input tidak dimutasi', () => {
   migrateLegacyElement(el)
   assert.deepEqual(el, snapshot)
 })
+
+test('binding chat baru (source chat / chatNotif) tidak dibuang dan lines dinormalisasi', () => {
+  const el = {
+    ...base,
+    textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 99, template: '{author}: {message}' },
+    stateBinding: { enabled: true, source: 'chatNotif', fallbackState: 'idle' },
+  }
+  const out = normalizeChatBindings(el)
+  assert.equal(out.textBinding.source, 'chat')
+  assert.equal(out.textBinding.lines, 30)
+  assert.equal(out.stateBinding.source, 'chatNotif')
+  assert.equal(out.stateBinding.enabled, true)
+  // Elemen yang sudah migrasi tetap lolos apa adanya (tidak crash / tidak hilang).
+  const migrated = migrateLegacyElement(out)
+  assert.equal(migrated.textBinding.source, 'chat')
+  assert.equal(migrated.stateBinding.source, 'chatNotif')
+})
+
+test('normalizeChatBindings memindahkan template notif lama ke dua baris (idempoten)', () => {
+  const el = { ...base, textBinding: { enabled: true, source: 'chat', field: 'notif', template: '{platformTag} {author}: {message}' } }
+  const out = normalizeChatBindings(el)
+  assert.equal(out.textBinding.template, '{platformTag} {author}\\n{message}')
+  assert.equal(normalizeChatBindings(out).textBinding.template, '{platformTag} {author}\\n{message}')
+  // Template stack/kustom tidak disentuh.
+  const stack = { ...base, textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 3, template: '{author}: {message}' } }
+  assert.equal(normalizeChatBindings(stack).textBinding.template, '{author}: {message}')
+})
+
+test('normalizeChatBindings mengembalikan referensi yang sama untuk elemen non-chat', () => {
+  const el = { ...base, textBinding: { enabled: true, source: 'clock', format: 'HH:mm' } }
+  assert.equal(normalizeChatBindings(el), el)
+})
+

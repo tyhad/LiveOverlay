@@ -10,6 +10,8 @@
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="/animation-engine.js"></script>
+  <script src="/chat-format.js"></script>
+  <script src="/text-binding.js"></script>
   <!-- Google Fonts for Stream Overlays & Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -176,7 +178,7 @@
         </div>
       </details>
 
-      <!-- Section 4: Platform Live Stats Connector -->
+      <!-- Section 4: Platform Connectors (TikTok & YouTube independen) -->
       <details class="p-3 border-b border-slate-800 space-y-2 group" open>
         <summary
           class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
@@ -184,8 +186,8 @@
             <span
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px] shrink-0 mt-0.5">▶</span>
             <div>
-              <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Live Stats</h2>
-              <p class="text-[10px] text-slate-500 mt-0.5">Auto-fetch dari TikTok / YouTube Live.</p>
+              <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Connectors</h2>
+              <p class="text-[10px] text-slate-500 mt-0.5">TikTok &amp; YouTube bisa aktif bersamaan.</p>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
@@ -193,77 +195,123 @@
             <span id="platform-connector-state-label" class="text-[10px] text-slate-500">OFF</span>
           </div>
         </summary>
-        <div class="space-y-2 mt-2">
+        <div class="space-y-3 mt-2">
 
-          <!-- Platform selector -->
-          <div class="grid grid-cols-2 gap-1.5">
-            <button id="platform-tiktok-btn"
-              class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
-              data-platform="tiktok">🎵 TikTok</button>
-            <button id="platform-youtube-btn"
-              class="px-2 py-1.5 rounded-lg border text-[11px] font-semibold transition platform-tab-btn border-slate-700 bg-slate-800 text-slate-400"
-              data-platform="youtube">▶️ YouTube</button>
-          </div>
-
-          <!-- TikTok fields -->
-          <div id="connector-tiktok-fields" class="space-y-1.5">
+          <!-- TikTok block -->
+          <div class="rounded-xl border border-slate-700/70 bg-slate-950/40 p-2.5 space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-200 cursor-pointer">
+                <input id="connector-tiktok-enabled" type="checkbox" class="accent-indigo-500">
+                <span>🎵 TikTok</span>
+              </label>
+              <span class="flex items-center gap-1.5">
+                <span id="connector-tiktok-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                <span id="connector-tiktok-state" class="text-[10px] text-slate-500">OFF</span>
+              </span>
+            </div>
             <label class="block text-[10px] text-slate-400">TikTok Username</label>
             <input type="text" id="connector-tiktok-username" placeholder="@username"
               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+            <p id="connector-tiktok-error" class="text-[10px] text-rose-400 hidden"></p>
           </div>
 
-          <!-- YouTube fields -->
-          <div id="connector-youtube-fields" class="hidden space-y-1.5">
+          <!-- YouTube block -->
+          <div class="rounded-xl border border-slate-700/70 bg-slate-950/40 p-2.5 space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-200 cursor-pointer">
+                <input id="connector-youtube-enabled" type="checkbox" class="accent-indigo-500">
+                <span>▶️ YouTube</span>
+              </label>
+              <span class="flex items-center gap-1.5">
+                <span id="connector-youtube-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                <span id="connector-youtube-state" class="text-[10px] text-slate-500">OFF</span>
+              </span>
+            </div>
             <label class="block text-[10px] text-slate-400">YouTube API Key <span class="text-slate-600">(Data API
                 v3)</span></label>
             <input type="password" id="connector-yt-api-key" placeholder="AIza..."
               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            <label class="block text-[10px] text-slate-400 mt-1">Video ID <span class="text-slate-600">(atau kosongi,
-                pakai Channel ID)</span></label>
+            <label class="block text-[10px] text-slate-400 mt-1">Video ID <span class="text-slate-600">(disarankan,
+                hemat quota)</span></label>
             <input type="text" id="connector-yt-video-id" placeholder="dQw4w9WgXcQ"
               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
             <label class="block text-[10px] text-slate-400 mt-1">Channel ID <span class="text-slate-600">(fallback
                 jika Video ID kosong)</span></label>
             <input type="text" id="connector-yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+            <p id="connector-youtube-video-hint" class="text-[10px] text-amber-400/90"></p>
+            <p class="text-[10px] text-slate-500">Quota terpakai hari ini: <span id="connector-youtube-quota"
+                class="text-slate-300">—</span></p>
+            <p id="connector-youtube-error" class="text-[10px] text-rose-400 hidden"></p>
           </div>
 
-          <!-- Poll interval -->
+          <!-- Stats poll interval -->
           <div class="flex items-center gap-2">
-            <label class="text-[10px] text-slate-400 shrink-0">Poll tiap</label>
+            <label class="text-[10px] text-slate-400 shrink-0">Poll statistik tiap</label>
             <input type="number" id="connector-poll-interval" min="10" max="300" value="30"
               class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
             <span class="text-[10px] text-slate-500">detik</span>
           </div>
 
-          <!-- Chat display duration -->
-          <div class="space-y-1">
-            <div class="flex items-center gap-2">
-              <label class="text-[10px] text-slate-400 shrink-0">Durasi tampil chat</label>
-              <input type="number" id="connector-chat-display-duration" min="1500" max="15000" step="500" value="4000"
-                class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-              <span class="text-[10px] text-slate-500">ms</span>
+          <!-- Notification / chat settings -->
+          <div class="rounded-xl border border-indigo-500/20 bg-indigo-600/10 p-2.5 space-y-2">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Chat Notification</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Tampil</label>
+                <input type="number" id="connector-notif-display-ms" min="1500" max="15000" step="250" value="4000"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+                <span class="text-[9px] text-slate-500">ms</span>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Jeda</label>
+                <input type="number" id="connector-notif-gap-ms" min="300" max="15000" step="100" value="600"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+                <span class="text-[9px] text-slate-500">ms (≥ 300)</span>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Antrean</label>
+                <input type="number" id="connector-notif-max-queue" min="1" max="500" step="1" value="20"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+                <span class="text-[9px] text-slate-500">chat</span>
+              </div>
             </div>
-            <p class="text-[10px] text-slate-500">Durasi tiap chat tampil sebelum ganti ke chat berikutnya. Independen
-              dari interval polling di atas.</p>
+            <p class="text-[10px] text-slate-500">Jeda sebaiknya ≥ durasi animasi keluar, supaya state sempat
+              idle → showing lagi.</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Tag TikTok</label>
+                <input type="text" id="connector-tiktok-tag" placeholder="[TT]"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Tag YouTube</label>
+                <input type="text" id="connector-youtube-tag" placeholder="[YT]"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
+              </div>
+            </div>
+            <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+              <input id="connector-archive-enabled" type="checkbox" class="accent-indigo-500">
+              <span>Arsipkan chat ke <code>chat-archive/</code></span>
+            </label>
           </div>
 
           <!-- Action buttons -->
           <div class="flex gap-1.5">
             <button id="connector-save-btn"
               class="flex-1 px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-[11px] font-semibold text-slate-200 transition">Simpan</button>
-            <button id="connector-start-btn"
+            <button id="connector-start-all-btn"
               class="flex-1 px-2 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-semibold transition">▶
-              Start</button>
-            <button id="connector-stop-btn"
-              class="flex-1 px-2 py-1.5 rounded-lg bg-rose-600/60 hover:bg-rose-600/80 text-white text-[11px] font-semibold transition hidden">■
-              Stop</button>
+              Start Semua</button>
+            <button id="connector-stop-all-btn"
+              class="flex-1 px-2 py-1.5 rounded-lg bg-rose-600/60 hover:bg-rose-600/80 text-white text-[11px] font-semibold transition">■
+              Stop Semua</button>
           </div>
 
           <!-- Status display -->
           <div id="platform-connector-status-box"
             class="bg-slate-950 border border-slate-800 rounded-lg p-2 space-y-0.5">
-            <p class="text-[10px] text-slate-500">Viewer: <span id="connector-status-viewers"
+            <p class="text-[10px] text-slate-500">Chat terakhir: <span id="connector-status-last-chat"
                 class="text-slate-300">—</span></p>
             <p class="text-[10px] text-slate-500">Updated: <span id="connector-status-updated"
                 class="text-slate-300">—</span></p>
@@ -456,15 +504,25 @@
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
                   <option value="counter">Counter</option>
                   <option value="eventState">Event State</option>
+                  <option value="chatNotif">Chat Notification</option>
                 </select>
               </div>
-              <div>
+              <div id="prop-vis-name-wrap">
                 <label class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
                 <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. raceStatus"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
                 <datalist id="vis-group-names"></datalist>
               </div>
             </div>
+            <p id="prop-vis-chatnotif-note"
+              class="hidden text-[10px] text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 rounded px-2 py-1">
+              State dari server: <code>idle</code> dan <code>showing</code>. Contoh preset: showing = opacity 1,
+              idle = opacity 0, lalu atur Enter/Transition di tab Animation.
+            </p>
+            <button id="chatnotif-preset-btn" type="button"
+              class="hidden w-full px-2 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-semibold transition cursor-pointer">
+              + Buat preset state idle / showing
+            </button>
             <div class="grid grid-cols-2 gap-2">
               <div id="prop-vis-comparator-wrap">
                 <label class="block text-[11px] text-slate-400 mb-1">Kondisi</label>
@@ -480,7 +538,7 @@
               </div>
               <div id="prop-vis-value-wrap" class="col-span-1">
                 <label class="block text-[11px] text-slate-400 mb-1">Fallback State</label>
-                <input type="text" id="prop-vis-value" placeholder="default"
+                <input type="text" id="prop-vis-value" list="vis-value-options" placeholder="default"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
                 <datalist id="vis-value-options"></datalist>
               </div>
@@ -763,6 +821,7 @@
                 <select id="prop-text-binding-source"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                   <option value="platform">Platform Stats</option>
+                  <option value="chat">Chat</option>
                   <option value="f1data">F1 Data (Local DB)</option>
                   <option value="clock">Current Time (Clock)</option>
                   <option value="control">Control Panel</option>
@@ -794,16 +853,48 @@
               <label class="block text-[11px] text-slate-400 mb-1">Platform Field</label>
               <select id="prop-text-binding-field"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                <option value="username">Username</option>
-                <option value="displayName">Display Name</option>
-                <option value="viewerCount">Viewer Count</option>
-                <option value="followerCount">Follower Count</option>
-                <option value="likeCount">Like Count</option>
-                <option value="latestChatAuthor">Latest Chat Author</option>
-                <option value="latestChatMessage">Latest Chat Message</option>
-                <option value="platform">Platform Name</option>
-                <option value="isLive">Live Status</option>
+                <option value="statusTiktok">Status TikTok</option>
+                <option value="statusYoutube">Status YouTube</option>
+                <option value="viewerTiktok">Viewers TikTok</option>
+                <option value="viewerYoutube">Viewers YouTube</option>
               </select>
+              <p class="text-[10px] text-slate-500 mt-1">Field lama (username, followers, likes, dll.) tetap
+                terbaca untuk scene lama, tetapi disembunyikan dari pilihan baru.</p>
+            </div>
+
+            <div id="chat-binding-group" class="hidden space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Chat Field</label>
+                  <select id="prop-chat-field"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <option value="stack">Chat Stack</option>
+                    <option value="notif">Chat Notification (Author + Message)</option>
+                  </select>
+                </div>
+                <div id="chat-lines-group">
+                  <label class="block text-[11px] text-slate-400 mb-1">Jumlah baris</label>
+                  <input type="number" id="prop-chat-lines" min="1" max="30" step="1" value="5"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Template</label>
+                <input type="text" id="prop-chat-template" list="chat-template-presets"
+                  placeholder="{platformTag} {author}: {message}"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                <datalist id="chat-template-presets">
+                  <option value="{platformTag} {author}: {message}">{platformTag} author: message (stack)</option>
+                  <option value="{author}\n{message}">author, baris baru message (notification)</option>
+                  <option value="{platformTag} {author}\n{message}">icon + author, baris baru message</option>
+                  <option value="{platformTag} {message}">{platformTag} message</option>
+                  <option value="{author}">{author}</option>
+                </datalist>
+              </div>
+              <p class="text-[10px] text-slate-500">Placeholder: <code>{platformTag}</code>, <code>{platform}</code>,
+                <code>{author}</code>, <code>{message}</code>. Tulis <code>\n</code> untuk baris baru. Ikon platform
+                otomatis dipakai kalau ada file di <code>public/chat-icons/tiktok.*</code> /
+                <code>youtube.*</code>; kalau tidak ada, <code>{platformTag}</code> jadi teks tag.</p>
             </div>
 
             <div id="f1data-binding-group" class="hidden space-y-2">
@@ -920,7 +1011,7 @@
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Preview</label>
               <div id="prop-text-binding-preview"
-                class="rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-2 text-xs text-slate-200 font-mono truncate">
+                class="rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-2 text-xs text-slate-200 font-mono whitespace-pre-line max-h-32 overflow-auto break-words">
                 -</div>
             </div>
           </div>
@@ -1383,6 +1474,14 @@
 
   <!-- STUDIO SCRIPT WITH GSAP ENGINE -->
   <script>
+    // Pure text-binding helpers live in /text-binding.js (shared with the overlay).
+    const {
+      getValueAtPath, formatBoundValue, formatClockTime,
+      computeTimerDisplayMs, formatTimerMs, getEffectiveParentId,
+    } = window.TextBinding
+    const getSceneCanvasSize = () => window.TextBinding.getSceneCanvasSize(scene)
+    const getFontStack = (family) => window.TextBinding.getFontStack(family || 'Manrope, sans-serif')
+
     const nativeFetch = window.fetch.bind(window)
     window.fetch = async (input, init = {}) => {
       const method = (init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase()
@@ -1482,19 +1581,12 @@
       sceneInfoEl.textContent = `${width} × ${height} • ${scene.id}`
     }
 
-    function getSceneCanvasSize() {
-      return {
-        width: Number(scene?.canvas?.width) || 1920,
-        height: Number(scene?.canvas?.height) || 1080,
-      }
-    }
-
     function ensureTextBinding(el) {
       if (!el.textBinding) {
         el.textBinding = {
           enabled: false,
           source: 'platform',
-          field: 'username',
+          field: 'statusTiktok',
           format: 'raw',
           prefix: '',
           suffix: '',
@@ -1535,10 +1627,14 @@
       const el = scene?.elements?.find(item => item.id === selectedElementId)
       const binding = el?.stateBinding
       const enabled = !!binding?.enabled
+      const isChatNotif = binding?.source === 'chatNotif'
       document.getElementById('prop-vis-comparator-wrap')?.classList.add('hidden')
+      document.getElementById('prop-vis-name-wrap')?.classList.toggle('hidden', isChatNotif)
+      document.getElementById('prop-vis-chatnotif-note')?.classList.toggle('hidden', !isChatNotif)
+      document.getElementById('chatnotif-preset-btn')?.classList.toggle('hidden', !isChatNotif)
       ;['prop-vis-source', 'prop-vis-name', 'prop-vis-value'].forEach(id => {
         const input = document.getElementById(id)
-        if (input) input.disabled = !enabled
+        if (input) input.disabled = !enabled || (id === 'prop-vis-name' && isChatNotif)
       })
       const noteEl = document.getElementById('state-binding-disabled-note')
       if (noteEl) noteEl.classList.toggle('hidden', enabled)
@@ -1549,10 +1645,18 @@
       if (!el) return null
       if (editorStatePreview[el.id]) return editorStatePreview[el.id]
       const binding = el?.stateBinding
-      if (!binding?.enabled || !binding.group) return null
-      const raw = binding.source === 'counter'
-        ? controlStateEditor.counters?.[binding.group]?.value
-        : controlStateEditor.eventStates?.[binding.group]?.value
+      if (!binding?.enabled) return null
+      let raw
+      if (binding.source === 'chatNotif') {
+        // Di editor tidak ada feed chat live; default ke idle. Preview manual per
+        // state tetap bisa dipakai untuk melihat state "showing".
+        raw = 'idle'
+      } else {
+        if (!binding.group) return null
+        raw = binding.source === 'counter'
+          ? controlStateEditor.counters?.[binding.group]?.value
+          : controlStateEditor.eventStates?.[binding.group]?.value
+      }
       return String(raw ?? binding.fallbackState ?? 'default')
     }
 
@@ -1715,6 +1819,99 @@
     let controlStateEditor = { counters: {}, eventStates: {}, timers: {}, texts: {} }
     let lastControlStateEditorHash = ''
 
+    // ── Chat feed untuk preview editor ───────────────────────────────────────
+    // Editor tidak memegang urutan chat; ia hanya menampilkan tail dari feed
+    // server supaya binding Chat Stack / Chat Notification bisa dipreview.
+    const EDITOR_CHAT_BUFFER_LIMIT = 50
+    const DEFAULT_CHAT_TAGS = { tiktok: '[TT]', youtube: '[YT]' }
+    let editorChatEvents = []
+    let editorChatSeq = 0
+    let editorChatInitialized = false
+    let editorChatNotif = { state: 'idle', seq: 0, author: '', message: '', platform: '' }
+    let editorChatTags = { ...DEFAULT_CHAT_TAGS }
+    let editorChatIcons = { tiktok: '', youtube: '' }
+    let editorPlatformStatus = { tiktok: null, youtube: null }
+
+    function formatEditorChatLine(event, template) {
+      const safe = {
+        platform: event?.platform || '',
+        author: String(event?.author || ''),
+        message: String(event?.message || ''),
+      }
+      if (window.ChatFormat?.formatChat) {
+        return window.ChatFormat.formatChat(safe, template, { tags: editorChatTags, icons: editorChatIcons })
+      }
+      return String(template || '{author}: {message}').replace(/\\n/g, '\n').replace(/\{(platformTag|platform|author|message)\}/g, (_, key) => {
+        if (key === 'platformTag') return editorChatTags[safe.platform] || DEFAULT_CHAT_TAGS[safe.platform] || ''
+        return safe[key] || ''
+      })
+    }
+
+    function resolveEditorChatText(binding) {
+      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
+      if (field === 'stack') {
+        const rawLines = Number(binding?.lines)
+        const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
+        return editorChatEvents
+          .slice(-lineCount)
+          .map((event) => formatEditorChatLine(event, template))
+          .filter((line) => line.trim() !== '')
+          .join('\n')
+      }
+      if (!editorChatNotif.author && !editorChatNotif.message) return ''
+      return formatEditorChatLine({ platform: editorChatNotif.platform, author: editorChatNotif.author, message: editorChatNotif.message }, template)
+    }
+
+    /** Status per platform untuk field baru D1: Status/Viewers TikTok & YouTube. */
+    function getEditorPlatformField(field) {
+      const map = {
+        statusTiktok: ['tiktok', 'isLive'],
+        statusYoutube: ['youtube', 'isLive'],
+        viewerTiktok: ['tiktok', 'viewerCount'],
+        viewerYoutube: ['youtube', 'viewerCount'],
+      }
+      const target = map[field]
+      if (!target) return undefined
+      const stamp = editorPlatformStatus?.[target[0]]
+      if (target[1] === 'isLive') {
+        if (!stamp) return ''
+        return stamp.running && stamp.isLive ? 'LIVE' : stamp.enabled ? 'OFFLINE' : 'OFF'
+      }
+      return Number(stamp?.viewerCount) || 0
+    }
+
+    async function loadEditorChatFeed() {
+      try {
+        const since = editorChatInitialized ? editorChatSeq : 0
+        const res = await fetch(`/api/chat/feed?since=${since}&limit=200`)
+        if (!res.ok) return false
+        const data = await res.json()
+        const items = Array.isArray(data.items) ? data.items : []
+        if (!editorChatInitialized || data.resetRequired) {
+          editorChatEvents = items.slice(-EDITOR_CHAT_BUFFER_LIMIT)
+        } else {
+          editorChatEvents.push(...items)
+          if (editorChatEvents.length > EDITOR_CHAT_BUFFER_LIMIT) {
+            editorChatEvents = editorChatEvents.slice(-EDITOR_CHAT_BUFFER_LIMIT)
+          }
+        }
+        editorChatSeq = Number(data.seq) || editorChatSeq
+        const previousNotif = JSON.stringify(editorChatNotif)
+        const previousStatus = JSON.stringify(editorPlatformStatus)
+        editorChatNotif = data.notif && typeof data.notif === 'object' ? data.notif : editorChatNotif
+        if (data.status && typeof data.status === 'object') editorPlatformStatus = data.status
+        const changed = !editorChatInitialized || items.length > 0 ||
+          JSON.stringify(editorChatNotif) !== previousNotif ||
+          JSON.stringify(editorPlatformStatus) !== previousStatus
+        editorChatInitialized = true
+        return changed
+      } catch (err) {
+        console.warn('Failed to load editor chat feed:', err)
+        return false
+      }
+    }
+
     /** Warna font efektif: kalau teks di-bind ke Event State dan opsi aktif punya warna
      *  (diatur di Control Panel), warna itu menimpa style.color. */
     function getEffectiveTextColor(el) {
@@ -1725,29 +1922,6 @@
         if (c) return c
       }
       return el?.style?.color || '#ffffff'
-    }
-
-    function computeTimerDisplayMs(timer) {
-      if (!timer) return 0
-      const elapsed = (timer.isRunning && typeof timer.startedAtMs === 'number')
-        ? Date.now() - timer.startedAtMs + (timer.pausedAccumMs || 0)
-        : (timer.pausedAccumMs || 0)
-      if (timer.mode === 'countdown') {
-        const remaining = (timer.durationMs || 0) - elapsed
-        return remaining <= 0 && !timer.continueBelowZero ? 0 : remaining
-      }
-      return elapsed
-    }
-
-    function formatTimerMs(ms, format) {
-      const sign = ms < 0 ? '-' : ''
-      const abs = Math.abs(Math.round(ms / 1000))
-      const pad = (n) => String(n).padStart(2, '0')
-      if (format === 'hh:mm:ss') {
-        return `${sign}${pad(Math.floor(abs / 3600))}:${pad(Math.floor((abs % 3600) / 60))}:${pad(abs % 60)}`
-      }
-      if (format === 'seconds') return `${sign}${abs}`
-      return `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
     }
 
     /** Kumpulkan nama grup yang sudah dikenal: dari control-state.json + binding di semua scene
@@ -1782,8 +1956,17 @@
       else if (binding?.source === 'text') fillDatalist('control-group-names', getKnownControlGroups('texts'))
 
       const sb = el?.stateBinding
-      const stateKind = sb?.source === 'counter' ? 'counters' : 'eventStates'
-      fillDatalist('vis-group-names', getKnownControlGroups(stateKind))
+      if (sb?.source === 'chatNotif') {
+        fillDatalist('vis-group-names', [])
+        fillDatalist('vis-value-options', ['idle', 'showing'])
+      } else {
+        const stateKind = sb?.source === 'counter' ? 'counters' : 'eventStates'
+        fillDatalist('vis-group-names', getKnownControlGroups(stateKind))
+        const groupName = sb?.group
+        fillDatalist('vis-value-options', stateKind === 'eventStates' && groupName
+          ? (controlStateEditor.eventStates?.[groupName]?.options || [])
+          : [])
+      }
     }
 
     /** Isi kolom "Daftar Opsi" dari server (kecuali sedang diketik) untuk grup eventState terpilih. */
@@ -1862,24 +2045,35 @@
       return el.scroll
     }
 
-    function getFontStack(family) {
-      const base = family || 'Manrope, sans-serif'
-      if (base.includes('Noto Color Emoji') || base.includes('Segoe UI Emoji')) return base
-      return `${base}, 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif`
+    // Field live-stats lama tetap dibaca (scene lama) tetapi tidak lagi tampil
+    // sebagai pilihan baru. Opsi sementara ditambahkan hanya kalau scene memakainya.
+    const DEPRECATED_PLATFORM_FIELDS = {
+      username: 'Username',
+      displayName: 'Display Name',
+      viewerCount: 'Viewer Count',
+      followerCount: 'Follower Count',
+      likeCount: 'Like Count',
+      latestChatAuthor: 'Latest Chat Author',
+      latestChatMessage: 'Latest Chat Message',
+      platform: 'Platform Name',
+      isLive: 'Live Status',
     }
 
-    function getPathSegments(path) {
-      return String(path || '').match(/[^.[\]]+/g) || []
-    }
-
-    function getValueAtPath(data, path) {
-      if (!path) return data
-      return getPathSegments(path).reduce((current, segment) => {
-        if (current === null || current === undefined) return undefined
-        if (Array.isArray(current)) return current[Number(segment)]
-        if (typeof current === 'object') return current[segment]
-        return undefined
-      }, data)
+    function syncDeprecatedPlatformFieldOption(field) {
+      const select = document.getElementById('prop-text-binding-field')
+      if (!select) return
+      const existing = select.querySelector('option[data-deprecated-field]')
+      const label = DEPRECATED_PLATFORM_FIELDS[field]
+      if (!label) {
+        if (existing) existing.remove()
+        return
+      }
+      const option = existing || document.createElement('option')
+      option.value = field
+      option.textContent = `Lama: ${label}`
+      option.dataset.deprecatedField = '1'
+      option.disabled = true
+      if (!existing) select.appendChild(option)
     }
 
     function formatBindingStatus(binding) {
@@ -1900,10 +2094,20 @@
         const state = t ? (t.isRunning ? 'running' : 'paused/stopped') : 'belum dibuat'
         return `Source: Timer "${binding.group || '-'}" | Status: ${state} | Dikontrol dari /control`
       }
+      if (binding?.source === 'chat') {
+        const isNotif = binding.field === 'notif'
+        const notifState = editorChatNotif?.state === 'showing' ? 'showing' : 'idle'
+        return `Source: Chat ${isNotif ? 'Notification' : 'Stack'} | ${editorChatEvents.length} chat di feed` +
+          (isNotif ? ` | State: ${notifState}` : '')
+      }
       if (binding?.source === 'f1data') {
         if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
         const stamp = f1Data.lastFetchedAt ? new Date(f1Data.lastFetchedAt).toLocaleString() : 'never'
         return `Source: F1GStats (Local DB) | Season: ${f1Data.season || '-'} | Fetched: ${stamp}`
+      }
+
+      if (['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube'].includes(binding?.field)) {
+        return `Source: ${binding.field} | Status per platform (feed chat)`
       }
 
       const stamp = liveStats.lastUpdatedAt ? new Date(liveStats.lastUpdatedAt).toLocaleString() : 'never'
@@ -1917,15 +2121,18 @@
       const isClock = binding?.source === 'clock'
       const isControl = ['counter', 'eventState', 'timer', 'text'].includes(binding?.source)
       const isTimer = binding?.source === 'timer'
-      const isPlatform = !isF1Data && !isClock && !isControl
+      const isChat = binding?.source === 'chat'
+      const isPlatform = !isF1Data && !isClock && !isControl && !isChat
       const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
 
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
+      document.getElementById('chat-binding-group').classList.toggle('hidden', !isChat)
+      document.getElementById('chat-lines-group').classList.toggle('hidden', binding?.field === 'notif')
       document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
       document.getElementById('clock-binding-group').classList.toggle('hidden', !isClock)
       document.getElementById('control-binding-group').classList.toggle('hidden', !isControl)
       document.getElementById('timer-format-group').classList.toggle('hidden', !isTimer)
-      document.getElementById('standard-format-group').classList.toggle('hidden', isClock || isControl)
+      document.getElementById('standard-format-group').classList.toggle('hidden', isClock || isControl || isChat)
       document.getElementById('control-type-group').classList.toggle('hidden', !isControl)
       document.getElementById('control-text-format-group').classList.toggle('hidden', !isControl || isTimer)
       document.getElementById('eventstate-options-group').classList.toggle('hidden', binding?.source !== 'eventState')
@@ -1949,113 +2156,16 @@
           'prop-text-binding-fallback',
           'prop-text-binding-f1-field-path',
           'prop-text-binding-timezone',
-          'prop-text-binding-clock-format'
+          'prop-text-binding-clock-format',
+          'prop-chat-field',
+          'prop-chat-lines',
+          'prop-chat-template'
         ].forEach(id => {
           const input = document.getElementById(id)
           if (input) input.disabled = !isEnabled
         })
 
       if (isF1Data) populateF1FieldPaths()
-    }
-
-    function formatBoundValue(value, format) {
-      if (value === undefined || value === null || value === '') return ''
-      if (format === 'number') {
-        const numeric = Number(value)
-        return Number.isFinite(numeric) ? new Intl.NumberFormat().format(numeric) : String(value)
-      }
-      if (format === 'uppercase') return String(value).toUpperCase()
-      if (format === 'lowercase') return String(value).toLowerCase()
-      return String(value)
-    }
-
-    function formatClockTime(timezone, formatStr, prefix = '', suffix = '') {
-      const tz = timezone || 'Asia/Jakarta'
-      const fmt = formatStr || 'HH:mm:ss'
-      const now = new Date()
-
-      try {
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: tz,
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          weekday: 'long',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        })
-        const parts = formatter.formatToParts(now)
-        const p = {}
-        for (const part of parts) {
-          p[part.type] = part.value
-        }
-
-        let hour24 = parseInt(p.hour || '0', 10)
-        if (hour24 === 24) hour24 = 0
-        const hour12 = hour24 % 12 || 12
-        const ampm = hour24 >= 12 ? 'PM' : 'AM'
-
-        const monthNameFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'long' })
-        const monthShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'short' })
-        const weekdayShortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
-
-        const monthName = monthNameFormatter.format(now)
-        const monthShort = monthShortFormatter.format(now)
-        const weekdayShort = weekdayShortFormatter.format(now)
-
-        const strHH = String(hour24).padStart(2, '0')
-        const strH = String(hour24)
-        const strhh = String(hour12).padStart(2, '0')
-        const strh = String(hour12)
-        const strmm = String(p.minute || '00').padStart(2, '0')
-        const strm = String(parseInt(p.minute || '0', 10))
-        const strss = String(p.second || '00').padStart(2, '0')
-        const strs = String(parseInt(p.second || '0', 10))
-        const strYYYY = p.year || '2026'
-        const strYY = strYYYY.slice(-2)
-        const strMM = p.month || '01'
-        const strM = String(parseInt(strMM, 10))
-        const strDD = p.day || '01'
-        const strD = String(parseInt(strDD, 10))
-        const strdddd = p.weekday || ''
-        const strddd = weekdayShort
-
-        const replacements = {
-          dddd: strdddd,
-          ddd: strddd,
-          YYYY: strYYYY,
-          yyyy: strYYYY,
-          YY: strYY,
-          yy: strYY,
-          MMMM: monthName,
-          MMM: monthShort,
-          MM: strMM,
-          M: strM,
-          DD: strDD,
-          dd: strDD,
-          D: strD,
-          d: strD,
-          HH: strHH,
-          H: strH,
-          hh: strhh,
-          h: strh,
-          mm: strmm,
-          m: strm,
-          ss: strss,
-          s: strs,
-          A: ampm,
-          a: ampm.toLowerCase(),
-        }
-
-        const regex = /dddd|ddd|YYYY|yyyy|YY|yy|MMMM|MMM|MM|M|DD|dd|D|d|HH|H|hh|h|mm|m|ss|s|A|a/g
-        const result = fmt.replace(regex, (match) => replacements[match] !== undefined ? replacements[match] : match)
-
-        return `${prefix}${result}${suffix}`
-      } catch (e) {
-        return `${prefix}${now.toLocaleTimeString()}${suffix}`
-      }
     }
 
     function resolveElementText(el) {
@@ -2079,6 +2189,15 @@
       } else if (binding.source === 'timer') {
         const timer = controlStateEditor.timers?.[binding.group]
         return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
+      } else if (binding.source === 'chat') {
+        const value = resolveEditorChatText(binding) || fallback
+        return `${binding.prefix || ''}${value}${binding.suffix || ''}`
+      } else if (['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube'].includes(binding.field)) {
+        rawValue = getEditorPlatformField(binding.field)
+      } else if (binding.field === 'latestChatAuthor') {
+        rawValue = editorChatEvents.at(-1)?.author || editorChatNotif.author || liveStats?.latestChatAuthor
+      } else if (binding.field === 'latestChatMessage') {
+        rawValue = editorChatEvents.at(-1)?.message || editorChatNotif.message || liveStats?.latestChatMessage
       } else {
         rawValue = liveStats?.[binding.field]
       }
@@ -2095,7 +2214,9 @@
       if (!previewEl || !statusEl || !el) return
 
       const binding = ensureTextBinding(el)
-      previewEl.textContent = resolveElementText(el) || '-'
+      const previewText = resolveElementText(el) || '-'
+      if (window.ChatFormat?.renderText) window.ChatFormat.renderText(previewEl, previewText, { tags: editorChatTags, icons: editorChatIcons })
+      else previewEl.textContent = previewText
       statusEl.textContent = formatBindingStatus(binding)
       updateBindingControls()
     }
@@ -2462,17 +2583,6 @@
     // Animasi state elemen ditangani oleh AnimationEngine. Lihat tombol "Test" di
     // attachPropertyListeners() untuk titik pemanggilannya di editor.
 
-    // Fase 9 — Element Binding/Grouping (Parent-Child Transform), lihat Vision.md §3.3.2.
-    // Scope sengaja 1 level: kalau `parent` itu sendiri sudah jadi child elemen lain,
-    // referensi diabaikan (fallback ke top-level) supaya tidak ada nested group berlapis.
-    function getEffectiveParentId(el, byId) {
-      if (!el || !el.parentId) return null
-      const parent = byId.get(el.parentId)
-      if (!parent || parent.id === el.id) return null
-      if (parent.parentId && byId.has(parent.parentId)) return null
-      return parent.id
-    }
-
     // Konversi x/y elemen supaya posisi visualnya tidak "loncat" saat parentId
     // berubah (Vision.md §3.3.2 mencatat ini sebagai concern UX yang perlu dijaga).
     function reparentElement(el, newParentId) {
@@ -2610,7 +2720,9 @@
           } else {
             textP.style.textShadow = 'none'
           }
-          textP.textContent = resolveElementText(el)
+          const text = resolveElementText(el) || ''
+          if (window.ChatFormat?.renderText) window.ChatFormat.renderText(textP, text, { tags: editorChatTags, icons: editorChatIcons })
+          else textP.textContent = text
           div.appendChild(textP)
 
           if (el.marquee?.enabled) {
@@ -2968,7 +3080,12 @@
         document.getElementById('prop-control-type').value = isControlSource ? binding.source : 'counter'
         document.getElementById('prop-control-text-format').value =
           ['raw', 'number', 'uppercase', 'lowercase'].includes(binding.format) ? binding.format : 'raw'
-        document.getElementById('prop-text-binding-field').value = binding.field || 'username'
+        const platformField = binding.source === 'platform' ? (binding.field || 'statusTiktok') : ''
+        syncDeprecatedPlatformFieldOption(platformField)
+        document.getElementById('prop-text-binding-field').value = platformField || 'statusTiktok'
+        document.getElementById('prop-chat-field').value = binding.source === 'chat' && binding.field === 'notif' ? 'notif' : 'stack'
+        document.getElementById('prop-chat-lines').value = Math.max(1, Math.min(30, Number(binding.lines) || 5))
+        document.getElementById('prop-chat-template').value = binding.template || ''
         document.getElementById('prop-text-binding-format').value = binding.format || 'raw'
         document.getElementById('prop-text-binding-timezone').value = binding.timezone || 'Asia/Jakarta'
         document.getElementById('prop-text-binding-clock-format').value = binding.source === 'clock' ? (binding.format || 'HH:mm:ss') : 'HH:mm:ss'
@@ -3614,6 +3731,16 @@
           // keluar dari timer/clock: kembalikan format ke standar supaya select Format valid
           binding.format = 'raw'
         }
+        if (newSource === 'chat') {
+          if (!['stack', 'notif'].includes(binding.field)) binding.field = 'stack'
+          if (!Number.isFinite(Number(binding.lines))) binding.lines = 5
+          if (!binding.template) {
+            binding.template = binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}'
+          }
+        } else if (newSource === 'platform') {
+          const validFields = ['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube', ...Object.keys(DEPRECATED_PLATFORM_FIELDS)]
+          if (!validFields.includes(binding.field)) binding.field = 'statusTiktok'
+        }
         // Nama grup dibawa antar tipe Control Panel (counter pakai `name`, lainnya `group`)
         if (['counter', 'eventState', 'timer', 'text'].includes(newSource)) {
           const current = document.getElementById('prop-control-group').value.trim()
@@ -3626,6 +3753,14 @@
         }
         document.getElementById('prop-text-binding-format').value = standardFormats.includes(binding.format) ? binding.format : 'raw'
         document.getElementById('prop-control-text-format').value = standardFormats.includes(binding.format) ? binding.format : 'raw'
+        if (newSource === 'chat') {
+          document.getElementById('prop-chat-field').value = binding.field
+          document.getElementById('prop-chat-lines').value = binding.lines ?? 5
+          document.getElementById('prop-chat-template').value = binding.template || ''
+        } else if (newSource === 'platform') {
+          syncDeprecatedPlatformFieldOption(binding.field)
+          document.getElementById('prop-text-binding-field').value = binding.field
+        }
         renderCanvas()
         updateBindingPreview()
       }
@@ -3672,8 +3807,24 @@
       document.getElementById('prop-vis-source').addEventListener('change', (e) => {
         const binding = getStateBinding(); if (!binding) return
         binding.source = e.target.value
+        if (binding.source === 'chatNotif' && (!binding.fallbackState || binding.fallbackState === 'default')) {
+          binding.fallbackState = 'idle'
+          document.getElementById('prop-vis-value').value = 'idle'
+        }
         updateStateBindingControls()
         refreshControlDatalists()
+      })
+      document.getElementById('chatnotif-preset-btn').addEventListener('click', () => {
+        const el = getSelected(); if (!el) return
+        const binding = ensureStateBinding(el)
+        if (!el.stateTargets) el.stateTargets = {}
+        if (!el.stateTargets.showing) el.stateTargets.showing = { opacity: 1 }
+        if (!el.stateTargets.idle) el.stateTargets.idle = { opacity: 0 }
+        el.stateOrder = [...new Set([...(Array.isArray(el.stateOrder) ? el.stateOrder : []), 'idle', 'showing'])]
+        binding.fallbackState = 'idle'
+        document.getElementById('prop-vis-value').value = 'idle'
+        updateStateBindingControls()
+        renderCanvas()
       })
       document.getElementById('prop-vis-name').addEventListener('input', (e) => {
         const binding = getStateBinding(); if (!binding) return
@@ -3786,6 +3937,14 @@
                 suggestions.appendChild(o)
               }
             }
+          } else if (binding?.source === 'chatNotif') {
+            for (const name of ['idle', 'showing']) {
+              if (!el.stateTargets?.[name]) {
+                const o = document.createElement('option')
+                o.value = name
+                suggestions.appendChild(o)
+              }
+            }
           }
           document.getElementById('state-target-new-name').focus()
         }
@@ -3825,6 +3984,36 @@
         const el = getSelected()
         if (!el) return
         ensureTextBinding(el).field = e.target.value
+        syncDeprecatedPlatformFieldOption(e.target.value)
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-chat-field').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        const binding = ensureTextBinding(el)
+        binding.field = e.target.value === 'notif' ? 'notif' : 'stack'
+        if (!binding.template) {
+          binding.template = binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}'
+        }
+        if (!Number.isFinite(Number(binding.lines))) binding.lines = 5
+        document.getElementById('prop-chat-template').value = binding.template
+        document.getElementById('prop-chat-lines').value = binding.lines
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-chat-lines').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        const lines = Math.max(1, Math.min(30, parseInt(e.target.value, 10) || 5))
+        ensureTextBinding(el).lines = lines
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-chat-template').addEventListener('input', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).template = e.target.value
         renderCanvas()
         updateBindingPreview()
       })
@@ -4359,6 +4548,17 @@
       setInterval(loadLiveStats, 2000)
       setInterval(loadF1Data, 30000)
       setInterval(loadPlatformConnectorStatus, 4000)
+      loadEditorChatFeed().then((changed) => { if (changed) { renderCanvas(); updateBindingPreview() } })
+      setInterval(async () => {
+        const changed = await loadEditorChatFeed()
+        if (!changed || !scene?.elements) return
+        const needsRender = scene.elements.some(el => {
+          const b = el.textBinding
+          return b?.enabled && (b.source === 'chat' ||
+            ['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube'].includes(b.field))
+        })
+        if (needsRender) { renderCanvas(); updateBindingPreview() }
+      }, 1500)
       loadControlStateForEditor().then(() => { renderCanvas(); updateBindingPreview() })
       setInterval(async () => {
         const changed = await loadControlStateForEditor()
@@ -4377,62 +4577,168 @@
       }, 1000)
     })
 
-    // ── Platform Live Stats Connector UI ──────────────────────────────────────
+    // ── Platform Connectors UI (TikTok & YouTube independen) ─────────────────
 
-    let connectorSelectedPlatform = 'tiktok'
+    function setConnectorPlatformStatus(platform, status) {
+      const dot = document.getElementById(`connector-${platform}-dot`)
+      const label = document.getElementById(`connector-${platform}-state`)
+      const errorEl = document.getElementById(`connector-${platform}-error`)
+      if (!dot || !label) return
 
-    function updatePlatformTabUI(platform) {
-      connectorSelectedPlatform = platform
-      const tikBtn = document.getElementById('platform-tiktok-btn')
-      const ytBtn = document.getElementById('platform-youtube-btn')
-      const tikFields = document.getElementById('connector-tiktok-fields')
-      const ytFields = document.getElementById('connector-youtube-fields')
+      const enabled = !!status?.enabled
+      const live = !!(enabled && status?.running && status?.isLive)
+      const connecting = !!(enabled && status?.running && !status?.isLive)
+      dot.className = `w-2 h-2 rounded-full ${live ? 'bg-emerald-500 animate-pulse' : enabled ? 'bg-amber-500' : 'bg-slate-600'}`
+      label.textContent = live ? 'LIVE' : connecting ? 'CONNECTING…' : enabled ? 'OFFLINE' : 'OFF'
+      label.className = `text-[10px] ${live ? 'text-emerald-400 font-semibold' : enabled ? 'text-amber-400' : 'text-slate-500'}`
 
-      const activeClass = ['border-indigo-500', 'bg-indigo-600/20', 'text-indigo-300']
-      const inactiveClass = ['border-slate-700', 'bg-slate-800', 'text-slate-400']
-
-      if (platform === 'tiktok') {
-        tikBtn.classList.remove(...inactiveClass); tikBtn.classList.add(...activeClass)
-        ytBtn.classList.remove(...activeClass); ytBtn.classList.add(...inactiveClass)
-        tikFields.classList.remove('hidden')
-        ytFields.classList.add('hidden')
-      } else {
-        ytBtn.classList.remove(...inactiveClass); ytBtn.classList.add(...activeClass)
-        tikBtn.classList.remove(...activeClass); tikBtn.classList.add(...inactiveClass)
-        ytFields.classList.remove('hidden')
-        tikFields.classList.add('hidden')
+      if (errorEl) {
+        if (status?.lastError) {
+          errorEl.textContent = `⚠ ${status.lastError}`
+          errorEl.classList.remove('hidden')
+        } else {
+          errorEl.classList.add('hidden')
+        }
       }
     }
 
-    function renderConnectorStatus(status, liveStatsSnapshot) {
-      const dot = document.getElementById('platform-connector-dot')
-      const stateLabel = document.getElementById('platform-connector-state-label')
-      const startBtn = document.getElementById('connector-start-btn')
-      const stopBtn = document.getElementById('connector-stop-btn')
-      const errorEl = document.getElementById('connector-status-error')
-      const viewersEl = document.getElementById('connector-status-viewers')
-      const updatedEl = document.getElementById('connector-status-updated')
-
-      const isRunning = status?.running && status?.enabled
-      dot.className = `w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : status?.enabled ? 'bg-amber-500' : 'bg-slate-600'}`
-      stateLabel.textContent = isRunning ? 'LIVE' : status?.enabled ? 'CONNECTING…' : 'OFF'
-      stateLabel.className = `text-[10px] ${isRunning ? 'text-emerald-400 font-semibold' : status?.enabled ? 'text-amber-400' : 'text-slate-500'}`
-
-      startBtn.classList.toggle('hidden', isRunning || !!status?.enabled)
-      stopBtn.classList.toggle('hidden', !isRunning && !status?.enabled)
-
-      if (status?.lastError) {
-        errorEl.textContent = `⚠ ${status.lastError}`
-        errorEl.classList.remove('hidden')
+    function updateYoutubeVideoHint() {
+      const hint = document.getElementById('connector-youtube-video-hint')
+      if (!hint) return
+      const enabled = document.getElementById('connector-youtube-enabled').checked
+      const videoId = document.getElementById('connector-yt-video-id').value.trim()
+      const channelId = document.getElementById('connector-yt-channel-id').value.trim()
+      if (!enabled) {
+        hint.textContent = ''
+      } else if (!videoId) {
+        hint.textContent = channelId
+          ? '💡 Isi Video ID kalau tahu; pencarian lewat Channel ID memakai quota lebih banyak.'
+          : '💡 Isi Video ID (atau Channel ID) supaya connector bisa menemukan live chat.'
       } else {
-        errorEl.classList.add('hidden')
+        hint.textContent = ''
+      }
+    }
+
+    function renderConnectorStatus(data) {
+      const statuses = data?.statusV2 || {}
+      const tiktok = statuses.tiktok || null
+      const youtube = statuses.youtube || null
+      setConnectorPlatformStatus('tiktok', tiktok)
+      setConnectorPlatformStatus('youtube', youtube)
+
+      const anyLive = !!(tiktok?.running && tiktok?.isLive) || !!(youtube?.running && youtube?.isLive)
+      const anyEnabled = !!tiktok?.enabled || !!youtube?.enabled
+      const dot = document.getElementById('platform-connector-dot')
+      const label = document.getElementById('platform-connector-state-label')
+      if (dot && label) {
+        dot.className = `w-2 h-2 rounded-full ${anyLive ? 'bg-emerald-500 animate-pulse' : anyEnabled ? 'bg-amber-500' : 'bg-slate-600'}`
+        label.textContent = anyLive ? 'LIVE' : anyEnabled ? 'CONNECTING…' : 'OFF'
+        label.className = `text-[10px] ${anyLive ? 'text-emerald-400 font-semibold' : anyEnabled ? 'text-amber-400' : 'text-slate-500'}`
       }
 
-      if (liveStatsSnapshot) {
-        viewersEl.textContent = liveStatsSnapshot.viewerCount !== undefined ? liveStatsSnapshot.viewerCount.toLocaleString() : '—'
-        const ts = status?.lastSuccessAt || liveStatsSnapshot.lastUpdatedAt
-        updatedEl.textContent = ts ? new Date(ts).toLocaleTimeString() : '—'
+      const quotaEl = document.getElementById('connector-youtube-quota')
+      if (quotaEl) {
+        const quota = Number(youtube?.quotaUnitsUsedToday)
+        quotaEl.textContent = Number.isFinite(quota) && quota > 0 ? quota.toLocaleString() + ' unit' : '0 unit'
       }
+
+      const lastChatEl = document.getElementById('connector-status-last-chat')
+      if (lastChatEl) {
+        const last = editorChatEvents.at(-1)
+        lastChatEl.textContent = last ? `${last.author}: ${last.message}`.slice(0, 48) : '—'
+      }
+
+      const updatedEl = document.getElementById('connector-status-updated')
+      if (updatedEl) {
+        const stamps = [tiktok?.lastSuccessAt, youtube?.lastSuccessAt].filter(Boolean).map(s => new Date(s).getTime())
+        updatedEl.textContent = stamps.length ? new Date(Math.max(...stamps)).toLocaleTimeString() : '—'
+      }
+
+      const errorEl = document.getElementById('connector-status-error')
+      if (errorEl) {
+        const errors = [tiktok?.lastError, youtube?.lastError].filter(Boolean)
+        if (errors.length) {
+          errorEl.textContent = errors.join(' · ')
+          errorEl.classList.remove('hidden')
+        } else {
+          errorEl.classList.add('hidden')
+        }
+      }
+      updateYoutubeVideoHint()
+    }
+
+    function applyConnectorConfigToForm(configV2) {
+      const cfg = configV2 || {}
+      document.getElementById('connector-tiktok-enabled').checked = !!cfg.tiktok?.enabled
+      document.getElementById('connector-tiktok-username').value = cfg.tiktok?.username || ''
+      document.getElementById('connector-youtube-enabled').checked = !!cfg.youtube?.enabled
+      document.getElementById('connector-yt-api-key').value = cfg.youtube?.apiKey || ''
+      document.getElementById('connector-yt-video-id').value = cfg.youtube?.videoId || ''
+      document.getElementById('connector-yt-channel-id').value = cfg.youtube?.channelId || ''
+      document.getElementById('connector-poll-interval').value = Math.round((cfg.stats?.pollIntervalMs || 30000) / 1000)
+      document.getElementById('connector-notif-display-ms').value = cfg.notif?.displayMs ?? 4000
+      document.getElementById('connector-notif-gap-ms').value = cfg.notif?.gapMs ?? 600
+      document.getElementById('connector-notif-max-queue').value = cfg.notif?.maxQueue ?? 20
+      document.getElementById('connector-tiktok-tag').value = cfg.chatFormat?.tiktokTag || DEFAULT_CHAT_TAGS.tiktok
+      document.getElementById('connector-youtube-tag').value = cfg.chatFormat?.youtubeTag || DEFAULT_CHAT_TAGS.youtube
+      document.getElementById('connector-archive-enabled').checked = cfg.archive?.enabled !== false
+      if (cfg.chatFormat) {
+        if (cfg.chatFormat.tiktokTag) editorChatTags.tiktok = cfg.chatFormat.tiktokTag
+        if (cfg.chatFormat.youtubeTag) editorChatTags.youtube = cfg.chatFormat.youtubeTag
+      }
+      updateYoutubeVideoHint()
+    }
+
+    function readConnectorForm() {
+      const pollIntervalSec = Math.max(10, Math.min(300, parseInt(document.getElementById('connector-poll-interval').value, 10) || 30))
+      const displayMs = Math.max(1500, Math.min(15000, parseInt(document.getElementById('connector-notif-display-ms').value, 10) || 4000))
+      const gapMs = Math.max(300, Math.min(15000, parseInt(document.getElementById('connector-notif-gap-ms').value, 10) || 600))
+      const maxQueue = Math.max(1, Math.min(500, parseInt(document.getElementById('connector-notif-max-queue').value, 10) || 20))
+      return {
+        tiktok: {
+          enabled: document.getElementById('connector-tiktok-enabled').checked,
+          username: document.getElementById('connector-tiktok-username').value.trim(),
+        },
+        youtube: {
+          enabled: document.getElementById('connector-youtube-enabled').checked,
+          apiKey: document.getElementById('connector-yt-api-key').value.trim(),
+          videoId: document.getElementById('connector-yt-video-id').value.trim(),
+          channelId: document.getElementById('connector-yt-channel-id').value.trim(),
+        },
+        stats: { pollIntervalMs: pollIntervalSec * 1000 },
+        notif: { displayMs, gapMs, maxQueue },
+        chatFormat: {
+          tiktokTag: document.getElementById('connector-tiktok-tag').value.trim() || DEFAULT_CHAT_TAGS.tiktok,
+          youtubeTag: document.getElementById('connector-youtube-tag').value.trim() || DEFAULT_CHAT_TAGS.youtube,
+        },
+        archive: { enabled: document.getElementById('connector-archive-enabled').checked },
+      }
+    }
+
+    async function savePlatformConnectorConfig() {
+      const res = await fetch('/api/platform-connector', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(readConnectorForm()),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to save config')
+      if (data.configV2) applyConnectorConfigToForm(data.configV2)
+      renderConnectorStatus(data)
+      return data
+    }
+
+    async function setAllConnectorsEnabled(enabled) {
+      document.getElementById('connector-tiktok-enabled').checked = enabled
+      document.getElementById('connector-youtube-enabled').checked = enabled
+      await savePlatformConnectorConfig()
+    }
+
+    function applyChatIcons(data) {
+      const icons = data?.chatIcons
+      if (!icons || typeof icons !== 'object') return
+      editorChatIcons.tiktok = String(icons.tiktok || '')
+      editorChatIcons.youtube = String(icons.youtube || '')
     }
 
     async function loadPlatformConnectorStatus() {
@@ -4440,65 +4746,19 @@
         const res = await fetch('/api/platform-connector')
         if (!res.ok) return
         const data = await res.json()
-        renderConnectorStatus(data.status, liveStats)
+        const tags = data?.configV2?.chatFormat
+        if (tags && typeof tags === 'object') {
+          if (tags.tiktokTag) editorChatTags.tiktok = tags.tiktokTag
+          if (tags.youtubeTag) editorChatTags.youtube = tags.youtubeTag
+        }
+        applyChatIcons(data)
+        renderConnectorStatus(data)
       } catch (err) {
         console.warn('Failed to load platform connector status:', err)
       }
     }
 
-    async function savePlatformConnectorConfig() {
-      const pollIntervalSec = Math.max(10, Math.min(300, parseInt(document.getElementById('connector-poll-interval').value) || 30))
-      const chatDisplayDurationMs = Math.max(1500, Math.min(15000, parseInt(document.getElementById('connector-chat-display-duration').value) || 4000))
-      const body = {
-        platform: connectorSelectedPlatform,
-        tiktokUsername: document.getElementById('connector-tiktok-username').value.trim(),
-        youtubeApiKey: document.getElementById('connector-yt-api-key').value.trim(),
-        youtubeVideoId: document.getElementById('connector-yt-video-id').value.trim(),
-        youtubeChannelId: document.getElementById('connector-yt-channel-id').value.trim(),
-        pollIntervalMs: pollIntervalSec * 1000,
-        chatDisplayDurationMs,
-      }
-
-      const res = await fetch('/api/platform-connector', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Failed to save config')
-      renderConnectorStatus(data.status, liveStats)
-    }
-
-    async function startPlatformConnector() {
-      try {
-        await savePlatformConnectorConfig()
-        const res = await fetch('/api/platform-connector/start', { method: 'POST' })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.message || 'Failed to start connector')
-        renderConnectorStatus(data.status, liveStats)
-      } catch (err) {
-        console.error('Failed to start platform connector:', err)
-        alert(err.message || 'Failed to start connector')
-      }
-    }
-
-    async function stopPlatformConnector() {
-      try {
-        const res = await fetch('/api/platform-connector/stop', { method: 'POST' })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.message || 'Failed to stop connector')
-        renderConnectorStatus(data.status, liveStats)
-      } catch (err) {
-        console.error('Failed to stop platform connector:', err)
-        alert(err.message || 'Failed to stop connector')
-      }
-    }
-
     async function initPlatformConnector() {
-      // Platform tab buttons
-      document.querySelectorAll('.platform-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => updatePlatformTabUI(btn.dataset.platform))
-      })
       document.getElementById('connector-save-btn').addEventListener('click', async () => {
         try {
           await savePlatformConnectorConfig()
@@ -4506,23 +4766,32 @@
           alert(err.message || 'Failed to save config')
         }
       })
-      document.getElementById('connector-start-btn').addEventListener('click', startPlatformConnector)
-      document.getElementById('connector-stop-btn').addEventListener('click', stopPlatformConnector)
+      document.getElementById('connector-start-all-btn').addEventListener('click', async () => {
+        try {
+          await setAllConnectorsEnabled(true)
+        } catch (err) {
+          alert(err.message || 'Failed to start connectors')
+        }
+      })
+      document.getElementById('connector-stop-all-btn').addEventListener('click', async () => {
+        try {
+          await setAllConnectorsEnabled(false)
+        } catch (err) {
+          alert(err.message || 'Failed to stop connectors')
+        }
+      })
+      document.getElementById('connector-yt-video-id').addEventListener('input', updateYoutubeVideoHint)
+      document.getElementById('connector-yt-channel-id').addEventListener('input', updateYoutubeVideoHint)
+      document.getElementById('connector-youtube-enabled').addEventListener('change', updateYoutubeVideoHint)
 
-      // Load current config and populate fields
+      // Load current config once; status polling must not overwrite fields the user is editing.
       try {
         const res = await fetch('/api/platform-connector')
         if (res.ok) {
           const data = await res.json()
-          const cfg = data.config || {}
-          updatePlatformTabUI(cfg.platform || 'tiktok')
-          document.getElementById('connector-tiktok-username').value = cfg.tiktokUsername || ''
-          document.getElementById('connector-yt-api-key').value = cfg.youtubeApiKey || ''
-          document.getElementById('connector-yt-video-id').value = cfg.youtubeVideoId || ''
-          document.getElementById('connector-yt-channel-id').value = cfg.youtubeChannelId || ''
-          document.getElementById('connector-poll-interval').value = Math.round((cfg.pollIntervalMs || 30000) / 1000)
-          document.getElementById('connector-chat-display-duration').value = cfg.chatDisplayDurationMs || 4000
-          renderConnectorStatus(data.status, liveStats)
+          applyConnectorConfigToForm(data.configV2)
+          applyChatIcons(data)
+          renderConnectorStatus(data)
         }
       } catch (err) {
         console.warn('Failed to init platform connector UI:', err)

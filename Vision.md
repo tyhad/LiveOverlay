@@ -41,7 +41,7 @@ Saat elemen dipilih di kanvas, muncul panel untuk atur:
 - Transform: posisi (x/y), ukuran, rotasi, skala.
 - Style: warna, opacity, border, shadow, font (untuk text), border-radius, dsb.
 - Animasi: **sequence property-transition** — lihat 3.3.1.
-- Data binding: elemen text bisa "terhubung" ke variabel dinamis (username, running text, Platform Live Stats TikTok/YouTube, F1 data via F1GStats) alih-alih teks statis.
+- Data binding: elemen text bisa "terhubung" ke variabel dinamis (running text, Platform Live Stats TikTok/YouTube, **Chat Stack / Chat Notification**, F1 data via F1GStats) alih-alih teks statis. Chat live memakai text binding (`source: 'chat'`), bukan sistem animasi terpisah.
 
 #### 3.3.1 Model Animasi: Property Transition Sequence
 
@@ -50,7 +50,7 @@ Model animasi menggunakan state target terpisah dari sequence timing. Prinsip ya
 > **Animation = State Transition + Time**, bukan **Animation = Named Preset**.
 
 - Tiap elemen punya `stateBinding`, `stateTargets`, dan `animation.enter`/`animation.transition`.
-- `stateTargets` menyimpan target visual absolut per state; `stateBinding` memilih state aktif dari Event State atau Counter.
+- `stateTargets` menyimpan target visual absolut per state; `stateBinding` memilih state aktif dari Event State atau Counter. Untuk notifikasi chat, `stateBinding` memakai source `chatNotif` dengan state `idle`/`showing` dari server — animasi masuk/keluar tetap memakai Enter/Transition yang sama, bukan animation engine baru.
 - `animation.enter.sequence` mengatur animasi awal. `animation.transition.sequence` hanya mengatur timing/ease dan properties yang ikut bergerak menuju target state baru.
 - Nilai `x`/`y` pada Enter sequence adalah offset relatif terhadap target state; posisi pada `stateTargets` tetap absolut terhadap canvas.
 - Preset (fade, slide, pulse, dll) tetap ada di **level UI saja**, sebagai template quick-insert yang otomatis mengisi field step generik — bukan konsep yang dikenal oleh animation engine.

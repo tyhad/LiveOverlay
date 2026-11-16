@@ -6,34 +6,9 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased]
 
-### Chat notification review, notif dua baris, dan ikon platform
+_(Belum ada perubahan setelah v1.2.0.)_
 
-- `/control` mendapat panel **Chat Review** (di luar `#app`, hanya tampil kalau ada State Binding `chatNotif` yang enabled): tombol ▲/▼ menelusuri 100 notifikasi terakhir, badge **LIVE/REVIEW**, status posisi & antrean, dan antrean live otomatis dipause selama review. State review disimpan di server (`GET /api/chat/notif`, `POST /api/chat/notif/step`) supaya semua Browser Source OBS menampilkan notifikasi yang sama.
-- Overlay memutar ulang animasi kemunculan elemen (`idle → showing`, atau enter animation kalau transition belum diatur) setiap kali review berpindah notifikasi, lalu loop di-resume seperti semula.
-- Template **Chat Notification** default menjadi dua baris `{author}\n{message}` (author di atas, message di bawah). Template satu baris lama dimigrasi otomatis & idempoten di `normalizeChatBindings`; `\n` pada template dirender sebagai baris baru oleh `public/chat-format.js`.
-- `{platformTag}` bisa diganti ikon file statis: letakkan `tiktok.*` / `youtube.*` di `public/chat-icons/` (deteksi berurutan `svg → png → webp → ico`). Tanpa file, otomatis kembali ke teks tag `[TT]`/`[YT]`. Ikon dirender inline lewat `ChatFormat.renderText()` di overlay dan preview editor; Running Text / Scroll Text memakai fallback teks tag (`ChatFormat.stripIcons()`). `GET /api/platform-connector` menyertakan `chatIcons` hasil `discoverChatIcons()`.
-- Dokumentasi dirapikan: dokumen internal dipindah ke `docs/` (`docs/audit-2026-11-15.md`, `docs/plans/multi-platform-chat.md`) sehingga root repo hanya berisi dokumen kanonik.
-
-### Audit hardening (`docs/audit-2026-11-15.md` temuan 1–18)
-
-- Upload `/uploads/*` disajikan dengan `Content-Security-Policy: sandbox` + `X-Content-Type-Options: nosniff`, dan tipe file divalidasi lewat whitelist MIME/ekstensi (bukan dipercaya dari klien).
-- Auth dipusatkan di satu `onBeforeHandle` untuk semua route POST/PUT/PATCH/DELETE; route GET arsip tetap memeriksa secret sendiri. Batas body global 12 MB, `POST /api/scenes` dibatasi 5 MB dan memakai skema `{ scene, originalId? }`.
-- Penyimpanan scene dipindah ke `src/scene-store.ts`: tulis atomik (`writeFileAtomic`), cache parse berbasis mtime untuk polling overlay tiap 2 detik, dan `scenes.json` korup tidak pernah ditimpa (save/delete mengembalikan 409).
-- `ChatArchiveManager` memvalidasi format ID sesi sebelum menyentuh file, meng-cache metadata sesi berdasarkan mtime/size, dan export stack memakai sliding window (bukan filter O(n²)).
-- TikTok menyambung ulang setelah `STREAM_END` (backoff yang sudah ada), dan kedua connector menghentikan timer/koneksi lama saat config-nya dikosongkan.
-- Koneksi SQLite F1 dibuka ulang saat mtime `f1gstats.sqlite` berubah, supaya hasil fetcher baru terbaca tanpa restart server.
-- Route settings/konektor versi lama yang tidak dipakai dihapus, termasuk `settings.example.json`. `bun run test` sekarang menjalankan `tsc --noEmit` lebih dulu.
-- Helper halaman bersama diekstrak ke `public/text-binding.js` (dipakai editor dan overlay). Test baru: `tests/scene-store.test.mjs`, `tests/text-binding.test.mjs`, plus test reconnect TikTok.
-
-### Chat archive controls
-
-- Endpoint baru: `POST /api/chat/archive/session/start` (tutup sesi aktif lalu mulai sesi baru) dan `DELETE /api/chat/archive/:id` (hapus sesi selesai; sesi aktif ditolak 400, ID divalidasi, traversal 404).
-- `/control` → Chat Archive mendapat tombol **Sesi baru** dan **Hapus sesi**. `startSession()` menaikkan detik nama file kalau sesi baru dimulai di detik yang sama, jadi file sesi lama tidak pernah ditimpa/di-append.
-- Daftar chat ikut dimuat ulang tiap polling 5 detik; saat sesi berganti, sesi lama dipertahankan satu siklus supaya chat yang telat masuk sempat tampil, baru berpindah ke sesi baru. Pilihan chat untuk alignment tidak hilang saat refresh.
-- Panel Chat Archive hanya tampil (dan polling-nya hanya jalan) kalau ada **State Binding → Chat Notification** yang enabled di salah satu scene; visibility dicek ulang tiap 8 detik.
-- Utility `.hidden` ditambahkan di Control Panel, sekaligus membetulkan tombol "End session aktif" yang sebelumnya tidak pernah benar-benar tersembunyi.
-
-## [1.2.0] - 2026-11-15 - Multi-platform Chat & State Binding
+## [1.2.0] - 2026-11-16 - Multi-platform Chat & State Binding
 
 ### Multi-platform chat (C1-C7 complete)
 
@@ -144,6 +119,33 @@ Keterbatasan migrasi `exitSequence` (diberi warning di log): bila satu properti 
 - Regression check terakhir: 33 animation tests dan 4 control-state tests lulus.
 
 Catatan stylesheet: `design.css` berisi token bersama dan styling Control Panel; `editor.css` berisi styling khusus editor; `styles.css` adalah hasil build Tailwind. `DESIGN.md` hanya referensi lokal pribadi dan tidak disimpan di repo; kontributor memakai `public/design.css` sebagai sumber kebenaran token.
+
+### Chat notification review, notif dua baris, dan ikon platform
+
+- `/control` mendapat panel **Chat Review** (di luar `#app`, hanya tampil kalau ada State Binding `chatNotif` yang enabled): tombol ▲/▼ menelusuri 100 notifikasi terakhir, badge **LIVE/REVIEW**, status posisi & antrean, dan antrean live otomatis dipause selama review. State review disimpan di server (`GET /api/chat/notif`, `POST /api/chat/notif/step`) supaya semua Browser Source OBS menampilkan notifikasi yang sama.
+- Overlay memutar ulang animasi kemunculan elemen (`idle → showing`, atau enter animation kalau transition belum diatur) setiap kali review berpindah notifikasi, lalu loop di-resume seperti semula.
+- Template **Chat Notification** default menjadi dua baris `{author}\n{message}` (author di atas, message di bawah). Template satu baris lama dimigrasi otomatis & idempoten di `normalizeChatBindings`; `\n` pada template dirender sebagai baris baru oleh `public/chat-format.js`.
+- `{platformTag}` bisa diganti ikon file statis: letakkan `tiktok.*` / `youtube.*` di `public/chat-icons/` (deteksi berurutan `svg → png → webp → ico`). Tanpa file, otomatis kembali ke teks tag `[TT]`/`[YT]`. Ikon dirender inline lewat `ChatFormat.renderText()` di overlay dan preview editor; Running Text / Scroll Text memakai fallback teks tag (`ChatFormat.stripIcons()`). `GET /api/platform-connector` menyertakan `chatIcons` hasil `discoverChatIcons()`.
+- Dokumentasi dirapikan: dokumen internal dipindah ke `docs/` (`docs/audit-2026-11-15.md`, `docs/plans/multi-platform-chat.md`) sehingga root repo hanya berisi dokumen kanonik.
+
+### Audit hardening (`docs/audit-2026-11-15.md` temuan 1–18)
+
+- Upload `/uploads/*` disajikan dengan `Content-Security-Policy: sandbox` + `X-Content-Type-Options: nosniff`, dan tipe file divalidasi lewat whitelist MIME/ekstensi (bukan dipercaya dari klien).
+- Auth dipusatkan di satu `onBeforeHandle` untuk semua route POST/PUT/PATCH/DELETE; route GET arsip tetap memeriksa secret sendiri. Batas body global 12 MB, `POST /api/scenes` dibatasi 5 MB dan memakai skema `{ scene, originalId? }`.
+- Penyimpanan scene dipindah ke `src/scene-store.ts`: tulis atomik (`writeFileAtomic`), cache parse berbasis mtime untuk polling overlay tiap 2 detik, dan `scenes.json` korup tidak pernah ditimpa (save/delete mengembalikan 409).
+- `ChatArchiveManager` memvalidasi format ID sesi sebelum menyentuh file, meng-cache metadata sesi berdasarkan mtime/size, dan export stack memakai sliding window (bukan filter O(n²)).
+- TikTok menyambung ulang setelah `STREAM_END` (backoff yang sudah ada), dan kedua connector menghentikan timer/koneksi lama saat config-nya dikosongkan.
+- Koneksi SQLite F1 dibuka ulang saat mtime `f1gstats.sqlite` berubah, supaya hasil fetcher baru terbaca tanpa restart server.
+- Route settings/konektor versi lama yang tidak dipakai dihapus, termasuk `settings.example.json`. `bun run test` sekarang menjalankan `tsc --noEmit` lebih dulu.
+- Helper halaman bersama diekstrak ke `public/text-binding.js` (dipakai editor dan overlay). Test baru: `tests/scene-store.test.mjs`, `tests/text-binding.test.mjs`, plus test reconnect TikTok.
+
+### Chat archive controls
+
+- Endpoint baru: `POST /api/chat/archive/session/start` (tutup sesi aktif lalu mulai sesi baru) dan `DELETE /api/chat/archive/:id` (hapus sesi selesai; sesi aktif ditolak 400, ID divalidasi, traversal 404).
+- `/control` → Chat Archive mendapat tombol **Sesi baru** dan **Hapus sesi**. `startSession()` menaikkan detik nama file kalau sesi baru dimulai di detik yang sama, jadi file sesi lama tidak pernah ditimpa/di-append.
+- Daftar chat ikut dimuat ulang tiap polling 5 detik; saat sesi berganti, sesi lama dipertahankan satu siklus supaya chat yang telat masuk sempat tampil, baru berpindah ke sesi baru. Pilihan chat untuk alignment tidak hilang saat refresh.
+- Panel Chat Archive hanya tampil (dan polling-nya hanya jalan) kalau ada **State Binding → Chat Notification** yang enabled di salah satu scene; visibility dicek ulang tiap 8 detik.
+- Utility `.hidden` ditambahkan di Control Panel, sekaligus membetulkan tombol "End session aktif" yang sebelumnya tidak pernah benar-benar tersembunyi.
 
 ## [1.1.0] — Fase 10
 

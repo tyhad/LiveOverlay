@@ -203,6 +203,17 @@
     background: transparent; border: 1px solid var(--border); color: var(--text-dim);
   }
   .manage-btn.on { background: var(--indigo); border-color: var(--indigo-2); color: #fff; }
+  /* Hide/Show + override prefix/suffix per control */
+  .control-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: -2px 0 10px; }
+  .override-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; min-width: 0; }
+  .override-row label { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-dim); }
+  .override-row input {
+    min-width: 0; width: 88px; padding: 4px 8px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+    font-size: 11px; user-select: text;
+  }
+  section.group.is-hidden { border-color: var(--danger); }
+  section.group.is-hidden > *:not(.group-title):not(.control-tools) { opacity: .45; }
   .add-option-row { display: flex; gap: 8px; margin-top: 10px; }
   .add-option-row input {
     flex: 1; min-width: 0; padding: 10px; border-radius: 10px;
@@ -632,8 +643,8 @@
     }
 
     const POLL_MS = 1000
-    let controlState = { counters: {}, eventStates: {} }
-    let usedGroups = { counters: new Set(), eventStates: new Set(), timers: new Set(), texts: new Set() }
+    let controlState = { counters: {}, eventStates: {}, timers: {}, texts: {}, hiddenControls: {}, textOverrides: {} }
+    let usedGroups = { counters: new Set(), eventStates: new Set(), timers: new Set(), texts: new Set(), samples: {}, chatNotif: false }
     let scanned = false
 
     function setStatus(ok) {
@@ -650,10 +661,11 @@
       const eventStates = new Set()
       const timers = new Set()
       const texts = new Set()
+      const samples = {}
       let chatNotif = false
       try {
         const res = await fetch('/api/scenes')
-        if (!res.ok) return { counters, eventStates, timers, texts, chatNotif }
+        if (!res.ok) return { counters, eventStates, timers, texts, samples, chatNotif }
         const data = await res.json()
         const scenes = Array.isArray(data.scenes) ? data.scenes : []
         scenes.forEach(scene => {
@@ -664,6 +676,12 @@
             if (tb?.source === 'timer' && tb.group) timers.add(tb.group)
             if (tb?.source === 'text' && tb.group) texts.add(tb.group)
             if (tb?.source === 'chat' && tb.field === 'notif') chatNotif = true
+            // Sample prefix/suffix dari editor, dipakai sebagai nilai awal input di Control Panel.
+            if (tb && ['counter', 'eventState', 'timer', 'text'].includes(tb.source)) {
+              const name = tb.group ?? tb.name
+              const key = name ? `${tb.source}:${name}` : ''
+              if (key && !samples[key]) samples[key] = { prefix: tb.prefix || '', suffix: tb.suffix || '' }
+            }
             const sb = el.stateBinding
             if (sb?.source === 'counter' && sb.group) counters.add(sb.group)
             if (sb?.source === 'eventState' && sb.group) eventStates.add(sb.group)
@@ -673,7 +691,7 @@
       } catch (err) {
         console.error('Failed to scan scenes for control groups:', err)
       }
-      return { counters, eventStates, timers, texts, chatNotif }
+      return { counters, eventStates, timers, texts, samples, chatNotif }
     }
 
     async function syncControlState() {
@@ -708,11 +726,46 @@
     function resetCounter(name) { callApi(`/api/control-state/counters/${encodeURIComponent(name)}/reset`) }
     function setEventState(group, value) { callApi(`/api/control-state/event-states/${encodeURIComponent(group)}/set`, { value }) }
 
+    const controlKey = (kind, group) => `${kind}:${group}`
+    const isControlHidden = (kind, group) => controlState.hiddenControls?.[controlKey(kind, group)] === true
+
+    function toggleControlHidden(kind, group) {
+      callApi(`/api/control-state/hidden/${encodeURIComponent(controlKey(kind, group))}/set`, {
+        hidden: !isControlHidden(kind, group),
+      })
+    }
+
+    function clearTextOverride(key) {
+      callApi(`/api/control-state/text-overrides/${encodeURIComponent(key)}/set`, { reset: true })
+    }
+
+    /** Tombol Hide/Show + override Prefix/Suffix, dipakai semua section control. */
+    function renderControlTools(kind, group) {
+      const key = controlKey(kind, group)
+      const hidden = isControlHidden(kind, group)
+      const sample = usedGroups.samples?.[key]
+      const override = controlState.textOverrides?.[key]
+      const prefix = override ? override.prefix : (sample?.prefix || '')
+      const suffix = override ? override.suffix : (sample?.suffix || '')
+      return `
+        <div class="control-tools">
+          <button class="manage-btn ${hidden ? 'on' : ''}" onclick="toggleControlHidden('${kind}','${esc(group)}')">${hidden ? 'Show' : 'Hide'}</button>
+          ${sample ? `
+            <div class="override-row">
+              <label>Prefix <input id="ctl-prefix-${esc(key)}" data-ctl-override data-key="${esc(key)}" data-part="prefix" value="${esc(prefix)}" autocomplete="off" /></label>
+              <label>Suffix <input id="ctl-suffix-${esc(key)}" data-ctl-override data-key="${esc(key)}" data-part="suffix" value="${esc(suffix)}" autocomplete="off" /></label>
+              ${override ? `<button class="tool-btn" onclick="clearTextOverride('${esc(key)}')" title="Kembalikan ke nilai editor">⟲</button>` : ''}
+            </div>` : ''}
+        </div>
+      `
+    }
+
     function renderCounterSection(name) {
       const counter = controlState.counters?.[name] || { value: 0, step: 1 }
       return `
-        <section class="group">
+        <section class="group ${isControlHidden('counter', name) ? 'is-hidden' : ''}">
           <div class="group-title"><span>${name}</span><span class="kind">Counter</span></div>
+          ${renderControlTools('counter', name)}
           <div class="counter-row">
             <button class="counter-btn dec" onclick="decCounter('${name}')" aria-label="Kurangi">−</button>
             <div class="counter-value">${counter.value}<small>step ${counter.step}</small></div>
@@ -751,7 +804,7 @@
         </div>
       `}).join('')
       return `
-        <section class="group">
+        <section class="group ${isControlHidden('eventState', group) ? 'is-hidden' : ''}">
           <div class="group-title">
             <span>${esc(group)}</span>
             <span style="display:flex;gap:6px;align-items:center;">
@@ -759,6 +812,7 @@
               <span class="kind">Event State</span>
             </span>
           </div>
+          ${renderControlTools('eventState', group)}
           <div class="pill-row">${pills || '<span style="color:var(--text-dim);font-size:12px;">Belum ada opsi — tambah di bawah.</span>'}</div>
           <div class="add-option-row">
             <input id="add-option-${esc(group)}" data-es-input data-group="${esc(group)}" type="text" placeholder="Tambah opsi (mis. green)" autocomplete="off" />
@@ -796,6 +850,12 @@
       const inp = e.target
       if (inp.matches && inp.matches('[data-es-color]')) {
         callApi(`/api/control-state/event-states/${encodeURIComponent(inp.dataset.group)}/options/color`, { option: inp.dataset.option, color: inp.value })
+      }
+      if (inp.matches && inp.matches('[data-ctl-override]')) {
+        const row = inp.closest('.override-row')
+        const prefix = row?.querySelector('[data-part="prefix"]')?.value ?? ''
+        const suffix = row?.querySelector('[data-part="suffix"]')?.value ?? ''
+        callApi(`/api/control-state/text-overrides/${encodeURIComponent(inp.dataset.key)}/set`, { prefix, suffix })
       }
     })
     document.addEventListener('keydown', (e) => {
@@ -878,8 +938,9 @@
       const durationText = formatDurationInput(timer.durationMs)
       const startLabel = timer.isRunning ? 'Restart' : (timer.pausedAccumMs > 0 ? 'Resume' : 'Start')
       return `
-        <section class="group">
+        <section class="group ${isControlHidden('timer', name) ? 'is-hidden' : ''}">
           <div class="group-title"><span>${name}</span><span class="kind">Timer</span></div>
+          ${renderControlTools('timer', name)}
           <div class="timer-mode-row">
             <button class="mode-btn ${timer.mode === 'countdown' ? 'active' : ''}" onclick="setTimerMode('${name}', 'countdown')">Countdown</button>
             <button class="mode-btn ${timer.mode === 'countup' ? 'active' : ''}" onclick="setTimerMode('${name}', 'countup')">Count Up</button>
@@ -914,8 +975,9 @@
       const dirty = hasDraft && textDrafts[name] !== serverValue
       const lines = serverValue ? serverValue.split('\n').length : 0
       return `
-        <section class="group">
+        <section class="group ${isControlHidden('text', name) ? 'is-hidden' : ''}">
           <div class="group-title"><span>${esc(name)}</span><span class="kind">Text</span></div>
+          ${renderControlTools('text', name)}
           <textarea id="text-input-${esc(name)}" class="text-input" data-text-input data-name="${esc(name)}" rows="3"
             placeholder="Tulis teks… (Enter = baris baru, Ctrl+Enter = kirim)">${esc(draft)}</textarea>
           <div class="text-actions">

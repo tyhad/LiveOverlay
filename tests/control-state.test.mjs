@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ControlStateStore, getTimerDisplayMs, validateControlName } from '../src/control-state.ts'
+import { ControlStateStore, getTimerDisplayMs, validateControlKey, validateControlName } from '../src/control-state.ts'
 
 function memoryStore(initial = null, now = () => 1000) {
   let saved = initial
@@ -65,4 +65,43 @@ test('state tersimpan dan dapat dibaca ulang lewat load/save inject', async () =
     save: async () => {},
   })
   assert.equal((await restarted.read()).texts.headline.value, 'tersimpan')
+})
+
+test('hidden control dan override prefix/suffix tersimpan serta bisa di-reset', async () => {
+  const { store } = memoryStore()
+  await store.setControlHidden('timer:Timer', true)
+  await store.setTextOverride('timer:Timer', { prefix: 'Q1 : ', suffix: ' left' })
+  let state = await store.read()
+  assert.equal(state.hiddenControls['timer:Timer'], true)
+  assert.deepEqual({ ...state.textOverrides['timer:Timer'] }, { prefix: 'Q1 : ', suffix: ' left' })
+
+  await store.setControlHidden('timer:Timer', false)
+  await store.clearTextOverride('timer:Timer')
+  state = await store.read()
+  assert.equal(state.hiddenControls['timer:Timer'], undefined)
+  assert.equal(state.textOverrides['timer:Timer'], undefined)
+})
+
+test('normalisasi membuang hidden/override yang tidak valid', async () => {
+  const { store } = memoryStore({
+    counters: {}, eventStates: {}, timers: {}, texts: {},
+    hiddenControls: { 'timer:A': true, 'timer:B': false, 'timer:C': 'yes' },
+    textOverrides: { 'text:X': { prefix: 'a', suffix: 5 }, 'text:Y': null },
+  })
+  const state = await store.read()
+  assert.equal(state.hiddenControls['timer:A'], true)
+  assert.equal(state.hiddenControls['timer:B'], undefined)
+  assert.equal(state.hiddenControls['timer:C'], undefined)
+  assert.deepEqual({ ...state.textOverrides['text:X'] }, { prefix: 'a', suffix: '' })
+  assert.equal(state.textOverrides['text:Y'], undefined)
+})
+
+test('validateControlKey menolak format, jenis, dan nama yang tidak valid', () => {
+  assert.equal(validateControlKey('timer:Timer'), null)
+  assert.equal(validateControlKey('eventState:raceFlag'), null)
+  assert.match(validateControlKey('timer'), /Format/)
+  assert.match(validateControlKey('bogus:X'), /Jenis/)
+  assert.match(validateControlKey('timer:'), /wajib/)
+  assert.match(validateControlKey('timer:__proto__'), /reserved/)
+  assert.match(validateControlKey(`timer:${'a'.repeat(65)}`), /64/)
 })

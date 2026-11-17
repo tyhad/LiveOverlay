@@ -15,5 +15,7 @@
       "isRunning": false,
       "continueBelowZero": false
     }
-  }
+  },
+  "hiddenControls": {},
+  "textOverrides": {}
 }

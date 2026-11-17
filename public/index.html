@@ -1302,8 +1302,13 @@
           </summary>
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Asset URL</label>
-            <input type="text" id="prop-image-src" readonly
-              class="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 font-mono truncate">
+            <div class="flex items-center gap-1.5">
+              <input type="text" id="prop-image-src"
+                class="flex-1 min-w-0 bg-slate-800/60 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-mono truncate focus:outline-none focus:border-indigo-500">
+              <button type="button" id="prop-image-pick"
+                class="shrink-0 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">Replace</button>
+            </div>
+            <div id="asset-picker" class="hidden grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto mt-1.5"></div>
           </div>
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Fit</label>
@@ -1315,6 +1320,15 @@
               <option value="none">None (native size)</option>
               <option value="scale-down">Scale Down</option>
             </select>
+            <div class="flex items-center gap-1.5 mt-1.5">
+              <select id="prop-image-fit-mode"
+                class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white focus:outline-none focus:border-indigo-500">
+                <option value="width">Fit box: keep width</option>
+                <option value="height">Fit box: keep height</option>
+              </select>
+              <button type="button" id="prop-image-fit-box"
+                class="shrink-0 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">Fit box</button>
+            </div>
           </div>
         </details>
 
@@ -3124,6 +3138,7 @@
         imageSection.classList.remove('hidden')
         document.getElementById('prop-image-src').value = el.src || ''
         document.getElementById('prop-image-fit').value = el.objectFit || 'contain'
+        document.getElementById('asset-picker').classList.add('hidden')
       } else {
         imageSection.classList.add('hidden')
       }
@@ -3569,6 +3584,83 @@
         })
         renderAnimationSequenceEditor(el)
         renderLayers()
+      })
+
+      // Swap asset tanpa menyentuh x/y/width/height/animasi elemen.
+      const setImageSrc = (el, src) => {
+        el.src = src
+        document.getElementById('prop-image-src').value = src
+        renderCanvas()
+        updateInspectorValues()
+      }
+
+      const renderImagePicker = () => {
+        const picker = document.getElementById('asset-picker')
+        picker.replaceChildren()
+        if (!assets.length) {
+          const empty = document.createElement('p')
+          empty.className = 'col-span-3 text-[11px] text-slate-500'
+          empty.textContent = 'No uploaded assets yet.'
+          picker.appendChild(empty)
+          return
+        }
+        assets.forEach(asset => {
+          const button = document.createElement('button')
+          button.type = 'button'
+          button.title = asset.name
+          button.className = 'aspect-square overflow-hidden rounded-lg border border-slate-700 bg-slate-800 hover:border-indigo-400'
+          const image = document.createElement('img')
+          image.src = asset.url
+          image.alt = asset.name
+          image.loading = 'lazy'
+          image.className = 'h-full w-full object-contain p-1'
+          button.appendChild(image)
+          button.addEventListener('click', () => {
+            const el = getSelected()
+            if (el?.type === 'image') setImageSrc(el, asset.url)
+          })
+          picker.appendChild(button)
+        })
+      }
+
+      document.getElementById('prop-image-src').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (el?.type !== 'image') return
+        const src = e.target.value.trim()
+        if (!src || src === el.src) {
+          e.target.value = el.src || ''
+          return
+        }
+        el.src = src
+        renderCanvas()
+      })
+
+      document.getElementById('prop-image-pick').addEventListener('click', () => {
+        const picker = document.getElementById('asset-picker')
+        if (picker.classList.contains('hidden')) renderImagePicker()
+        picker.classList.toggle('hidden')
+      })
+
+      document.getElementById('prop-image-fit-box').addEventListener('click', () => {
+        const el = getSelected()
+        if (el?.type !== 'image' || !el.src) return
+        const mode = document.getElementById('prop-image-fit-mode').value
+        const probe = new Image()
+        probe.onload = () => {
+          // SVG tanpa width/height (cuma viewBox) tidak punya ukuran intrinsik.
+          if (!probe.naturalWidth || !probe.naturalHeight) {
+            alert('Cannot fit box: this asset has no intrinsic size (SVG without width/height).')
+            return
+          }
+          if (mode === 'height') {
+            el.width = Math.max(1, Math.round(el.height * (probe.naturalWidth / probe.naturalHeight)))
+          } else {
+            el.height = Math.max(1, Math.round(el.width * (probe.naturalHeight / probe.naturalWidth)))
+          }
+          renderCanvas()
+          updateInspectorValues()
+        }
+        probe.src = el.src
       })
 
       document.getElementById('prop-image-fit').addEventListener('change', (e) => {

@@ -4347,7 +4347,12 @@
       })
     })
 
-    document.getElementById('assets-add-btn').addEventListener('click', () => assetFileInput.click())
+    document.getElementById('assets-add-btn').addEventListener('click', (e) => {
+      // Jangan sampai klik ini ikut men-toggle <details> induknya.
+      e.preventDefault()
+      e.stopPropagation()
+      assetFileInput.click()
+    })
     assetFileInput.addEventListener('change', async () => {
       const [file] = assetFileInput.files
       if (!file) return

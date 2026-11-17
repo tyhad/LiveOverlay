@@ -25,7 +25,7 @@ function bootOverlay() {
   w.setInterval = () => 0
   w.setTimeout = () => 0
   const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n')
-  w.eval(inline + '\nwindow.__h={renderScene,renderedElements,applyChatFeed,getElementActiveState,resolveChatText,setControl:(v)=>{controlState=v},setChatIcons:(v)=>{chatIcons=v},chatState:()=>({seq:chatFeedSeq,events:chatEvents.slice(),notif:chatNotif,effectiveNotif:getEffectiveNotifState()})}')
+  w.eval(inline + '\nwindow.__h={renderScene,renderedElements,applyChatFeed,getElementActiveState,resolveChatText,resolveElementText,setControl:(v)=>{controlState=v},setChatIcons:(v)=>{chatIcons=v},chatState:()=>({seq:chatFeedSeq,events:chatEvents.slice(),notif:chatNotif,effectiveNotif:getEffectiveNotifState()})}')
   const h = w.__h
   const api = {
     w,
@@ -296,4 +296,30 @@ test('review ▲/▼ memutar ulang animasi kemunculan walau state tetap showing'
   assert.notEqual(replayed, live, 'transition kemunculan harus dibangun ulang saat review step')
   replayed.progress(1)
   assert.equal(o.x(), 0) // delta x ke target showing (x=100, baseline 100)
+})
+test('grup binding yang di-hide dari Control Panel menyembunyikan layer', () => {
+  const o = bootOverlay()
+  const state = (hiddenControls) => ({
+    counters: {}, eventStates: { G: { value: '1', options: [] } }, timers: {}, texts: {}, hiddenControls,
+  })
+
+  o.w.__h.setControl(state({ 'eventState:G': true }))
+  o.render(makeScene())
+  assert.equal(o.vis(), 'hidden')
+
+  o.w.__h.setControl(state({}))
+  o.render(makeScene())
+  assert.equal(o.vis(), 'visible')
+})
+
+test('override prefix/suffix dari Control Panel menimpa textBinding elemen', () => {
+  const o = bootOverlay()
+  o.w.__h.setControl({
+    counters: { C: { value: 5, step: 1 } }, eventStates: {}, timers: {}, texts: {},
+    textOverrides: { 'counter:C': { prefix: 'Q1 : ', suffix: ' pts' } },
+  })
+  const text = o.w.__h.resolveElementText({
+    textBinding: { enabled: true, source: 'counter', group: 'C', prefix: 'Q3 : ', suffix: '' },
+  })
+  assert.equal(text, 'Q1 : 5 pts')
 })

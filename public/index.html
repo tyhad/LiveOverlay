@@ -2182,14 +2182,25 @@
       if (isF1Data) populateF1FieldPaths()
     }
 
+    /** Key override control dari Control Panel ("<jenis>:<nama>"). */
+    function controlBindingKey(binding) {
+      const name = binding?.group ?? binding?.name
+      return name ? `${binding.source}:${name}` : ''
+    }
+
     function resolveElementText(el) {
       const binding = el?.textBinding
       const fallback = binding?.fallback || el?.style?.text || ''
       if (!binding?.enabled) return el?.style?.text || fallback
 
+      // Override prefix/suffix dari Control Panel, supaya preview editor = output overlay.
+      const override = controlStateEditor.textOverrides?.[controlBindingKey(binding)]
+      const prefix = override ? override.prefix : (binding.prefix || '')
+      const suffix = override ? override.suffix : (binding.suffix || '')
+
       let rawValue
       if (binding.source === 'clock') {
-        return formatClockTime(binding.timezone, binding.format, binding.prefix, binding.suffix)
+        return formatClockTime(binding.timezone, binding.format, prefix, suffix)
       } else if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
       } else if (binding.source === 'counter') {
@@ -2202,10 +2213,10 @@
         rawValue = controlStateEditor.texts?.[binding.group]?.value
       } else if (binding.source === 'timer') {
         const timer = controlStateEditor.timers?.[binding.group]
-        return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
+        return `${prefix}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${suffix}`
       } else if (binding.source === 'chat') {
         const value = resolveEditorChatText(binding) || fallback
-        return `${binding.prefix || ''}${value}${binding.suffix || ''}`
+        return `${prefix}${value}${suffix}`
       } else if (['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube'].includes(binding.field)) {
         rawValue = getEditorPlatformField(binding.field)
       } else if (binding.field === 'latestChatAuthor') {
@@ -2218,7 +2229,7 @@
 
       const formattedValue = formatBoundValue(rawValue, binding.format || 'raw')
       const finalValue = formattedValue || fallback
-      return `${binding.prefix || ''}${finalValue}${binding.suffix || ''}`
+      return `${prefix}${finalValue}${suffix}`
     }
 
     function updateBindingPreview() {

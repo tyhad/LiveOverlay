@@ -20,11 +20,20 @@ export interface TimerState {
 
 export interface TextState { value: string }
 
+export interface TextOverride { prefix: string; suffix: string }
+
+export const CONTROL_KINDS = ['counter', 'eventState', 'timer', 'text'] as const
+const MAX_OVERRIDE_TEXT_LENGTH = 200
+
 export interface ControlStateData {
   counters: Record<string, CounterState>
   eventStates: Record<string, EventStateState>
   timers: Record<string, TimerState>
   texts: Record<string, TextState>
+  /** key "<jenis>:<nama>" -> true. Hanya key yang ada di sini yang disembunyikan. */
+  hiddenControls: Record<string, true>
+  /** Override prefix/suffix per grup control, menimpa textBinding.prefix/suffix di semua layer. */
+  textOverrides: Record<string, TextOverride>
 }
 
 export interface ControlStatePersistence {
@@ -40,6 +49,16 @@ export function validateControlName(name: string): string | null {
   return null
 }
 
+/** Key override berbentuk "<jenis>:<nama>", mis. "timer:Timer". */
+export function validateControlKey(key: string): string | null {
+  const separator = key.indexOf(':')
+  if (separator < 0) return 'Format key harus "<jenis>:<nama>"'
+  if (!(CONTROL_KINDS as readonly string[]).includes(key.slice(0, separator))) return 'Jenis control tidak dikenal'
+  const name = key.slice(separator + 1)
+  if (!name) return 'Nama grup wajib diisi'
+  return validateControlName(name)
+}
+
 export function getTimerDisplayMs(timer: TimerState, now = Date.now()): number {
   const elapsed = timer.pausedAccumMs + (timer.isRunning && timer.startedAtMs !== null ? now - timer.startedAtMs : 0)
   if (timer.mode !== 'countdown') return elapsed
@@ -53,6 +72,8 @@ export function createEmptyControlState(): ControlStateData {
     eventStates: Object.create(null),
     timers: Object.create(null),
     texts: Object.create(null),
+    hiddenControls: Object.create(null),
+    textOverrides: Object.create(null),
   }
 }
 
@@ -105,6 +126,21 @@ export function normalizeControlState(data: Partial<ControlStateData> | null | u
     for (const [name, raw] of Object.entries(data.texts)) {
       if (!raw || typeof raw !== 'object') continue
       state.texts[name] = { value: typeof (raw as TextState).value === 'string' ? (raw as TextState).value : '' }
+    }
+  }
+  if (data?.hiddenControls && typeof data.hiddenControls === 'object') {
+    for (const [key, hidden] of Object.entries(data.hiddenControls)) {
+      if (hidden === true && !RESERVED_CONTROL_NAMES.has(key)) state.hiddenControls[key] = true
+    }
+  }
+  if (data?.textOverrides && typeof data.textOverrides === 'object') {
+    for (const [key, raw] of Object.entries(data.textOverrides)) {
+      if (!raw || typeof raw !== 'object' || RESERVED_CONTROL_NAMES.has(key)) continue
+      const override = raw as Partial<TextOverride>
+      state.textOverrides[key] = {
+        prefix: typeof override.prefix === 'string' ? override.prefix.slice(0, MAX_OVERRIDE_TEXT_LENGTH) : '',
+        suffix: typeof override.suffix === 'string' ? override.suffix.slice(0, MAX_OVERRIDE_TEXT_LENGTH) : '',
+      }
     }
   }
   return state
@@ -161,6 +197,27 @@ export class ControlStateStore {
   async setEventStateOptionColor(group: string, option: string, color: string) { return this.mutate((state) => { const event = this.eventState(state, group); if (!event.options.includes(option)) event.options = [...event.options, option]; const colors = event.colors ??= Object.create(null); const clean = color.trim(); if (clean) colors[option] = clean; else delete colors[option] }) }
   async removeEventStateOption(group: string, option: string) { return this.mutate((state) => { const event = this.eventState(state, group); event.options = event.options.filter((item) => item !== option); if (event.colors) delete event.colors[option]; if (event.value === option) event.value = event.options[0] || '' }) }
   async setControlText(name: string, value: string) { return this.mutate((state) => { state.texts[name] = { value: value.replace(/\r\n/g, '\n').slice(0, 5000) } }) }
+
+  async setControlHidden(key: string, hidden: boolean) {
+    return this.mutate((state) => {
+      if (hidden) state.hiddenControls[key] = true
+      else delete state.hiddenControls[key]
+    })
+  }
+
+  async setTextOverride(key: string, patch: { prefix?: string; suffix?: string }) {
+    return this.mutate((state) => {
+      const current = state.textOverrides[key] ?? { prefix: '', suffix: '' }
+      state.textOverrides[key] = {
+        prefix: typeof patch.prefix === 'string' ? patch.prefix.slice(0, MAX_OVERRIDE_TEXT_LENGTH) : current.prefix,
+        suffix: typeof patch.suffix === 'string' ? patch.suffix.slice(0, MAX_OVERRIDE_TEXT_LENGTH) : current.suffix,
+      }
+    })
+  }
+
+  async clearTextOverride(key: string) {
+    return this.mutate((state) => { delete state.textOverrides[key] })
+  }
 
   async startTimer(name: string, mode?: 'countdown' | 'countup', durationMs?: number, restart = false) {
     return this.mutate((state) => {

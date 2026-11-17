@@ -6,7 +6,12 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased]
 
-_(Belum ada perubahan setelah v1.2.0.)_
+### Control Panel — hide layer & override prefix/suffix
+
+- Setiap section Counter / Event State / Timer / Text di `/control` punya tombol **Hide/Show**. Hide menyembunyikan semua layer (elemen scene) yang binding ke grup itu di overlay, tanpa mengubah file scene; Show mengembalikannya.
+- Prefix/suffix per grup bisa diubah langsung dari `/control` untuk grup yang dipakai text binding. Nilai editor tetap tersimpan dan bisa dipulihkan lewat tombol `⟲`.
+- Keduanya disimpan di `control-state.json` (`hiddenControls`, `textOverrides`) dan disinkronkan ke overlay lewat polling `/api/control-state` yang sudah ada (±0,5 dtk). Preview teks di editor juga memakai override yang sama.
+- Endpoint baru: `POST /api/control-state/hidden/:key/set` dan `POST /api/control-state/text-overrides/:key/set` (`key` = `<jenis>:<nama>`).
 
 ## [1.2.0] - 2026-11-16 - Multi-platform Chat & State Binding
 

@@ -89,7 +89,7 @@
     let lastF1DataHash = ''
     // Infrastruktur Control Panel (fondasi #5/#6) — state Counter/Event State, dipoll terpisah
     // (300-500ms) dari syncScene/syncLiveStats (2 detik) karena butuh terasa instan saat dipencet live.
-    let controlState = { counters: {}, eventStates: {}, timers: {}, texts: {} }
+    let controlState = { counters: {}, eventStates: {}, timers: {}, texts: {}, hiddenControls: {}, textOverrides: {} }
     let lastControlStateHash = ''
 
     // ─── Chat feed (Fase C5) ────────────────────────────────────────────────
@@ -647,14 +647,33 @@
       return Number(status?.viewerCount) || 0
     }
 
+    /** Key override control: "<jenis>:<nama>" — sama dengan yang dipakai Control Panel. */
+    function controlBindingKey(binding) {
+      const name = binding?.group ?? binding?.name
+      return name ? `${binding.source}:${name}` : ''
+    }
+
+    /** Hide live dari Control Panel: grup binding elemen (text/state) ditandai hidden. */
+    function isElementHiddenByControl(el) {
+      return [el?.textBinding, el?.stateBinding].some((binding) => {
+        const key = controlBindingKey(binding)
+        return key ? controlState.hiddenControls?.[key] === true : false
+      })
+    }
+
     function resolveElementText(el) {
       const binding = el?.textBinding
       const fallback = binding?.fallback || el?.style?.text || ''
       if (!binding?.enabled) return el?.style?.text || fallback
 
+      // Prefix/suffix bisa di-override dari Control Panel (per grup control).
+      const override = controlState.textOverrides?.[controlBindingKey(binding)]
+      const prefix = override ? override.prefix : (binding.prefix || '')
+      const suffix = override ? override.suffix : (binding.suffix || '')
+
       let rawValue
       if (binding.source === 'clock') {
-        return formatClockTime(binding.timezone, binding.format, binding.prefix, binding.suffix)
+        return formatClockTime(binding.timezone, binding.format, prefix, suffix)
       } else if (binding.source === 'f1data') {
         rawValue = getValueAtPath(f1Data, binding.fieldPath)
       } else if (binding.source === 'counter') {
@@ -665,10 +684,10 @@
         rawValue = controlState.texts?.[binding.group]?.value
       } else if (binding.source === 'timer') {
         const timer = controlState.timers?.[binding.group]
-        return `${binding.prefix || ''}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${binding.suffix || ''}`
+        return `${prefix}${formatTimerMs(computeTimerDisplayMs(timer), binding.format || 'mm:ss')}${suffix}`
       } else if (binding.source === 'chat') {
         const value = resolveChatText(binding) || fallback
-        return `${binding.prefix || ''}${value}${binding.suffix || ''}`
+        return `${prefix}${value}${suffix}`
       } else if (binding.field === 'statusTiktok' || binding.field === 'statusYoutube' ||
                  binding.field === 'viewerTiktok' || binding.field === 'viewerYoutube') {
         rawValue = getPlatformStatusField(binding.field)
@@ -682,7 +701,7 @@
 
       const formatted = formatBoundValue(rawValue, binding.format || 'raw')
       const value = formatted || fallback
-      return `${binding.prefix || ''}${value}${binding.suffix || ''}`
+      return `${prefix}${value}${suffix}`
     }
 
     function applyElementBox(node, el, hasChildren) {
@@ -784,10 +803,11 @@
       return target
     }
 
-    // Visibilitas elemen = hidden manual (editor) ATAU state target bertanda invisible.
+    // Visibilitas elemen = hidden manual (editor) ATAU state target bertanda invisible
+    // ATAU grup binding-nya di-hide dari Control Panel.
     // Dipisah dari opacity: opacity untuk tampilan/animasi, visible untuk benar-benar menyembunyikan.
     function applyRecordVisibility(record, el) {
-      record.node.style.visibility = (el.hidden || record.stateVisible === false) ? 'hidden' : ''
+      record.node.style.visibility = (el.hidden || record.stateVisible === false || isElementHiddenByControl(el)) ? 'hidden' : ''
     }
 
     function removeRenderedElement(id, record) {

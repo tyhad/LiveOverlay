@@ -121,7 +121,7 @@
       class="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 z-20 overflow-y-auto min-h-0">
 
       <!-- Section 1: Quick Add Elements -->
-      <details class="p-3.5 border-b border-slate-800 group" open>
+      <details class="p-3.5 border-b border-slate-800 group">
         <summary
           class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden flex items-center gap-1.5">
           <span
@@ -163,7 +163,7 @@
       </details>
 
       <!-- Section 2: Uploaded Assets -->
-      <details class="p-3 border-b border-slate-800 group" open>
+      <details class="p-3 border-b border-slate-800 group">
         <summary
           class="flex items-center justify-between mb-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
           <span class="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-slate-400">
@@ -179,7 +179,7 @@
       </details>
 
       <!-- Section 4: Platform Connectors (TikTok & YouTube independen) -->
-      <details class="p-3 border-b border-slate-800 space-y-2 group" open>
+      <details class="p-3 border-b border-slate-800 space-y-2 group">
         <summary
           class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
           <div class="flex items-center gap-1.5">
@@ -449,7 +449,7 @@
         </div>
 
         <!-- Alignment Controls -->
-        <details class="space-y-2 group" open>
+        <details class="space-y-2 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -576,7 +576,7 @@
 
 
         <!-- Typography Section (Text Elements) -->
-        <details id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
+        <details id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -713,7 +713,7 @@
         </details>
 
         <!-- Dynamic Content: Running Text (Marquee) & Data Binding -->
-        <details id="dynamic-content-section" class="space-y-3 pt-2 border-t border-slate-800 group" open>
+        <details id="dynamic-content-section" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -1018,7 +1018,7 @@
         </details>
 
         <!-- Transform: Dimensions, Position & Rotation -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+        <details class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5">
@@ -1141,8 +1141,7 @@
 
         <!-- Animation Sequence Editor (Fase 8 / Fase 3) — lihat issue.md -->
         <details
-          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30 group"
-          open>
+          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30 group">
           <summary
             class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center space-x-1.5">
@@ -1293,7 +1292,7 @@
 
 
         <!-- Image / SVG Section -->
-        <details id="image-props-section" class="hidden space-y-3 pt-2 border-t border-slate-800 group" open>
+        <details id="image-props-section" class="hidden space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -1333,7 +1332,7 @@
         </details>
 
         <!-- Fill & Gradient Section -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+        <details class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5">
@@ -1399,7 +1398,7 @@
         </details>
 
         <!-- Borders & Corners Section -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+        <details class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -1444,7 +1443,7 @@
         </details>
 
         <!-- Shadow & Glow Section -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group" open>
+        <details class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -3069,7 +3068,6 @@
       document.getElementById('prop-vis-name').value = stateBinding.group || ''
       document.getElementById('prop-vis-value').value = stateBinding.fallbackState || 'default'
       updateStateBindingControls()
-      if (stateBinding.enabled) document.getElementById('state-binding-section').open = true
 
       // Animation Sequence Editor
       const animation = ensureAnimation(el)

@@ -12,4 +12,15 @@ test('dedupe, monotonic sequence, bounded ring, and reset feed', () => {
   assert.deepEqual(hub.since(0).items.map(item => item.seq), [3, 4, 5])
   assert.equal(hub.since(1).resetRequired, true)
   assert.deepEqual(hub.since(4).items.map(item => item.seq), [5])
+
+  const withMeta = hub.push({
+    platform: 'tiktok',
+    id: '6',
+    author: 'c',
+    message: 'hi',
+    avatar: 'https://example.com/a.jpg',
+    badges: [{ type: 'mod', label: 'MOD' }],
+  })
+  assert.equal(withMeta.avatar, 'https://example.com/a.jpg')
+  assert.deepEqual(withMeta.badges, [{ type: 'mod', label: 'MOD' }])
 })

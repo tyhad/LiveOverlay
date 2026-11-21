@@ -1,4 +1,4 @@
-import type { ChatEvent, ChatPlatform, NotifSnapshot } from './chat-types'
+import type { ChatBadge, ChatEvent, ChatPlatform, NotifSnapshot } from './chat-types'
 
 export interface ChatInput {
   id: string
@@ -6,6 +6,8 @@ export interface ChatInput {
   author: string
   message: string
   ts?: number
+  avatar?: string
+  badges?: ChatBadge[]
 }
 
 export interface ChatHubOptions {
@@ -41,7 +43,18 @@ export class ChatHub {
     if (!id || !message.trim()) return null
     const key = `${input.platform}:${id}`
     if (this.ids.has(key)) return null
-    const event: ChatEvent = { seq: ++this.sequence, id, platform: input.platform, author: String(input.author || 'viewer'), message, ts: Number.isFinite(input.ts) ? Number(input.ts) : this.now() }
+    const avatar = typeof input.avatar === 'string' && input.avatar.trim() ? input.avatar.trim() : undefined
+    const badges = Array.isArray(input.badges) && input.badges.length > 0 ? input.badges : undefined
+    const event: ChatEvent = {
+      seq: ++this.sequence,
+      id,
+      platform: input.platform,
+      author: String(input.author || 'viewer'),
+      message,
+      ts: Number.isFinite(input.ts) ? Number(input.ts) : this.now(),
+      ...(avatar ? { avatar } : {}),
+      ...(badges ? { badges } : {}),
+    }
     this.ids.add(key); this.idOrder.push(key)
     while (this.idOrder.length > this.dedupeCapacity) this.ids.delete(this.idOrder.shift()!)
     this.events.push(event)

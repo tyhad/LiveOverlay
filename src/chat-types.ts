@@ -1,5 +1,10 @@
 export type ChatPlatform = 'tiktok' | 'youtube'
 
+export interface ChatBadge {
+  type: 'owner' | 'mod' | 'sub' | 'gifter' | 'fan' | 'verified'
+  label: string
+}
+
 export interface ChatEvent {
   seq: number
   id: string
@@ -7,6 +12,8 @@ export interface ChatEvent {
   author: string
   message: string
   ts: number
+  avatar?: string
+  badges?: ChatBadge[]
 }
 
 export interface NotifSnapshot {
@@ -15,6 +22,8 @@ export interface NotifSnapshot {
   author: string
   message: string
   platform: ChatPlatform | ''
+  avatar?: string
+  badges?: ChatBadge[]
   showUntil: number
   queueLength: number
   /** Mode review dari Control Panel: antrean live di-pause sementara. */

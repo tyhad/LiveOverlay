@@ -857,11 +857,18 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
         return { success: false, message: '"message" is required' }
       }
 
+      const badges = Array.isArray(body.badges)
+        ? body.badges
+            .filter((b: any) => b && typeof b.type === 'string' && typeof b.label === 'string')
+            .map((b: any) => ({ type: b.type, label: String(b.label) }))
+        : undefined
       const event = chatHub.push({
         id: `dev-${Date.now()}-${crypto.randomUUID()}`,
         platform,
         author: String(body.author || 'tester').trim() || 'tester',
         message,
+        avatar: typeof body.avatar === 'string' ? body.avatar : undefined,
+        badges,
       })
       return { success: true, event, notif: chatNotifQueue.getSnapshot() }
     },
@@ -870,6 +877,8 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
         platform: t.Optional(t.String()),
         author: t.Optional(t.String()),
         message: t.String(),
+        avatar: t.Optional(t.String()),
+        badges: t.Optional(t.Array(t.Object({ type: t.String(), label: t.String() }))),
       }),
     }
   )

@@ -113,7 +113,13 @@ test('tiktok connector forwards chat and room stats correctly', async () => {
     fakeConn.emit(WebcastEvent.CHAT, {
       msgId: 'tt_123',
       content: 'Halo TikTok!',
-      user: { nickname: 'Viewer1' },
+      user: {
+        nickname: 'Viewer1',
+        avatarThumb: { urlList: ['https://example.com/tt-avatar.jpg'] },
+        verified: true,
+        badgeList: [{ sceneType: 8, privilegeLogExtra: { level: '12' } }],
+      },
+      userIdentity: { isModeratorOfAnchor: true, isSubscriberOfAnchor: true },
     })
 
     assert.equal(chats.length, 1)
@@ -121,6 +127,13 @@ test('tiktok connector forwards chat and room stats correctly', async () => {
     assert.equal(chats[0].author, 'Viewer1')
     assert.equal(chats[0].message, 'Halo TikTok!')
     assert.equal(chats[0].platform, 'tiktok')
+    assert.equal(chats[0].avatar, 'https://example.com/tt-avatar.jpg')
+    assert.deepEqual(chats[0].badges, [
+      { type: 'mod', label: 'MOD' },
+      { type: 'sub', label: 'SUB' },
+      { type: 'gifter', label: 'LV.12' },
+      { type: 'verified', label: '✓' },
+    ])
 
     // Emit LIKE & ROOM_USER
     fakeConn.emit(WebcastEvent.LIKE, { total: 130 })

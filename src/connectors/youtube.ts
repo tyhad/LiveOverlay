@@ -1,4 +1,4 @@
-import type { PlatformStatus } from '../chat-types'
+import type { ChatBadge, PlatformStatus } from '../chat-types'
 
 export interface YouTubeConnectorConfig {
   apiKey: string
@@ -13,6 +13,8 @@ export interface YouTubeChatPayload {
   author: string
   message: string
   ts: number
+  avatar?: string
+  badges?: ChatBadge[]
 }
 
 export interface YouTubeStatsPayload {
@@ -369,7 +371,14 @@ export class YouTubeConnector {
             textMessageDetails?: { messageText?: string }
             superChatDetails?: { userComment?: string }
           }
-          authorDetails?: { displayName?: string }
+          authorDetails?: {
+            displayName?: string
+            profileImageUrl?: string
+            isVerified?: boolean
+            isChatOwner?: boolean
+            isChatModerator?: boolean
+            isChatSponsor?: boolean
+          }
         }[]
       }
 
@@ -390,7 +399,14 @@ export class YouTubeConnector {
           if (oldest) this.seenMessageIds.delete(oldest)
         }
 
-        const author = item.authorDetails?.displayName || 'viewer'
+        const ad = item.authorDetails
+        const author = ad?.displayName || 'viewer'
+        const avatar = typeof ad?.profileImageUrl === 'string' && ad.profileImageUrl.trim() ? ad.profileImageUrl.trim() : undefined
+        const badges: ChatBadge[] = []
+        if (ad?.isChatOwner) badges.push({ type: 'owner', label: 'HOST' })
+        if (ad?.isChatModerator) badges.push({ type: 'mod', label: 'MOD' })
+        if (ad?.isChatSponsor) badges.push({ type: 'sub', label: 'MEMBER' })
+        if (ad?.isVerified) badges.push({ type: 'verified', label: '✓' })
         const message = item.snippet?.displayMessage ||
           item.snippet?.superChatDetails?.userComment ||
           item.snippet?.textMessageDetails?.messageText ||
@@ -403,6 +419,8 @@ export class YouTubeConnector {
           author,
           message,
           ts: Number.isFinite(ts) ? ts : this.now(),
+          ...(avatar ? { avatar } : {}),
+          ...(badges.length > 0 ? { badges } : {}),
         })
       }
 

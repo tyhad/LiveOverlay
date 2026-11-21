@@ -1,5 +1,5 @@
 import { WebcastEvent, ControlEvent, TikTokLiveConnection } from 'tiktok-live-connector'
-import type { PlatformStatus } from '../chat-types'
+import type { ChatBadge, PlatformStatus } from '../chat-types'
 
 export interface TikTokChatPayload {
   platform: 'tiktok'
@@ -7,6 +7,58 @@ export interface TikTokChatPayload {
   author: string
   message: string
   ts?: number
+  avatar?: string
+  badges?: ChatBadge[]
+}
+
+function extractTikTokAvatar(user: any): string | undefined {
+  const url =
+    user?.avatarThumb?.urlList?.[0] ||
+    user?.avatarMedium?.urlList?.[0] ||
+    user?.avatarLarge?.urlList?.[0] ||
+    user?.profilePictureUrl ||
+    ''
+  return typeof url === 'string' && url.trim() ? url.trim() : undefined
+}
+
+function extractTikTokBadges(data: any): ChatBadge[] {
+  const user = data?.user || {}
+  const identity = data?.userIdentity || {}
+  const badgeList: any[] = Array.isArray(user.badgeList)
+    ? user.badgeList
+    : (Array.isArray(user.userBadges) ? user.userBadges : [])
+  const hasScene = (scenes: number[]) =>
+    badgeList.some((b) => scenes.includes(Number(b?.sceneType ?? b?.badgeSceneType)))
+
+  const badges: ChatBadge[] = []
+  if (identity.isAnchor) badges.push({ type: 'owner', label: 'HOST' })
+  if (identity.isModeratorOfAnchor || user.userAttr?.isAdmin || user.isModerator || hasScene([1])) {
+    badges.push({ type: 'mod', label: 'MOD' })
+  }
+  if (identity.isSubscriberOfAnchor || user.subscribeInfo?.isSubscribed || user.isSubscriber || hasScene([4, 7])) {
+    badges.push({ type: 'sub', label: 'SUB' })
+  }
+
+  const gifterBadge = badgeList.find((b) => [8].includes(Number(b?.sceneType ?? b?.badgeSceneType)))
+  const gifterLevel = Number(
+    gifterBadge?.privilegeLogExtra?.level ||
+    gifterBadge?.level ||
+    user.payGrade?.level ||
+    user.gifterLevel ||
+    0
+  )
+  if (Number.isFinite(gifterLevel) && gifterLevel > 0) {
+    badges.push({ type: 'gifter', label: `LV.${gifterLevel}` })
+  }
+
+  const fanBadge = badgeList.find((b) => [10].includes(Number(b?.sceneType ?? b?.badgeSceneType)))
+  const fanLevel = Number(user.fansClubInfo?.fansLevel || fanBadge?.level || user.teamMemberLevel || 0)
+  if (Number.isFinite(fanLevel) && fanLevel > 0) {
+    badges.push({ type: 'fan', label: `♥ ${fanLevel}` })
+  }
+
+  if (user.verified === true) badges.push({ type: 'verified', label: '✓' })
+  return badges
 }
 
 export interface TikTokStatsPayload {
@@ -78,6 +130,8 @@ export class TikTokConnector {
       const author = data.user?.nickname || data.user?.uniqueId || 'viewer'
       const message = data.content || ''
       const msgId = String(data.msgId || `${author}:${message}:${Math.floor(Date.now() / 1000)}`)
+      const avatar = extractTikTokAvatar(data.user)
+      const badges = extractTikTokBadges(data)
       this.status.lastSuccessAt = new Date().toISOString()
       this.status.lastError = null
       this.options.onChat({
@@ -85,6 +139,8 @@ export class TikTokConnector {
         id: msgId,
         author,
         message,
+        ...(avatar ? { avatar } : {}),
+        ...(badges.length > 0 ? { badges } : {}),
       })
     })
 

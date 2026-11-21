@@ -98,7 +98,7 @@
     // snapshot server supaya beberapa browser source selalu sinkron.
     const CHAT_BUFFER_LIMIT = 50
     const CHAT_FEED_INTERVAL_MS = 500
-    const EMPTY_NOTIF = Object.freeze({ state: 'idle', seq: 0, author: '', message: '', platform: '', showUntil: 0, queueLength: 0, reviewing: false })
+    const EMPTY_NOTIF = Object.freeze({ state: 'idle', seq: 0, author: '', message: '', platform: '', avatar: '', badges: [], showUntil: 0, queueLength: 0, reviewing: false })
     let chatEvents = []
     let chatFeedSeq = 0
     let chatNotif = { ...EMPTY_NOTIF }
@@ -212,6 +212,18 @@
         textEl.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${el.style.textShadowColor}`
       } else {
         textEl.style.textShadow = 'none'
+      }
+      if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && window.ChatFormat?.renderChatList) {
+        const items = resolveChatItems(el.textBinding)
+        if (items.length > 0) {
+          window.ChatFormat.renderChatList(textEl, items, {
+            mode: el.textBinding.field === 'notif' ? 'notif' : 'stack',
+            tags: chatTags,
+            icons: chatIcons,
+            textAlign: el.style?.textAlign || 'left',
+          })
+          return
+        }
       }
       if (window.ChatFormat?.renderText) window.ChatFormat.renderText(textEl, text, { tags: chatTags, icons: chatIcons })
       else textEl.textContent = text
@@ -481,6 +493,8 @@
         platform: event.platform === 'youtube' ? 'youtube' : 'tiktok',
         author: String(event.author || ''),
         message: String(event.message || ''),
+        avatar: typeof event.avatar === 'string' ? event.avatar : '',
+        badges: Array.isArray(event.badges) ? event.badges : [],
         ts: Number(event.ts) || 0,
       }
     }
@@ -494,6 +508,8 @@
         author: String(snapshot?.author || ''),
         message: String(snapshot?.message || ''),
         platform,
+        avatar: typeof snapshot?.avatar === 'string' ? snapshot.avatar : '',
+        badges: Array.isArray(snapshot?.badges) ? snapshot.badges : [],
         showUntil: Number(snapshot?.showUntil) || 0,
         queueLength: Math.max(0, Number(snapshot?.queueLength) || 0),
         reviewing: snapshot?.reviewing === true,
@@ -533,6 +549,23 @@
       if (event) return { author: event.author, message: event.message }
       if (chatNotif.author || chatNotif.message) return { author: chatNotif.author, message: chatNotif.message }
       return { author: liveStats.latestChatAuthor || '', message: liveStats.latestChatMessage || '' }
+    }
+
+    function resolveChatItems(binding) {
+      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      if (field === 'stack') {
+        const rawLines = Number(binding?.lines)
+        const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
+        return chatEvents.slice(-lineCount).filter((event) => String(event?.message || '').trim() !== '')
+      }
+      if (!chatNotif.author && !chatNotif.message) return []
+      return [{
+        platform: chatNotif.platform,
+        author: chatNotif.author,
+        message: chatNotif.message,
+        avatar: chatNotif.avatar || '',
+        badges: chatNotif.badges || [],
+      }]
     }
 
     function resolveChatText(binding) {

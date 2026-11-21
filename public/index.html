@@ -889,10 +889,9 @@
                   <option value="{author}">{author}</option>
                 </datalist>
               </div>
-              <p class="text-[10px] text-slate-500">Placeholder: <code>{platformTag}</code>, <code>{platform}</code>,
-                <code>{author}</code>, <code>{message}</code>. Tulis <code>\n</code> untuk baris baru. Ikon platform
-                otomatis dipakai kalau ada file di <code>public/chat-icons/tiktok.*</code> /
-                <code>youtube.*</code>; kalau tidak ada, <code>{platformTag}</code> jadi teks tag.</p>
+              <p class="text-[10px] text-slate-500">Chat Notification &amp; Chat Stack otomatis tampil bergaya TikTok Live
+                (avatar bulat, ikon platform, badge user, nama di atas, pesan di bawah). Template di atas tetap dipakai
+                untuk mode Marquee / Scroll.</p>
             </div>
 
             <div id="f1data-binding-group" class="hidden space-y-2">
@@ -1858,6 +1857,35 @@
       })
     }
 
+    function resolveEditorChatItems(binding) {
+      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      if (field === 'stack') {
+        const rawLines = Number(binding?.lines)
+        const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
+        const live = editorChatEvents.slice(-lineCount).filter((event) => String(event?.message || '').trim() !== '')
+        if (live.length > 0) return live
+        return [
+          { platform: 'tiktok', author: 'ViewerTikTok', message: 'Keren banget stream-nya!', badges: [{ type: 'sub', label: 'SUB' }] },
+          { platform: 'youtube', author: 'ViewerYouTube', message: 'Gas terus bang!', badges: [{ type: 'mod', label: 'MOD' }] },
+        ].slice(-lineCount)
+      }
+      if (editorChatNotif.author || editorChatNotif.message) {
+        return [{
+          platform: editorChatNotif.platform,
+          author: editorChatNotif.author,
+          message: editorChatNotif.message,
+          avatar: editorChatNotif.avatar || '',
+          badges: editorChatNotif.badges || [],
+        }]
+      }
+      return [{
+        platform: 'tiktok',
+        author: 'ContohPenonton',
+        message: 'Halo! Ini preview chat bergaya TikTok Live',
+        badges: [{ type: 'mod', label: 'MOD' }, { type: 'gifter', label: 'LV.10' }],
+      }]
+    }
+
     function resolveEditorChatText(binding) {
       const field = binding?.field === 'notif' ? 'notif' : 'stack'
       const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
@@ -2743,8 +2771,18 @@
             textP.style.textShadow = 'none'
           }
           const text = resolveElementText(el) || ''
-          if (window.ChatFormat?.renderText) window.ChatFormat.renderText(textP, text, { tags: editorChatTags, icons: editorChatIcons })
-          else textP.textContent = text
+          if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && !el.marquee?.enabled && !el.scroll?.enabled && window.ChatFormat?.renderChatList) {
+            window.ChatFormat.renderChatList(textP, resolveEditorChatItems(el.textBinding), {
+              mode: el.textBinding.field === 'notif' ? 'notif' : 'stack',
+              tags: editorChatTags,
+              icons: editorChatIcons,
+              textAlign: el.style?.textAlign || 'left',
+            })
+          } else if (window.ChatFormat?.renderText) {
+            window.ChatFormat.renderText(textP, text, { tags: editorChatTags, icons: editorChatIcons })
+          } else {
+            textP.textContent = text
+          }
           div.appendChild(textP)
 
           if (el.marquee?.enabled) {

@@ -125,8 +125,8 @@ test('loop enter dilanjutkan setelah pindah state tanpa transition step', () => 
 
 // ─── Fase C5 — Chat Stack, Chat Notification, dan reload ─────────────────────
 
-const chatEvent = (seq, platform, author, message) => ({ seq, id: `${platform}-${seq}`, platform, author, message, ts: seq * 1000 })
-const idleNotif = { state: 'idle', seq: 0, author: '', message: '', platform: '', showUntil: 0, queueLength: 0 }
+const chatEvent = (seq, platform, author, message, extra = {}) => ({ seq, id: `${platform}-${seq}`, platform, author, message, ts: seq * 1000, ...extra })
+const idleNotif = { state: 'idle', seq: 0, author: '', message: '', platform: '', avatar: '', badges: [], showUntil: 0, queueLength: 0 }
 const chatScene = (patch = {}) => makeScene({
   type: 'text',
   style: { text: '', fontSize: 20, color: '#ffffff' },
@@ -134,34 +134,45 @@ const chatScene = (patch = {}) => makeScene({
   ...patch,
 })
 
-test('chat stack: N baris terakhir, urut lama→baru, terbaru di bawah, dengan tag platform', () => {
+test('chat stack: N baris terakhir, urut lama→baru, terbaru di bawah, dengan layout TikTok', () => {
   const o = bootOverlay()
   o.feed({
     seq: 3,
     items: [
       chatEvent(1, 'tiktok', 'alice', 'satu'),
-      chatEvent(2, 'youtube', 'bob', 'dua'),
+      chatEvent(2, 'youtube', 'bob', 'dua', { avatar: 'https://example.com/bob.jpg', badges: [{ type: 'mod', label: 'MOD' }] }),
       chatEvent(3, 'tiktok', 'cara', 'tiga'),
     ],
     notif: idleNotif,
   })
   o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 2 } }))
-  assert.equal(o.node().textContent, '[YT] bob: dua\n[TT] cara: tiga')
+  const items = o.node().querySelectorAll('.tt-chat-item')
+  assert.equal(items.length, 2)
+  assert.equal(items[0].querySelector('.tt-chat-platform-tag')?.textContent, '[YT]')
+  assert.equal(items[0].querySelector('.tt-chat-badge--mod')?.textContent, 'MOD')
+  assert.equal(items[0].querySelector('.tt-chat-author')?.textContent, 'bob')
+  assert.equal(items[0].querySelector('.tt-chat-msg')?.textContent, 'dua')
+  assert.equal(items[0].querySelector('.tt-chat-avatar img')?.getAttribute('src'), 'https://example.com/bob.jpg')
+  assert.equal(items[1].querySelector('.tt-chat-author')?.textContent, 'cara')
+  assert.equal(items[1].querySelector('.tt-chat-msg')?.textContent, 'tiga')
   assert.equal(o.chat().events.length, 3)
 })
 
-test('chat stack: template kustom dan batas lines dinormalisasi (1–30)', () => {
+test('chat stack: batas lines dinormalisasi (1–30) dan fallback inisial avatar', () => {
   const o = bootOverlay()
   o.feed({
     seq: 2,
     items: [chatEvent(1, 'tiktok', 'alice', 'satu'), chatEvent(2, 'youtube', 'bob', 'dua')],
     notif: idleNotif,
   })
-  o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 99, template: '{platform}: {author} > {message}' } }))
-  assert.equal(o.node().textContent, 'tiktok: alice > satu\nyoutube: bob > dua')
+  o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 99 } }))
+  const items = o.node().querySelectorAll('.tt-chat-item')
+  assert.equal(items.length, 2)
+  assert.equal(items[0].querySelector('.tt-chat-avatar-fallback')?.textContent, 'A')
+  assert.equal(items[1].querySelector('.tt-chat-avatar-fallback')?.textContent, 'B')
 })
 
-test('chat notification: snapshot showing → idle mengubah state aktif elemen', () => {
+test('chat notification: snapshot showing → idle mengubah state aktif elemen dengan avatar & badge', () => {
   const o = bootOverlay()
   const scene = () => chatScene({
     textBinding: { enabled: true, source: 'chat', field: 'notif' },
@@ -172,21 +183,46 @@ test('chat notification: snapshot showing → idle mengubah state aktif elemen',
   o.feed({
     seq: 1,
     items: [chatEvent(1, 'tiktok', 'alice', 'halo')],
-    notif: { state: 'showing', seq: 1, author: 'alice', message: 'halo', platform: 'tiktok', showUntil: 1, queueLength: 0 },
+    notif: {
+      state: 'showing',
+      seq: 1,
+      author: 'alice',
+      message: 'halo',
+      platform: 'tiktok',
+      avatar: 'https://example.com/alice.jpg',
+      badges: [{ type: 'sub', label: 'SUB' }],
+      showUntil: 1,
+      queueLength: 0,
+    },
   })
   o.render(scene())
   assert.equal(o.rec().currentState, 'showing')
-  assert.equal(o.node().textContent, 'alice\nhalo')
+  assert.equal(o.node().querySelectorAll('.tt-chat-item').length, 1)
+  assert.equal(o.node().querySelector('.tt-chat-avatar img')?.getAttribute('src'), 'https://example.com/alice.jpg')
+  assert.equal(o.node().querySelector('.tt-chat-badge--sub')?.textContent, 'SUB')
+  assert.equal(o.node().querySelector('.tt-chat-author')?.textContent, 'alice')
+  assert.equal(o.node().querySelector('.tt-chat-msg')?.textContent, 'halo')
 
   o.feed({
     seq: 1,
     items: [],
-    notif: { state: 'idle', seq: 1, author: 'alice', message: 'halo', platform: 'tiktok', showUntil: 0, queueLength: 0 },
+    notif: {
+      state: 'idle',
+      seq: 1,
+      author: 'alice',
+      message: 'halo',
+      platform: 'tiktok',
+      avatar: 'https://example.com/alice.jpg',
+      badges: [{ type: 'sub', label: 'SUB' }],
+      showUntil: 0,
+      queueLength: 0,
+    },
   })
   o.render(scene())
   assert.equal(o.rec().currentState, 'idle')
-  // Teks terakhir dipertahankan saat idle supaya animasi keluar tidak kosong.
-  assert.equal(o.node().textContent, 'alice\nhalo')
+  // Teks & avatar terakhir dipertahankan saat idle supaya animasi keluar tidak kosong.
+  assert.equal(o.node().querySelector('.tt-chat-author')?.textContent, 'alice')
+  assert.equal(o.node().querySelector('.tt-chat-msg')?.textContent, 'halo')
 })
 
 test('scene lama dengan latestChatAuthor/latestChatMessage tetap render dari chat terbaru', () => {
@@ -249,7 +285,8 @@ test('reload tidak memicu notif lama; chat baru berikutnya tetap tampil', () => 
   })
   o.render(scene())
   assert.equal(o.rec().currentState, 'showing')
-  assert.equal(o.node().textContent, 'baru\nbaru masuk')
+  assert.equal(o.node().querySelector('.tt-chat-author')?.textContent, 'baru')
+  assert.equal(o.node().querySelector('.tt-chat-msg')?.textContent, 'baru masuk')
 })
 
 test('platformTag jadi ikon inline kalau file ikon tersedia, platform lain tetap teks tag', () => {
@@ -262,10 +299,13 @@ test('platformTag jadi ikon inline kalau file ikon tersedia, platform lain tetap
   })
   o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'stack', lines: 5, template: '{platformTag} {author}: {message}' } }))
 
-  const icons = o.node().querySelectorAll('img')
+  const icons = o.node().querySelectorAll('.tt-chat-platform-icon')
   assert.equal(icons.length, 1)
   assert.equal(icons[0].getAttribute('src'), '/chat-icons/tiktok.ico')
-  assert.equal(o.node().textContent, ' alice: satu\n[YT] bob: dua')
+  const items = o.node().querySelectorAll('.tt-chat-item')
+  assert.equal(items[0].querySelector('.tt-chat-author')?.textContent, 'alice')
+  assert.equal(items[1].querySelector('.tt-chat-platform-tag')?.textContent, '[YT]')
+  assert.equal(items[1].querySelector('.tt-chat-author')?.textContent, 'bob')
 })
 
 test('review ▲/▼ memutar ulang animasi kemunculan walau state tetap showing', () => {
@@ -291,7 +331,8 @@ test('review ▲/▼ memutar ulang animasi kemunculan walau state tetap showing'
   o.render(scene())
 
   assert.equal(o.rec().currentState, 'showing')
-  assert.equal(o.node().textContent, 'bob\ndua')
+  assert.equal(o.node().querySelector('.tt-chat-author')?.textContent, 'bob')
+  assert.equal(o.node().querySelector('.tt-chat-msg')?.textContent, 'dua')
   const replayed = o.tl()
   assert.notEqual(replayed, live, 'transition kemunculan harus dibangun ulang saat review step')
   replayed.progress(1)

@@ -87,10 +87,16 @@ test('tiktok memutus koneksi lama saat username dikosongkan', async () => {
 test('tiktok connector forwards chat and room stats correctly', async () => {
   const chats = []
   const statsUpdates = []
+  const topViewersList = []
+  const followers = []
+  const joins = []
   let fakeConn = null
 
   const connector = new TikTokConnector({
     onChat: (payload) => chats.push(payload),
+    onTopViewers: (viewers) => topViewersList.push(viewers),
+    onFollower: (payload) => followers.push(payload),
+    onJoin: (payload) => joins.push(payload),
     onStats: (stats) => statsUpdates.push(stats),
     connectionFactory: (username) => {
       fakeConn = new FakeTikTokConnection(username)
@@ -135,11 +141,21 @@ test('tiktok connector forwards chat and room stats correctly', async () => {
       { type: 'verified', label: '✓' },
     ])
 
-    // Emit LIKE & ROOM_USER
+    // Emit LIKE & ROOM_USER (with ranks), FOLLOW, MEMBER
     fakeConn.emit(WebcastEvent.LIKE, { total: 130 })
-    fakeConn.emit(WebcastEvent.ROOM_USER, { total: 60 })
+    fakeConn.emit(WebcastEvent.ROOM_USER, {
+      total: 60,
+      ranks: [{ rank: 1, score: '900', user: { nickname: 'Sultan', avatarThumb: { urlList: ['https://example.com/s.jpg'] } } }],
+    })
+    fakeConn.emit(WebcastEvent.FOLLOW, { common: { msgId: 'fl_1' }, user: { nickname: 'Follower1' } })
+    fakeConn.emit(WebcastEvent.MEMBER, { common: { msgId: 'mb_1' }, user: { nickname: 'Joiner1' } })
     assert.equal(statsUpdates.some((s) => s.likeCount === 130), true)
     assert.equal(statsUpdates.some((s) => s.viewerCount === 60), true)
+    assert.equal(topViewersList.length, 1)
+    assert.equal(topViewersList[0][0].author, 'Sultan')
+    assert.equal(topViewersList[0][0].score, 900)
+    assert.equal(followers[0].author, 'Follower1')
+    assert.equal(joins[0].author, 'Joiner1')
 
     // Emit STREAM_END
     fakeConn.emit(WebcastEvent.STREAM_END)

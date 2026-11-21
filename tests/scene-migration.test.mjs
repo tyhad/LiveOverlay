@@ -172,3 +172,19 @@ test('normalizeChatBindings mengembalikan referensi yang sama untuk elemen non-c
   assert.equal(normalizeChatBindings(el), el)
 })
 
+test('normalizeChatBindings mendukung field topViewers, followers, join dan state joinNotif', () => {
+  for (const field of ['topViewers', 'followers']) {
+    const out = normalizeChatBindings({ ...base, textBinding: { enabled: true, source: 'chat', field, lines: 50 } })
+    assert.equal(out.textBinding.field, field)
+    assert.equal(out.textBinding.lines, 30)
+  }
+  const join = normalizeChatBindings({
+    ...base,
+    textBinding: { enabled: true, source: 'chat', field: 'join', template: 'Welcome {author}' },
+    stateBinding: { enabled: true, source: 'joinNotif', fallbackState: 'idle' },
+  })
+  assert.equal(join.textBinding.field, 'join')
+  assert.equal(join.stateBinding.source, 'joinNotif')
+  assert.equal(join.stateBinding.enabled, true)
+})
+

@@ -240,15 +240,16 @@ export function normalizeChatBindings<T>(element: T): T {
   let next: AnyRecord = element
 
   if (text?.source === 'chat') {
-    const field = text.field === 'notif' ? 'notif' : (text.field === 'stack' ? 'stack' : null)
+    const validFields = new Set(['stack', 'notif', 'topViewers', 'followers', 'join'])
+    const field = validFields.has(text.field) ? text.field : null
     if (field) {
       const normalized: AnyRecord = { ...text, field }
-      if (field === 'stack') {
+      if (field === 'stack' || field === 'topViewers' || field === 'followers') {
         const rawLines = Number(text.lines)
         normalized.lines = Number.isFinite(rawLines) && rawLines > 0
           ? Math.min(30, Math.max(1, Math.round(rawLines)))
           : 5
-      } else {
+      } else if (field === 'notif') {
         const legacy = LEGACY_NOTIF_TEMPLATES[String(text.template || '')]
         if (legacy) normalized.template = legacy
       }
@@ -256,7 +257,7 @@ export function normalizeChatBindings<T>(element: T): T {
     }
   }
 
-  if (state?.source === 'chatNotif') {
+  if (state?.source === 'chatNotif' || state?.source === 'joinNotif') {
     next = { ...next, stateBinding: { ...state, enabled: state.enabled !== false } }
   }
 

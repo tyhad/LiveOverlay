@@ -1,11 +1,20 @@
 import { WebcastEvent, ControlEvent, TikTokLiveConnection } from 'tiktok-live-connector'
-import type { ChatBadge, PlatformStatus } from '../chat-types'
+import type { ChatBadge, PlatformStatus, TopViewerEntry } from '../chat-types'
 
 export interface TikTokChatPayload {
   platform: 'tiktok'
   id: string
   author: string
   message: string
+  ts?: number
+  avatar?: string
+  badges?: ChatBadge[]
+}
+
+export interface TikTokUserEventPayload {
+  platform: 'tiktok'
+  id: string
+  author: string
   ts?: number
   avatar?: string
   badges?: ChatBadge[]
@@ -73,6 +82,9 @@ export interface TikTokStatsPayload {
 
 export interface TikTokConnectorOptions {
   onChat: (payload: TikTokChatPayload) => void
+  onTopViewers?: (viewers: TopViewerEntry[]) => void
+  onFollower?: (payload: TikTokUserEventPayload) => void
+  onJoin?: (payload: TikTokUserEventPayload) => void
   onStats?: (stats: TikTokStatsPayload) => Promise<void> | void
   connectionFactory?: (username: string, options?: any) => any
 }
@@ -157,6 +169,56 @@ export class TikTokConnector {
         this.status.viewerCount = viewerCount
         void this.options.onStats?.({ viewerCount })
       }
+      const rawRanks = Array.isArray(data.ranks)
+        ? data.ranks
+        : (Array.isArray(data.seats) ? data.seats : (Array.isArray(data.topViewers) ? data.topViewers : []))
+      if (rawRanks.length > 0 && this.options.onTopViewers) {
+        const viewers: TopViewerEntry[] = rawRanks.map((entry: any, idx: number) => {
+          const u = entry?.user || {}
+          const avatar = extractTikTokAvatar(u)
+          const badges = extractTikTokBadges({ user: u })
+          const rank = Number(entry?.rank)
+          const score = Number(entry?.score ?? entry?.coinCount ?? 0)
+          return {
+            rank: Number.isFinite(rank) && rank > 0 ? rank : idx + 1,
+            author: u.nickname || u.uniqueId || 'viewer',
+            score: Number.isFinite(score) ? score : 0,
+            ...(avatar ? { avatar } : {}),
+            ...(badges.length > 0 ? { badges } : {}),
+          }
+        })
+        this.options.onTopViewers(viewers)
+      }
+    })
+
+    conn.on(WebcastEvent.FOLLOW, (data: any) => {
+      const u = data?.user || {}
+      const author = u.nickname || u.uniqueId || 'viewer'
+      const msgId = String(data?.common?.msgId || data?.msgId || `follow:${author}:${Math.floor(Date.now() / 1000)}`)
+      const avatar = extractTikTokAvatar(u)
+      const badges = extractTikTokBadges(data)
+      this.options.onFollower?.({
+        platform: 'tiktok',
+        id: msgId,
+        author,
+        ...(avatar ? { avatar } : {}),
+        ...(badges.length > 0 ? { badges } : {}),
+      })
+    })
+
+    conn.on(WebcastEvent.MEMBER, (data: any) => {
+      const u = data?.user || {}
+      const author = u.nickname || u.uniqueId || 'viewer'
+      const msgId = String(data?.common?.msgId || data?.msgId || `join:${author}:${Math.floor(Date.now() / 1000)}`)
+      const avatar = extractTikTokAvatar(u)
+      const badges = extractTikTokBadges(data)
+      this.options.onJoin?.({
+        platform: 'tiktok',
+        id: msgId,
+        author,
+        ...(avatar ? { avatar } : {}),
+        ...(badges.length > 0 ? { badges } : {}),
+      })
     })
 
     conn.on(WebcastEvent.STREAM_END, () => {

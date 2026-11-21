@@ -59,12 +59,14 @@ async function discoverChatIcons(): Promise<Record<string, string>> {
 }
 
 const chatNotifQueue = new NotifQueue()
+const joinNotifQueue = new NotifQueue()
 const chatArchive = new ChatArchiveManager()
 // Di-set dari config v2 sebelum connector mulai. Saat false, chat tetap tampil
 // di overlay tetapi tidak ditulis ke chat-archive/.
 let chatArchiveEnabled = false
 const chatHub = new ChatHub({
   notif: chatNotifQueue,
+  joinNotif: joinNotifQueue,
   onChat: (event: ChatEvent) => {
     if (chatArchiveEnabled) chatArchive.appendChat(event)
   },
@@ -771,6 +773,7 @@ function currentPlatformStatus(platform: PlatformType): PlatformStatus {
 
 function schedulePlatformConnectors(config: PlatformConfigV2): void {
   chatNotifQueue.configure(config.notif)
+  joinNotifQueue.configure(config.notif)
   const anyEnabled = config.tiktok.enabled || config.youtube.enabled
   chatArchiveEnabled = Boolean(config.archive.enabled)
   // D4: sesi arsip hidup selama minimal satu connector aktif dan arsip tidak
@@ -850,35 +853,55 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
         return { success: false, message: 'Not found' }
       }
 
+      const kind = body.kind || 'chat'
       const platform = body.platform === 'youtube' ? 'youtube' : 'tiktok'
+      const author = String(body.author || 'tester').trim() || 'tester'
+      const avatar = typeof body.avatar === 'string' ? body.avatar : undefined
+      const badges = Array.isArray(body.badges)
+        ? body.badges
+            .filter((b: any) => b && typeof b.type === 'string' && typeof b.label === 'string')
+            .map((b: any) => ({ type: b.type, label: String(b.label) }))
+        : undefined
+
+      if (kind === 'topViewers') {
+        const viewers = Array.isArray(body.topViewers) ? body.topViewers : [{ rank: 1, author, score: 1500, avatar, badges }]
+        chatHub.setTopViewers(viewers)
+        return { success: true, topViewers: chatHub.since().topViewers }
+      }
+      if (kind === 'follower') {
+        const event = chatHub.pushFollower({ id: `dev-f-${Date.now()}-${crypto.randomUUID()}`, platform: 'tiktok', author, avatar, badges })
+        return { success: true, event }
+      }
+      if (kind === 'join') {
+        const event = chatHub.pushJoin({ id: `dev-j-${Date.now()}-${crypto.randomUUID()}`, platform: 'tiktok', author, avatar, badges })
+        return { success: true, event, joinNotif: joinNotifQueue.getSnapshot() }
+      }
+
       const message = String(body.message || '').trim()
       if (!message) {
         set.status = 400
         return { success: false, message: '"message" is required' }
       }
 
-      const badges = Array.isArray(body.badges)
-        ? body.badges
-            .filter((b: any) => b && typeof b.type === 'string' && typeof b.label === 'string')
-            .map((b: any) => ({ type: b.type, label: String(b.label) }))
-        : undefined
       const event = chatHub.push({
         id: `dev-${Date.now()}-${crypto.randomUUID()}`,
         platform,
-        author: String(body.author || 'tester').trim() || 'tester',
+        author,
         message,
-        avatar: typeof body.avatar === 'string' ? body.avatar : undefined,
+        avatar,
         badges,
       })
       return { success: true, event, notif: chatNotifQueue.getSnapshot() }
     },
     {
       body: t.Object({
+        kind: t.Optional(t.String()),
         platform: t.Optional(t.String()),
         author: t.Optional(t.String()),
-        message: t.String(),
+        message: t.Optional(t.String()),
         avatar: t.Optional(t.String()),
         badges: t.Optional(t.Array(t.Object({ type: t.String(), label: t.String() }))),
+        topViewers: t.Optional(t.Array(t.Any())),
       }),
     }
   )

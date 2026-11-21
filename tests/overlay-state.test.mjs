@@ -364,3 +364,39 @@ test('override prefix/suffix dari Control Panel menimpa textBinding elemen', () 
   })
   assert.equal(text, 'Q1 : 5 pts')
 })
+
+test('topViewers, followers, dan join live (Welcome {author} + joinNotif) merender dengan benar', () => {
+  const o = bootOverlay()
+  o.feed({
+    seq: 1,
+    items: [],
+    notif: idleNotif,
+    joinNotif: { state: 'showing', seq: 1, author: 'Budi', message: 'joined', platform: 'tiktok', showUntil: 1, queueLength: 0 },
+    topViewers: [
+      { rank: 1, author: 'Sultan', score: 1500, avatar: 'https://example.com/s.jpg', badges: [{ type: 'gifter', label: 'LV.20' }] },
+      { rank: 2, author: 'RunnerUp', score: 800 },
+    ],
+    followers: [
+      { seq: 1, id: 'f1', platform: 'tiktok', author: 'FollowerBaru' },
+    ],
+  })
+
+  o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'topViewers', lines: 5 } }))
+  assert.equal(o.node().querySelectorAll('.tt-chat-item').length, 2)
+  assert.equal(o.node().querySelector('.tt-chat-rank')?.textContent, '#1')
+  assert.equal(o.node().querySelector('.tt-chat-author')?.textContent, 'Sultan')
+  assert.ok(o.node().querySelector('.tt-chat-msg')?.textContent.includes('pts'))
+
+  o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'followers', lines: 5 } }))
+  assert.equal(o.node().querySelectorAll('.tt-chat-item').length, 1)
+  assert.equal(o.node().querySelector('.tt-chat-author')?.textContent, 'FollowerBaru')
+  assert.equal(o.node().querySelector('.tt-chat-msg')?.textContent, 'Followed')
+
+  o.render(chatScene({
+    textBinding: { enabled: true, source: 'chat', field: 'join', template: 'Welcome {author}' },
+    stateBinding: { enabled: true, source: 'joinNotif', fallbackState: 'idle' },
+    stateTargets: { showing: { x: 100 }, idle: { x: 300, _visible: false } },
+  }))
+  assert.equal(o.rec().currentState, 'showing')
+  assert.equal(o.node().textContent, 'Welcome Budi')
+})

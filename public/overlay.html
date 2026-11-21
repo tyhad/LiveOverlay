@@ -102,6 +102,9 @@
     let chatEvents = []
     let chatFeedSeq = 0
     let chatNotif = { ...EMPTY_NOTIF }
+    let joinNotif = { ...EMPTY_NOTIF }
+    let topViewers = []
+    let chatFollowers = []
     let chatPlatformStatus = { tiktok: null, youtube: null }
     let chatTags = { tiktok: '[TT]', youtube: '[YT]' }
     let chatIcons = { tiktok: '', youtube: '' }
@@ -110,6 +113,7 @@
     // Tandai seq-nya dan tampilkan sebagai idle sampai chat BARU masuk, supaya reload
     // OBS/browser source tidak memutar ulang animasi notif yang sudah lewat.
     let suppressedNotifSeq = null
+    let suppressedJoinNotifSeq = null
     let chatRenderPending = false
     const renderedElements = new Map()
 
@@ -213,11 +217,11 @@
       } else {
         textEl.style.textShadow = 'none'
       }
-      if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && window.ChatFormat?.renderChatList) {
+      if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && el.textBinding?.field !== 'join' && window.ChatFormat?.renderChatList) {
         const items = resolveChatItems(el.textBinding)
         if (items.length > 0) {
           window.ChatFormat.renderChatList(textEl, items, {
-            mode: el.textBinding.field === 'notif' ? 'notif' : 'stack',
+            mode: el.textBinding.field || 'stack',
             tags: chatTags,
             icons: chatIcons,
             textAlign: el.style?.textAlign || 'left',
@@ -521,8 +525,16 @@
       return chatNotif.state === 'showing' ? 'showing' : 'idle'
     }
 
-    /** Seq notif untuk elemen chat notification saat showing (review atau skip antrean); null kalau idle. */
+    function getEffectiveJoinNotifState() {
+      if (suppressedJoinNotifSeq !== null) return 'idle'
+      return joinNotif.state === 'showing' ? 'showing' : 'idle'
+    }
+
+    /** Seq notif untuk elemen chat/join notification saat showing; null kalau idle. */
     function getNotifReviewSeq(el) {
+      if (el.stateBinding?.source === 'joinNotif' || (el.textBinding?.source === 'chat' && el.textBinding?.field === 'join')) {
+        return getEffectiveJoinNotifState() === 'showing' ? joinNotif.seq : null
+      }
       if (getEffectiveNotifState() !== 'showing') return null
       const isNotif = (el.textBinding?.source === 'chat' && el.textBinding?.field === 'notif') || el.stateBinding?.source === 'chatNotif'
       return isNotif ? chatNotif.seq : null
@@ -552,24 +564,34 @@
     }
 
     function resolveChatItems(binding) {
-      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      const field = binding?.field || 'stack'
+      const rawLines = Number(binding?.lines)
+      const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
+      if (field === 'topViewers') return topViewers.slice(0, lineCount)
+      if (field === 'followers') return chatFollowers.slice(-lineCount)
       if (field === 'stack') {
-        const rawLines = Number(binding?.lines)
-        const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
         return chatEvents.slice(-lineCount).filter((event) => String(event?.message || '').trim() !== '')
       }
-      if (!chatNotif.author && !chatNotif.message) return []
-      return [{
-        platform: chatNotif.platform,
-        author: chatNotif.author,
-        message: chatNotif.message,
-        avatar: chatNotif.avatar || '',
-        badges: chatNotif.badges || [],
-      }]
+      if (field === 'notif') {
+        if (!chatNotif.author && !chatNotif.message) return []
+        return [{
+          platform: chatNotif.platform,
+          author: chatNotif.author,
+          message: chatNotif.message,
+          avatar: chatNotif.avatar || '',
+          badges: chatNotif.badges || [],
+        }]
+      }
+      return []
     }
 
     function resolveChatText(binding) {
-      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      const field = binding?.field || 'stack'
+      if (field === 'join') {
+        if (!joinNotif.author) return ''
+        const template = binding?.template || 'Welcome {author}'
+        return formatChatLine({ platform: joinNotif.platform || 'tiktok', author: joinNotif.author, message: '' }, template)
+      }
       const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
       if (field === 'stack') {
         const rawLines = Number(binding?.lines)
@@ -650,6 +672,30 @@
         }
         chatNotif = nextNotif
         if (JSON.stringify(chatNotif) !== previousSignature) changed = true
+      }
+
+      if (payload.joinNotif) {
+        const nextJoin = normalizeNotifSnapshot(payload.joinNotif)
+        const prevJoinSig = JSON.stringify(joinNotif)
+        if (isInitial) {
+          suppressedJoinNotifSeq = nextJoin.state === 'showing' ? nextJoin.seq : null
+        } else if (suppressedJoinNotifSeq !== null) {
+          if (nextJoin.seq !== suppressedJoinNotifSeq || nextJoin.state === 'idle') suppressedJoinNotifSeq = null
+        }
+        joinNotif = nextJoin
+        if (JSON.stringify(joinNotif) !== prevJoinSig) changed = true
+      }
+
+      if (Array.isArray(payload.topViewers)) {
+        const prevTv = JSON.stringify(topViewers)
+        topViewers = payload.topViewers
+        if (JSON.stringify(topViewers) !== prevTv) changed = true
+      }
+
+      if (Array.isArray(payload.followers)) {
+        const prevFl = JSON.stringify(chatFollowers)
+        chatFollowers = payload.followers
+        if (JSON.stringify(chatFollowers) !== prevFl) changed = true
       }
 
       if (payload.status && typeof payload.status === 'object') {
@@ -803,6 +849,8 @@
         // `group` sengaja tidak dipakai: seluruh notifikasi chat memakai satu
         // state machine server-owned. State aktif = idle | showing.
         raw = getEffectiveNotifState()
+      } else if (binding.source === 'joinNotif') {
+        raw = getEffectiveJoinNotifState()
       } else {
         if (!binding.group) return null
         raw = binding.source === 'counter'

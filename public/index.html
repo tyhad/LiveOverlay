@@ -505,6 +505,7 @@
                   <option value="counter">Counter</option>
                   <option value="eventState">Event State</option>
                   <option value="chatNotif">Chat Notification</option>
+                  <option value="joinNotif">Join Live (Welcome)</option>
                 </select>
               </div>
               <div id="prop-vis-name-wrap">
@@ -868,6 +869,9 @@
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                     <option value="stack">Chat Stack</option>
                     <option value="notif">Chat Notification (Author + Message)</option>
+                    <option value="topViewers">Top Viewer List (TikTok)</option>
+                    <option value="followers">New Followers List (TikTok)</option>
+                    <option value="join">Join Live (Welcome)</option>
                   </select>
                 </div>
                 <div id="chat-lines-group">
@@ -1637,7 +1641,7 @@
       const el = scene?.elements?.find(item => item.id === selectedElementId)
       const binding = el?.stateBinding
       const enabled = !!binding?.enabled
-      const isChatNotif = binding?.source === 'chatNotif'
+      const isChatNotif = binding?.source === 'chatNotif' || binding?.source === 'joinNotif'
       document.getElementById('prop-vis-comparator-wrap')?.classList.add('hidden')
       document.getElementById('prop-vis-name-wrap')?.classList.toggle('hidden', isChatNotif)
       document.getElementById('prop-vis-chatnotif-note')?.classList.toggle('hidden', !isChatNotif)
@@ -1657,7 +1661,7 @@
       const binding = el?.stateBinding
       if (!binding?.enabled) return null
       let raw
-      if (binding.source === 'chatNotif') {
+      if (binding.source === 'chatNotif' || binding.source === 'joinNotif') {
         // Di editor tidak ada feed chat live; default ke idle. Preview manual per
         // state tetap bisa dipakai untuk melihat state "showing".
         raw = 'idle'
@@ -1838,6 +1842,9 @@
     let editorChatSeq = 0
     let editorChatInitialized = false
     let editorChatNotif = { state: 'idle', seq: 0, author: '', message: '', platform: '' }
+    let editorJoinNotif = { state: 'idle', seq: 0, author: '', message: '', platform: '' }
+    let editorTopViewers = []
+    let editorFollowers = []
     let editorChatTags = { ...DEFAULT_CHAT_TAGS }
     let editorChatIcons = { tiktok: '', youtube: '' }
     let editorPlatformStatus = { tiktok: null, youtube: null }
@@ -1858,10 +1865,24 @@
     }
 
     function resolveEditorChatItems(binding) {
-      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      const field = binding?.field || 'stack'
+      const rawLines = Number(binding?.lines)
+      const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
+      if (field === 'topViewers') {
+        if (editorTopViewers.length > 0) return editorTopViewers.slice(0, lineCount)
+        return [
+          { rank: 1, author: 'TopViewer1', score: 2500, badges: [{ type: 'gifter', label: 'LV.20' }] },
+          { rank: 2, author: 'TopViewer2', score: 1200, badges: [{ type: 'sub', label: 'SUB' }] },
+        ].slice(0, lineCount)
+      }
+      if (field === 'followers') {
+        if (editorFollowers.length > 0) return editorFollowers.slice(-lineCount)
+        return [
+          { platform: 'tiktok', author: 'FollowerBaru1' },
+          { platform: 'tiktok', author: 'FollowerBaru2', badges: [{ type: 'sub', label: 'SUB' }] },
+        ].slice(-lineCount)
+      }
       if (field === 'stack') {
-        const rawLines = Number(binding?.lines)
-        const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
         const live = editorChatEvents.slice(-lineCount).filter((event) => String(event?.message || '').trim() !== '')
         if (live.length > 0) return live
         return [
@@ -1887,7 +1908,12 @@
     }
 
     function resolveEditorChatText(binding) {
-      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      const field = binding?.field || 'stack'
+      if (field === 'join') {
+        const author = editorJoinNotif.author || 'ViewerBaru'
+        const template = binding?.template || 'Welcome {author}'
+        return formatEditorChatLine({ platform: editorJoinNotif.platform || 'tiktok', author, message: '' }, template)
+      }
       const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
       if (field === 'stack') {
         const rawLines = Number(binding?.lines)
@@ -1937,11 +1963,20 @@
         }
         editorChatSeq = Number(data.seq) || editorChatSeq
         const previousNotif = JSON.stringify(editorChatNotif)
+        const previousJoin = JSON.stringify(editorJoinNotif)
+        const previousTv = JSON.stringify(editorTopViewers)
+        const previousFl = JSON.stringify(editorFollowers)
         const previousStatus = JSON.stringify(editorPlatformStatus)
         editorChatNotif = data.notif && typeof data.notif === 'object' ? data.notif : editorChatNotif
+        if (data.joinNotif && typeof data.joinNotif === 'object') editorJoinNotif = data.joinNotif
+        if (Array.isArray(data.topViewers)) editorTopViewers = data.topViewers
+        if (Array.isArray(data.followers)) editorFollowers = data.followers
         if (data.status && typeof data.status === 'object') editorPlatformStatus = data.status
         const changed = !editorChatInitialized || items.length > 0 ||
           JSON.stringify(editorChatNotif) !== previousNotif ||
+          JSON.stringify(editorJoinNotif) !== previousJoin ||
+          JSON.stringify(editorTopViewers) !== previousTv ||
+          JSON.stringify(editorFollowers) !== previousFl ||
           JSON.stringify(editorPlatformStatus) !== previousStatus
         editorChatInitialized = true
         return changed
@@ -1995,7 +2030,7 @@
       else if (binding?.source === 'text') fillDatalist('control-group-names', getKnownControlGroups('texts'))
 
       const sb = el?.stateBinding
-      if (sb?.source === 'chatNotif') {
+      if (sb?.source === 'chatNotif' || sb?.source === 'joinNotif') {
         fillDatalist('vis-group-names', [])
         fillDatalist('vis-value-options', ['idle', 'showing'])
       } else {
@@ -2166,7 +2201,7 @@
 
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
       document.getElementById('chat-binding-group').classList.toggle('hidden', !isChat)
-      document.getElementById('chat-lines-group').classList.toggle('hidden', binding?.field === 'notif')
+      document.getElementById('chat-lines-group').classList.toggle('hidden', binding?.field === 'notif' || binding?.field === 'join')
       document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
       document.getElementById('clock-binding-group').classList.toggle('hidden', !isClock)
       document.getElementById('control-binding-group').classList.toggle('hidden', !isControl)
@@ -2771,9 +2806,9 @@
             textP.style.textShadow = 'none'
           }
           const text = resolveElementText(el) || ''
-          if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && !el.marquee?.enabled && !el.scroll?.enabled && window.ChatFormat?.renderChatList) {
+          if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && el.textBinding?.field !== 'join' && !el.marquee?.enabled && !el.scroll?.enabled && window.ChatFormat?.renderChatList) {
             window.ChatFormat.renderChatList(textP, resolveEditorChatItems(el.textBinding), {
-              mode: el.textBinding.field === 'notif' ? 'notif' : 'stack',
+              mode: el.textBinding.field || 'stack',
               tags: editorChatTags,
               icons: editorChatIcons,
               textAlign: el.style?.textAlign || 'left',
@@ -3944,9 +3979,11 @@
       document.getElementById('prop-vis-source').addEventListener('change', (e) => {
         const binding = getStateBinding(); if (!binding) return
         binding.source = e.target.value
-        if (binding.source === 'chatNotif' && (!binding.fallbackState || binding.fallbackState === 'default')) {
-          binding.fallbackState = 'idle'
-          document.getElementById('prop-vis-value').value = 'idle'
+        if (binding.source === 'chatNotif' || binding.source === 'joinNotif') {
+          if (!binding.fallbackState || binding.fallbackState === 'default') {
+            binding.fallbackState = 'idle'
+            document.getElementById('prop-vis-value').value = 'idle'
+          }
         }
         updateStateBindingControls()
         refreshControlDatalists()
@@ -4074,7 +4111,7 @@
                 suggestions.appendChild(o)
               }
             }
-          } else if (binding?.source === 'chatNotif') {
+          } else if (binding?.source === 'chatNotif' || binding?.source === 'joinNotif') {
             for (const name of ['idle', 'showing']) {
               if (!el.stateTargets?.[name]) {
                 const o = document.createElement('option')
@@ -4129,9 +4166,12 @@
         const el = getSelected()
         if (!el) return
         const binding = ensureTextBinding(el)
-        binding.field = e.target.value === 'notif' ? 'notif' : 'stack'
-        if (!binding.template) {
-          binding.template = binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}'
+        const valid = ['stack', 'notif', 'topViewers', 'followers', 'join']
+        binding.field = valid.includes(e.target.value) ? e.target.value : 'stack'
+        if (!binding.template || binding.field === 'join') {
+          binding.template = binding.field === 'join'
+            ? 'Welcome {author}'
+            : (binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}')
         }
         if (!Number.isFinite(Number(binding.lines))) binding.lines = 5
         document.getElementById('prop-chat-template').value = binding.template

@@ -75,10 +75,13 @@
     return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
   }
 
-  /** Render daftar pesan chat bergaya TikTok Live (avatar bulat kiri, nama+ikon/badge atas, pesan bawah). */
+  const RANK_COLORS = { 1: '#facc15', 2: '#e2e8f0', 3: '#fb923c' }
+
+  /** Render daftar pesan/viewer/follower bergaya TikTok Live (avatar bulat kiri, nama+ikon/badge atas, pesan/subtext bawah). */
   function renderChatList(target, items, options) {
     const list = document.createElement('div')
-    const mode = options?.mode === 'notif' ? 'single' : 'stack'
+    const rawMode = options?.mode || 'stack'
+    const mode = rawMode === 'notif' ? 'single' : rawMode
     list.className = `tt-chat-list tt-chat-list--${mode}`
     list.style.width = '100%'
     list.style.display = 'flex'
@@ -93,11 +96,25 @@
       const row = document.createElement('div')
       row.className = 'tt-chat-item'
       row.style.display = 'flex'
-      row.style.alignItems = 'flex-start'
+      row.style.alignItems = mode === 'topViewers' ? 'center' : 'flex-start'
       row.style.gap = '0.55em'
       row.style.width = '100%'
       row.style.minWidth = '0'
       if (alignRight) row.style.flexDirection = 'row-reverse'
+
+      if (mode === 'topViewers') {
+        const rank = Number(item.rank) || 1
+        const rankEl = document.createElement('span')
+        rankEl.className = 'tt-chat-rank'
+        rankEl.textContent = `#${rank}`
+        rankEl.style.fontSize = '0.85em'
+        rankEl.style.fontWeight = '800'
+        rankEl.style.minWidth = '1.9em'
+        rankEl.style.textAlign = 'center'
+        rankEl.style.flexShrink = '0'
+        rankEl.style.color = RANK_COLORS[rank] || 'rgba(255, 255, 255, 0.65)'
+        row.appendChild(rankEl)
+      }
 
       const avatarWrap = document.createElement('div')
       avatarWrap.className = 'tt-chat-avatar'
@@ -214,8 +231,19 @@
 
       const msgEl = document.createElement('div')
       msgEl.className = 'tt-chat-msg'
-      msgEl.textContent = stripMarker(item.message || '')
-      msgEl.style.fontSize = '1em'
+      if (mode === 'topViewers') {
+        msgEl.textContent = `${Number(item.score || 0).toLocaleString()} pts`
+        msgEl.style.fontSize = '0.82em'
+        msgEl.style.opacity = '0.85'
+      } else if (mode === 'followers') {
+        msgEl.textContent = 'Followed'
+        msgEl.style.fontSize = '0.85em'
+        msgEl.style.fontWeight = '600'
+        msgEl.style.color = '#34d399'
+      } else {
+        msgEl.textContent = stripMarker(item.message || '')
+        msgEl.style.fontSize = '1em'
+      }
       msgEl.style.lineHeight = '1.3'
       msgEl.style.whiteSpace = 'pre-wrap'
       msgEl.style.wordBreak = 'break-word'

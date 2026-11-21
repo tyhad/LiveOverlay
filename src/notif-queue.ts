@@ -70,7 +70,15 @@ export class NotifQueue {
    */
   step(direction: 'up' | 'down'): NotifSnapshot {
     if (direction === 'down') {
-      if (!this.reviewing) return this.getSnapshot()
+      if (!this.reviewing) {
+        if (this.queue.length === 0) return this.getSnapshot()
+        if (this.timer !== null) {
+          this.cancel(this.timer)
+          this.timer = null
+        }
+        this.showNext()
+        return this.getSnapshot()
+      }
       if (this.reviewIndex + 1 >= this.history.length) return this.exitReview()
       return this.showReview(this.reviewIndex + 1)
     }

@@ -521,9 +521,9 @@
       return chatNotif.state === 'showing' ? 'showing' : 'idle'
     }
 
-    /** Seq notif untuk elemen chat notification saat mode review; null kalau tidak review. */
+    /** Seq notif untuk elemen chat notification saat showing (review atau skip antrean); null kalau idle. */
     function getNotifReviewSeq(el) {
-      if (!chatNotif.reviewing) return null
+      if (getEffectiveNotifState() !== 'showing') return null
       const isNotif = (el.textBinding?.source === 'chat' && el.textBinding?.field === 'notif') || el.stateBinding?.source === 'chatNotif'
       return isNotif ? chatNotif.seq : null
     }

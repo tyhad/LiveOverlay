@@ -41,4 +41,11 @@ test('review steps through shown notifications and resumes live', () => {
   const live = queue.step('down')
   assert.equal(live.reviewing, false)
   assert.equal(live.seq, 4, 'keluar review langsung menampilkan antrean')
+
+  queue.push(event(5))
+  assert.equal(queue.getSnapshot().queueLength, 1)
+  const skipped = queue.step('down')
+  assert.equal(skipped.reviewing, false)
+  assert.equal(skipped.seq, 5, 'step down saat live memaksa chat antrean tampil tanpa tunggu jeda')
+  assert.equal(skipped.queueLength, 0)
 })

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ChatHub } from '../src/chat-hub.ts'
+import { NotifQueue } from '../src/notif-queue.ts'
 
 test('dedupe, monotonic sequence, bounded ring, and reset feed', () => {
   let writes = 0
-  const hub = new ChatHub({ capacity: 3, onChat: () => { writes++ } })
+  const joinNotif = new NotifQueue()
+  const hub = new ChatHub({ capacity: 3, onChat: () => { writes++ }, joinNotif })
   assert.equal(hub.push({ platform: 'tiktok', id: '1', author: 'a', message: 'one' }).seq, 1)
   assert.equal(hub.push({ platform: 'tiktok', id: '1', author: 'a', message: 'one' }), null)
   for (const id of ['2', '3', '4', '5']) hub.push({ platform: 'youtube', id, author: 'b', message: id })
@@ -23,4 +25,21 @@ test('dedupe, monotonic sequence, bounded ring, and reset feed', () => {
   })
   assert.equal(withMeta.avatar, 'https://example.com/a.jpg')
   assert.deepEqual(withMeta.badges, [{ type: 'mod', label: 'MOD' }])
+
+  hub.setTopViewers([
+    { rank: 2, author: 'second', score: 200 },
+    { rank: 1, author: 'first', score: 500, avatar: 'https://example.com/1.jpg' },
+  ])
+  assert.equal(hub.pushFollower({ platform: 'tiktok', id: 'f1', author: 'newbie' }).seq, 1)
+  assert.equal(hub.pushFollower({ platform: 'tiktok', id: 'f1', author: 'newbie' }), null)
+  assert.equal(hub.pushJoin({ platform: 'tiktok', id: 'j1', author: 'joiner1' }).seq, 1)
+  assert.equal(hub.pushJoin({ platform: 'tiktok', id: 'j1', author: 'joiner1' }), null)
+
+  const feed = hub.since(5)
+  assert.deepEqual(feed.topViewers.map(v => v.author), ['first', 'second'])
+  assert.equal(feed.followers.length, 1)
+  assert.equal(feed.followers[0].author, 'newbie')
+  assert.equal(feed.joinNotif.state, 'showing')
+  assert.equal(feed.joinNotif.author, 'joiner1')
+  joinNotif.stop()
 })

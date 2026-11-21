@@ -16,6 +16,24 @@ export interface ChatEvent {
   badges?: ChatBadge[]
 }
 
+export interface TopViewerEntry {
+  rank: number
+  author: string
+  score: number
+  avatar?: string
+  badges?: ChatBadge[]
+}
+
+export interface FollowerEvent {
+  seq: number
+  id: string
+  platform: ChatPlatform
+  author: string
+  avatar?: string
+  badges?: ChatBadge[]
+  ts: number
+}
+
 export interface NotifSnapshot {
   state: 'idle' | 'showing'
   seq: number

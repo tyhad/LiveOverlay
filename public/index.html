@@ -1838,6 +1838,8 @@
     // server supaya binding Chat Stack / Chat Notification bisa dipreview.
     const EDITOR_CHAT_BUFFER_LIMIT = 50
     const DEFAULT_CHAT_TAGS = { tiktok: '[TT]', youtube: '[YT]' }
+    const VALID_CHAT_FIELDS = ['stack', 'notif', 'topViewers', 'followers', 'join']
+    const CHAT_FIELD_LABELS = { stack: 'Chat Stack', notif: 'Chat Notification', topViewers: 'Top Viewers', followers: 'New Followers', join: 'Join Live' }
     let editorChatEvents = []
     let editorChatSeq = 0
     let editorChatInitialized = false
@@ -1924,6 +1926,7 @@
           .filter((line) => line.trim() !== '')
           .join('\n')
       }
+      if (field !== 'notif') return ''
       if (!editorChatNotif.author && !editorChatNotif.message) return ''
       return formatEditorChatLine({ platform: editorChatNotif.platform, author: editorChatNotif.author, message: editorChatNotif.message }, template)
     }
@@ -2169,10 +2172,13 @@
         return `Source: Timer "${binding.group || '-'}" | Status: ${state} | Dikontrol dari /control`
       }
       if (binding?.source === 'chat') {
-        const isNotif = binding.field === 'notif'
-        const notifState = editorChatNotif?.state === 'showing' ? 'showing' : 'idle'
-        return `Source: Chat ${isNotif ? 'Notification' : 'Stack'} | ${editorChatEvents.length} chat di feed` +
-          (isNotif ? ` | State: ${notifState}` : '')
+        const field = VALID_CHAT_FIELDS.includes(binding.field) ? binding.field : 'stack'
+        const label = CHAT_FIELD_LABELS[field] || 'Chat Stack'
+        if (field === 'notif') {
+          const notifState = editorChatNotif?.state === 'showing' ? 'showing' : 'idle'
+          return `Source: ${label} | ${editorChatEvents.length} chat di feed | State: ${notifState}`
+        }
+        return `Source: ${label} | ${editorChatEvents.length} chat di feed`
       }
       if (binding?.source === 'f1data') {
         if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
@@ -3177,7 +3183,8 @@
         const platformField = binding.source === 'platform' ? (binding.field || 'statusTiktok') : ''
         syncDeprecatedPlatformFieldOption(platformField)
         document.getElementById('prop-text-binding-field').value = platformField || 'statusTiktok'
-        document.getElementById('prop-chat-field').value = binding.source === 'chat' && binding.field === 'notif' ? 'notif' : 'stack'
+        document.getElementById('prop-chat-field').value =
+          binding.source === 'chat' && VALID_CHAT_FIELDS.includes(binding.field) ? binding.field : 'stack'
         document.getElementById('prop-chat-lines').value = Math.max(1, Math.min(30, Number(binding.lines) || 5))
         document.getElementById('prop-chat-template').value = binding.template || ''
         document.getElementById('prop-text-binding-format').value = binding.format || 'raw'
@@ -3904,10 +3911,12 @@
           binding.format = 'raw'
         }
         if (newSource === 'chat') {
-          if (!['stack', 'notif'].includes(binding.field)) binding.field = 'stack'
+          if (!VALID_CHAT_FIELDS.includes(binding.field)) binding.field = 'stack'
           if (!Number.isFinite(Number(binding.lines))) binding.lines = 5
           if (!binding.template) {
-            binding.template = binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}'
+            binding.template = binding.field === 'join'
+              ? 'Welcome {author}'
+              : (binding.field === 'notif' ? '{author}\\n{message}' : '{platformTag} {author}: {message}')
           }
         } else if (newSource === 'platform') {
           const validFields = ['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube', ...Object.keys(DEPRECATED_PLATFORM_FIELDS)]
@@ -4166,8 +4175,7 @@
         const el = getSelected()
         if (!el) return
         const binding = ensureTextBinding(el)
-        const valid = ['stack', 'notif', 'topViewers', 'followers', 'join']
-        binding.field = valid.includes(e.target.value) ? e.target.value : 'stack'
+        binding.field = VALID_CHAT_FIELDS.includes(e.target.value) ? e.target.value : 'stack'
         if (!binding.template || binding.field === 'join') {
           binding.template = binding.field === 'join'
             ? 'Welcome {author}'

@@ -392,6 +392,11 @@ test('topViewers, followers, dan join live (Welcome {author} + joinNotif) merend
   assert.equal(o.node().querySelector('.tt-chat-author')?.textContent, 'FollowerBaru')
   assert.equal(o.node().querySelector('.tt-chat-msg')?.textContent, 'Followed')
 
+  // Saat followers kosong, tidak boleh jatuh ke teks chatNotif
+  o.feed({ seq: 2, items: [], notif: { state: 'showing', seq: 2, author: 'ChatUser', message: 'pesan notif', platform: 'tiktok', showUntil: 2, queueLength: 0 }, followers: [] })
+  o.render(chatScene({ textBinding: { enabled: true, source: 'chat', field: 'followers', lines: 5, fallback: 'Belum ada follower' } }))
+  assert.equal(o.node().textContent, 'Belum ada follower')
+
   o.render(chatScene({
     textBinding: { enabled: true, source: 'chat', field: 'join', template: 'Welcome {author}' },
     stateBinding: { enabled: true, source: 'joinNotif', fallbackState: 'idle' },

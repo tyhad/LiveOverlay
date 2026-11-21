@@ -602,6 +602,7 @@
           .filter((line) => line.trim() !== '')
           .join('\n')
       }
+      if (field !== 'notif') return ''
       if (!chatNotif.author && !chatNotif.message) return ''
       return formatChatLine({ platform: chatNotif.platform, author: chatNotif.author, message: chatNotif.message }, template)
     }

@@ -354,6 +354,25 @@
     max-width: 720px;
     margin: 0 auto 16px;
   }
+  .archive-root > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .archive-root > summary::-webkit-details-marker { display: none; }
+  .archive-root > summary::after { content: '▸'; font-size: 13px; color: var(--text-dim); }
+  .archive-root[open] > summary { margin-bottom: 10px; }
+  .archive-root[open] > summary::after { content: '▾'; }
+  .archive-root > summary h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
   .archive-head {
     display: flex;
     align-items: flex-start;
@@ -539,15 +558,18 @@
   <!-- Panel arsip sengaja DI LUAR #app: render() control-state berjalan tiap detik
        dan tidak boleh menghapus form/daftar sesi yang sedang dipakai. -->
   <section id="chat-archive-panel" class="archive-panel hidden">
-    <div class="archive-head">
-      <div>
-        <h2>Chat Archive</h2>
-        <p class="archive-sub">Rekaman chat per sesi dan export subtitle (SRT/VTT/CSV/JSON).</p>
-      </div>
-      <button id="archive-refresh-btn" class="archive-btn" title="Muat ulang daftar sesi">↻</button>
-    </div>
+    <details class="archive-root">
+      <summary>
+        <div>
+          <h2>Chat Archive</h2>
+          <p class="archive-sub">Rekaman chat per sesi dan export subtitle (SRT/VTT/CSV/JSON).</p>
+        </div>
+      </summary>
 
-    <div id="archive-active-summary" class="archive-active">Memuat sesi arsip…</div>
+      <div class="archive-head">
+        <div id="archive-active-summary" class="archive-active" style="flex:1;margin-bottom:0">Memuat sesi arsip…</div>
+        <button id="archive-refresh-btn" class="archive-btn" title="Muat ulang daftar sesi">↻</button>
+      </div>
 
     <div class="archive-label-row">
       <span class="archive-label">Daftar sesi</span>
@@ -616,6 +638,7 @@
       </div>
       <p class="archive-status" id="archive-align-status">Offset hasil hitungan otomatis masuk ke kolom Offset di
         atas.</p>
+    </details>
     </details>
   </section>
 
@@ -1404,11 +1427,12 @@
       const reviewing = notif.reviewing === true
       state.textContent = reviewing ? 'REVIEW' : 'LIVE'
       state.classList.toggle('reviewing', reviewing)
+      const queueLen = Number(notif.queueLength) || 0
       up.disabled = total === 0 || (reviewing && notif.reviewIndex <= 0)
-      down.disabled = !reviewing
+      down.disabled = !reviewing && queueLen === 0
       meta.textContent = reviewing
-        ? `Chat ${Number(notif.reviewIndex) + 1} / ${total} · antre ${Number(notif.queueLength) || 0}`
-        : `Chat terbaru · antre ${Number(notif.queueLength) || 0}`
+        ? `Chat ${Number(notif.reviewIndex) + 1} / ${total} · antre ${queueLen}`
+        : `Chat terbaru · antre ${queueLen}`
     }
 
     async function stepChatReview(direction) {

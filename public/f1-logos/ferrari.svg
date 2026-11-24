@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="76" viewBox="0 0 64 76" fill="none">
+  <path d="M8 6C8 4 10 3 32 3C54 3 56 4 56 6V38C56 56 42 67 32 73C22 67 8 56 8 38V6Z" fill="#FFF200" stroke="#18181B" stroke-width="2.5"/>
+  <rect x="10.5" y="6" width="43" height="3.2" fill="#009246"/>
+  <rect x="10.5" y="9.2" width="43" height="3.2" fill="#FFFFFF"/>
+  <rect x="10.5" y="12.4" width="43" height="3.2" fill="#CE2B37"/>
+  <path d="M35 21C32 21 29 23 28 26L23 24L25 29C22 32 21 36 22 40L19 45L24 44C26 47 28 50 28 55H34C34 50 37 46 40 43C43 40 44 35 42 30C44 29 45 27 44 25C42 26 40 26 39 25C39 22 37 21 35 21Z" fill="#111111"/>
+  <text x="32" y="65" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="11" fill="#111111" letter-spacing="1">SF</text>
+</svg>

@@ -70,7 +70,15 @@ export class NotifQueue {
    */
   step(direction: 'up' | 'down'): NotifSnapshot {
     if (direction === 'down') {
-      if (!this.reviewing) return this.getSnapshot()
+      if (!this.reviewing) {
+        if (this.queue.length === 0) return this.getSnapshot()
+        if (this.timer !== null) {
+          this.cancel(this.timer)
+          this.timer = null
+        }
+        this.showNext()
+        return this.getSnapshot()
+      }
       if (this.reviewIndex + 1 >= this.history.length) return this.exitReview()
       return this.showReview(this.reviewIndex + 1)
     }
@@ -98,7 +106,17 @@ export class NotifQueue {
     this.history.push(event)
     while (this.history.length > HISTORY_LIMIT) this.history.shift()
     const showUntil = this.now() + this.displayMs
-    this.snapshot = { state: 'showing', seq: event.seq, author: event.author, message: event.message, platform: event.platform, showUntil, queueLength: this.queue.length }
+    this.snapshot = {
+      state: 'showing',
+      seq: event.seq,
+      author: event.author,
+      message: event.message,
+      platform: event.platform,
+      avatar: event.avatar || '',
+      badges: event.badges || [],
+      showUntil,
+      queueLength: this.queue.length,
+    }
     this.timer = this.schedule(() => {
       this.snapshot = { ...this.snapshot, state: 'idle', showUntil: 0, queueLength: this.queue.length }
       this.timer = this.schedule(() => { this.timer = null; this.showNext() }, this.gapMs)
@@ -115,7 +133,17 @@ export class NotifQueue {
       this.reviewing = true
     }
     this.reviewIndex = index
-    this.snapshot = { state: 'showing', seq: event.seq, author: event.author, message: event.message, platform: event.platform, showUntil: 0, queueLength: this.queue.length }
+    this.snapshot = {
+      state: 'showing',
+      seq: event.seq,
+      author: event.author,
+      message: event.message,
+      platform: event.platform,
+      avatar: event.avatar || '',
+      badges: event.badges || [],
+      showUntil: 0,
+      queueLength: this.queue.length,
+    }
     return this.getSnapshot()
   }
 

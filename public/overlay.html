@@ -8,13 +8,14 @@
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="/animation-engine.js"></script>
+  <script src="/f1-radio-theme.js"></script>
   <script src="/chat-format.js"></script>
   <script src="/text-binding.js"></script>
   <!-- Google Fonts for Stream Overlays -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+    href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Titillium+Web:wght@600;700;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
   
   <style>
     * {
@@ -98,18 +99,25 @@
     // snapshot server supaya beberapa browser source selalu sinkron.
     const CHAT_BUFFER_LIMIT = 50
     const CHAT_FEED_INTERVAL_MS = 500
-    const EMPTY_NOTIF = Object.freeze({ state: 'idle', seq: 0, author: '', message: '', platform: '', showUntil: 0, queueLength: 0, reviewing: false })
+    const EMPTY_NOTIF = Object.freeze({ state: 'idle', seq: 0, author: '', message: '', platform: '', avatar: '', badges: [], showUntil: 0, queueLength: 0, reviewing: false })
     let chatEvents = []
     let chatFeedSeq = 0
     let chatNotif = { ...EMPTY_NOTIF }
+    let joinNotif = { ...EMPTY_NOTIF }
+    let topViewers = []
+    let chatFollowers = []
     let chatPlatformStatus = { tiktok: null, youtube: null }
     let chatTags = { tiktok: '[TT]', youtube: '[YT]' }
     let chatIcons = { tiktok: '', youtube: '' }
+    let f1Logos = {}
+    let f1RadioKeywords = { teams: {}, drivers: [] }
+    let lastF1RadioConfigHash = ''
     let chatFeedInitialized = false
     // Saat halaman di-load ulang, snapshot notif yang masih "showing" adalah chat lama.
     // Tandai seq-nya dan tampilkan sebagai idle sampai chat BARU masuk, supaya reload
     // OBS/browser source tidak memutar ulang animasi notif yang sudah lewat.
     let suppressedNotifSeq = null
+    let suppressedJoinNotifSeq = null
     let chatRenderPending = false
     const renderedElements = new Map()
 
@@ -212,6 +220,25 @@
         textEl.style.textShadow = `${tsX}px ${tsY}px ${tsBlur}px ${el.style.textShadowColor}`
       } else {
         textEl.style.textShadow = 'none'
+      }
+      if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && el.textBinding?.field !== 'join' && window.ChatFormat?.renderChatList) {
+        const items = resolveChatItems(el.textBinding)
+        if (items.length > 0) {
+          window.ChatFormat.renderChatList(textEl, items, {
+            mode: el.textBinding.field || 'stack',
+            displayStyle: el.textBinding.displayStyle || 'tiktok',
+            tags: chatTags,
+            icons: chatIcons,
+            textAlign: el.style?.textAlign || 'left',
+            f1Logos,
+            f1Drivers: f1Data?.driverStandings || [],
+            f1RadioKeywords,
+            boxHeight: el.height,
+            fontSize: el.style?.fontSize || 18,
+            padding: el.style?.padding || 0,
+          })
+          return
+        }
       }
       if (window.ChatFormat?.renderText) window.ChatFormat.renderText(textEl, text, { tags: chatTags, icons: chatIcons })
       else textEl.textContent = text
@@ -481,6 +508,8 @@
         platform: event.platform === 'youtube' ? 'youtube' : 'tiktok',
         author: String(event.author || ''),
         message: String(event.message || ''),
+        avatar: typeof event.avatar === 'string' ? event.avatar : '',
+        badges: Array.isArray(event.badges) ? event.badges : [],
         ts: Number(event.ts) || 0,
       }
     }
@@ -494,6 +523,8 @@
         author: String(snapshot?.author || ''),
         message: String(snapshot?.message || ''),
         platform,
+        avatar: typeof snapshot?.avatar === 'string' ? snapshot.avatar : '',
+        badges: Array.isArray(snapshot?.badges) ? snapshot.badges : [],
         showUntil: Number(snapshot?.showUntil) || 0,
         queueLength: Math.max(0, Number(snapshot?.queueLength) || 0),
         reviewing: snapshot?.reviewing === true,
@@ -505,9 +536,17 @@
       return chatNotif.state === 'showing' ? 'showing' : 'idle'
     }
 
-    /** Seq notif untuk elemen chat notification saat mode review; null kalau tidak review. */
+    function getEffectiveJoinNotifState() {
+      if (suppressedJoinNotifSeq !== null) return 'idle'
+      return joinNotif.state === 'showing' ? 'showing' : 'idle'
+    }
+
+    /** Seq notif untuk elemen chat/join notification saat showing; null kalau idle. */
     function getNotifReviewSeq(el) {
-      if (!chatNotif.reviewing) return null
+      if (el.stateBinding?.source === 'joinNotif' || (el.textBinding?.source === 'chat' && el.textBinding?.field === 'join')) {
+        return getEffectiveJoinNotifState() === 'showing' ? joinNotif.seq : null
+      }
+      if (getEffectiveNotifState() !== 'showing') return null
       const isNotif = (el.textBinding?.source === 'chat' && el.textBinding?.field === 'notif') || el.stateBinding?.source === 'chatNotif'
       return isNotif ? chatNotif.seq : null
     }
@@ -535,8 +574,35 @@
       return { author: liveStats.latestChatAuthor || '', message: liveStats.latestChatMessage || '' }
     }
 
+    function resolveChatItems(binding) {
+      const field = binding?.field || 'stack'
+      const rawLines = Number(binding?.lines)
+      const lineCount = Math.max(1, Math.min(30, Number.isFinite(rawLines) && rawLines > 0 ? Math.round(rawLines) : 5))
+      if (field === 'topViewers') return topViewers.slice(0, lineCount)
+      if (field === 'followers') return chatFollowers.slice(-lineCount)
+      if (field === 'stack') {
+        return chatEvents.slice(-lineCount).filter((event) => String(event?.message || '').trim() !== '')
+      }
+      if (field === 'notif') {
+        if (!chatNotif.author && !chatNotif.message) return []
+        return [{
+          platform: chatNotif.platform,
+          author: chatNotif.author,
+          message: chatNotif.message,
+          avatar: chatNotif.avatar || '',
+          badges: chatNotif.badges || [],
+        }]
+      }
+      return []
+    }
+
     function resolveChatText(binding) {
-      const field = binding?.field === 'notif' ? 'notif' : 'stack'
+      const field = binding?.field || 'stack'
+      if (field === 'join') {
+        if (!joinNotif.author) return ''
+        const template = binding?.template || 'Welcome {author}'
+        return formatChatLine({ platform: joinNotif.platform || 'tiktok', author: joinNotif.author, message: '' }, template)
+      }
       const template = binding?.template || (field === 'stack' ? '{platformTag} {author}: {message}' : '{author}\\n{message}')
       if (field === 'stack') {
         const rawLines = Number(binding?.lines)
@@ -547,6 +613,7 @@
           .filter((line) => line.trim() !== '')
           .join('\n')
       }
+      if (field !== 'notif') return ''
       if (!chatNotif.author && !chatNotif.message) return ''
       return formatChatLine({ platform: chatNotif.platform, author: chatNotif.author, message: chatNotif.message }, template)
     }
@@ -617,6 +684,30 @@
         }
         chatNotif = nextNotif
         if (JSON.stringify(chatNotif) !== previousSignature) changed = true
+      }
+
+      if (payload.joinNotif) {
+        const nextJoin = normalizeNotifSnapshot(payload.joinNotif)
+        const prevJoinSig = JSON.stringify(joinNotif)
+        if (isInitial) {
+          suppressedJoinNotifSeq = nextJoin.state === 'showing' ? nextJoin.seq : null
+        } else if (suppressedJoinNotifSeq !== null) {
+          if (nextJoin.seq !== suppressedJoinNotifSeq || nextJoin.state === 'idle') suppressedJoinNotifSeq = null
+        }
+        joinNotif = nextJoin
+        if (JSON.stringify(joinNotif) !== prevJoinSig) changed = true
+      }
+
+      if (Array.isArray(payload.topViewers)) {
+        const prevTv = JSON.stringify(topViewers)
+        topViewers = payload.topViewers
+        if (JSON.stringify(topViewers) !== prevTv) changed = true
+      }
+
+      if (Array.isArray(payload.followers)) {
+        const prevFl = JSON.stringify(chatFollowers)
+        chatFollowers = payload.followers
+        if (JSON.stringify(chatFollowers) !== prevFl) changed = true
       }
 
       if (payload.status && typeof payload.status === 'object') {
@@ -770,6 +861,8 @@
         // `group` sengaja tidak dipakai: seluruh notifikasi chat memakai satu
         // state machine server-owned. State aktif = idle | showing.
         raw = getEffectiveNotifState()
+      } else if (binding.source === 'joinNotif') {
+        raw = getEffectiveJoinNotifState()
       } else {
         if (!binding.group) return null
         raw = binding.source === 'counter'
@@ -1018,6 +1111,7 @@
           if (tiktokTag) chatTags.tiktok = tiktokTag
           if (youtubeTag) chatTags.youtube = youtubeTag
         }
+        let configChanged = false
         if (data?.chatIcons && typeof data.chatIcons === 'object') {
           const nextIcons = {
             tiktok: String(data.chatIcons.tiktok || ''),
@@ -1025,9 +1119,23 @@
           }
           if (nextIcons.tiktok !== chatIcons.tiktok || nextIcons.youtube !== chatIcons.youtube) {
             chatIcons = nextIcons
-            if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
+            configChanged = true
           }
         }
+        const nextF1Config = {
+          f1Logos: data?.f1Logos && typeof data.f1Logos === 'object' ? data.f1Logos : {},
+          f1RadioKeywords: data?.f1RadioKeywords && typeof data.f1RadioKeywords === 'object'
+            ? data.f1RadioKeywords
+            : { teams: {}, drivers: [] },
+        }
+        const nextF1Hash = JSON.stringify(nextF1Config)
+        if (nextF1Hash !== lastF1RadioConfigHash) {
+          lastF1RadioConfigHash = nextF1Hash
+          f1Logos = nextF1Config.f1Logos
+          f1RadioKeywords = nextF1Config.f1RadioKeywords
+          configChanged = true
+        }
+        if (configChanged && currentScene) requestAnimationFrame(() => renderScene(currentScene))
       } catch (err) {
         console.error('Failed to sync platform connector config:', err)
       }

@@ -17,6 +17,7 @@ import { SceneStore, createDefaultScene, writeFileAtomic, type SceneData } from 
 
 const F1_DB_PATH = process.env.F1_DB_PATH || '../F1GStats/f1gstats.sqlite'
 const F1_TEMPLATES_FILE = 'f1-text-templates.json'
+const F1_RADIO_KEYWORDS_FILE = 'f1-radio-keywords.json'
 const SCENES_FILE = 'scenes.json'
 const LIVE_STATS_FILE = 'live-stats.json'
 const EXAMPLE_LIVE_STATS_FILE = 'live-stats.example.json'
@@ -41,6 +42,12 @@ const ASSET_MIME_TYPES = new Map([
 ])
 const CHAT_ICON_DIRECTORY = 'public/chat-icons'
 const CHAT_ICON_EXTENSIONS = ['svg', 'png', 'webp', 'ico']
+const F1_LOGO_DIRECTORY = 'public/f1-logos'
+const F1_LOGO_EXTENSIONS = ['png', 'webp', 'svg']
+const F1_LOGO_TEAM_IDS = [
+  'f1', 'ferrari', 'redbull', 'mclaren', 'mercedes', 'astonmartin',
+  'alpine', 'williams', 'racingbulls', 'haas', 'audi', 'cadillac',
+]
 
 /** Ikon platform opsional: taruh file di public/chat-icons/<platform>.<ext>.
  *  Kalau tidak ada, `{platformTag}` tetap memakai teks tag dari config. */
@@ -58,13 +65,104 @@ async function discoverChatIcons(): Promise<Record<string, string>> {
   return icons
 }
 
+/** Logo tim F1 Team Radio: taruh file di public/f1-logos/<teamId>.<ext>.
+ *  Prioritas .png -> .webp -> .svg agar user cukup drop PNG resmi tanpa hapus SVG bawaan. */
+async function discoverF1Logos(): Promise<Record<string, string>> {
+  const logos: Record<string, string> = {}
+  for (const teamId of F1_LOGO_TEAM_IDS) {
+    for (const ext of F1_LOGO_EXTENSIONS) {
+      const filename = `${teamId}.${ext}`
+      if (await Bun.file(`${F1_LOGO_DIRECTORY}/${filename}`).exists()) {
+        logos[teamId] = `/f1-logos/${filename}`
+        break
+      }
+    }
+  }
+  return logos
+}
+
+interface F1RadioKeywordsConfig {
+  teams: Record<string, string[]>
+  drivers: Array<{
+    name: string
+    shortName?: string
+    number?: string
+    teamId: string
+    abbr?: string
+    keywords?: string[]
+    caseSensitiveKeywords?: string[]
+  }>
+}
+
+const EMPTY_F1_RADIO_KEYWORDS: F1RadioKeywordsConfig = { teams: {}, drivers: [] }
+let cachedF1RadioKeywords: F1RadioKeywordsConfig = EMPTY_F1_RADIO_KEYWORDS
+let cachedF1RadioKeywordsMtimeMs: number | null = null
+
+/** Keyword custom opsional untuk F1 Team Radio dari `f1-radio-keywords.json`.
+ *  Auto-reload berdasarkan mtime (persis pola `f1-text-templates.json`). */
+function getF1RadioKeywords(): F1RadioKeywordsConfig {
+  try {
+    const stat = statSync(F1_RADIO_KEYWORDS_FILE)
+    if (cachedF1RadioKeywordsMtimeMs === stat.mtimeMs) return cachedF1RadioKeywords
+    const raw = JSON.parse(readFileSync(F1_RADIO_KEYWORDS_FILE, 'utf-8'))
+    const teams: Record<string, string[]> = {}
+    if (raw?.teams && typeof raw.teams === 'object') {
+      for (const [teamId, list] of Object.entries(raw.teams)) {
+        if (Array.isArray(list)) {
+          teams[String(teamId).trim().toLowerCase()] = list
+            .map((k) => String(k || '').trim())
+            .filter(Boolean)
+        }
+      }
+    }
+    const drivers: F1RadioKeywordsConfig['drivers'] = []
+    if (Array.isArray(raw?.drivers)) {
+      for (const d of raw.drivers) {
+        if (!d || typeof d !== 'object') continue
+        const teamId = String((d as any).teamId || '').trim().toLowerCase()
+        const name = String((d as any).name || '').trim()
+        if (!teamId || !name) continue
+        drivers.push({
+          name,
+          shortName: (d as any).shortName ? String((d as any).shortName).trim() : undefined,
+          number: (d as any).number !== undefined ? String((d as any).number).trim() : undefined,
+          teamId,
+          abbr: (d as any).abbr ? String((d as any).abbr).trim() : undefined,
+          keywords: Array.isArray((d as any).keywords)
+            ? (d as any).keywords.map((k: unknown) => String(k || '').trim()).filter(Boolean)
+            : [],
+          caseSensitiveKeywords: Array.isArray((d as any).caseSensitiveKeywords)
+            ? (d as any).caseSensitiveKeywords.map((k: unknown) => String(k || '').trim()).filter(Boolean)
+            : [],
+        })
+      }
+    }
+    cachedF1RadioKeywords = { teams, drivers }
+    cachedF1RadioKeywordsMtimeMs = stat.mtimeMs
+    return cachedF1RadioKeywords
+  } catch {
+    if (cachedF1RadioKeywordsMtimeMs !== null) {
+      // File dihapus -> reset ke kosong agar tidak menyisakan keyword lama.
+      try {
+        statSync(F1_RADIO_KEYWORDS_FILE)
+      } catch {
+        cachedF1RadioKeywords = EMPTY_F1_RADIO_KEYWORDS
+        cachedF1RadioKeywordsMtimeMs = null
+      }
+    }
+    return cachedF1RadioKeywords
+  }
+}
+
 const chatNotifQueue = new NotifQueue()
+const joinNotifQueue = new NotifQueue()
 const chatArchive = new ChatArchiveManager()
 // Di-set dari config v2 sebelum connector mulai. Saat false, chat tetap tampil
 // di overlay tetapi tidak ditulis ke chat-archive/.
 let chatArchiveEnabled = false
 const chatHub = new ChatHub({
   notif: chatNotifQueue,
+  joinNotif: joinNotifQueue,
   onChat: (event: ChatEvent) => {
     if (chatArchiveEnabled) chatArchive.appendChat(event)
   },
@@ -771,6 +869,7 @@ function currentPlatformStatus(platform: PlatformType): PlatformStatus {
 
 function schedulePlatformConnectors(config: PlatformConfigV2): void {
   chatNotifQueue.configure(config.notif)
+  joinNotifQueue.configure(config.notif)
   const anyEnabled = config.tiktok.enabled || config.youtube.enabled
   chatArchiveEnabled = Boolean(config.archive.enabled)
   // D4: sesi arsip hidup selama minimal satu connector aktif dan arsip tidak
@@ -850,7 +949,30 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
         return { success: false, message: 'Not found' }
       }
 
+      const kind = body.kind || 'chat'
       const platform = body.platform === 'youtube' ? 'youtube' : 'tiktok'
+      const author = String(body.author || 'tester').trim() || 'tester'
+      const avatar = typeof body.avatar === 'string' ? body.avatar : undefined
+      const badges = Array.isArray(body.badges)
+        ? body.badges
+            .filter((b: any) => b && typeof b.type === 'string' && typeof b.label === 'string')
+            .map((b: any) => ({ type: b.type, label: String(b.label) }))
+        : undefined
+
+      if (kind === 'topViewers') {
+        const viewers = Array.isArray(body.topViewers) ? body.topViewers : [{ rank: 1, author, score: 1500, avatar, badges }]
+        chatHub.setTopViewers(viewers)
+        return { success: true, topViewers: chatHub.since().topViewers }
+      }
+      if (kind === 'follower') {
+        const event = chatHub.pushFollower({ id: `dev-f-${Date.now()}-${crypto.randomUUID()}`, platform: 'tiktok', author, avatar, badges })
+        return { success: true, event }
+      }
+      if (kind === 'join') {
+        const event = chatHub.pushJoin({ id: `dev-j-${Date.now()}-${crypto.randomUUID()}`, platform: 'tiktok', author, avatar, badges })
+        return { success: true, event, joinNotif: joinNotifQueue.getSnapshot() }
+      }
+
       const message = String(body.message || '').trim()
       if (!message) {
         set.status = 400
@@ -860,16 +982,22 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
       const event = chatHub.push({
         id: `dev-${Date.now()}-${crypto.randomUUID()}`,
         platform,
-        author: String(body.author || 'tester').trim() || 'tester',
+        author,
         message,
+        avatar,
+        badges,
       })
       return { success: true, event, notif: chatNotifQueue.getSnapshot() }
     },
     {
       body: t.Object({
+        kind: t.Optional(t.String()),
         platform: t.Optional(t.String()),
         author: t.Optional(t.String()),
-        message: t.String(),
+        message: t.Optional(t.String()),
+        avatar: t.Optional(t.String()),
+        badges: t.Optional(t.Array(t.Object({ type: t.String(), label: t.String() }))),
+        topViewers: t.Optional(t.Array(t.Any())),
       }),
     }
   )
@@ -975,6 +1103,8 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
     return {
       configV2,
       chatIcons: await discoverChatIcons(),
+      f1Logos: await discoverF1Logos(),
+      f1RadioKeywords: getF1RadioKeywords(),
       statusV2: { tiktok: currentPlatformStatus('tiktok'), youtube: currentPlatformStatus('youtube') },
     }
   })
@@ -1311,8 +1441,8 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
       }
 
       try {
-        const payload = body as { scene?: SceneData; originalId?: string }
-        const updated = await sceneStore.save((payload.scene || body) as SceneData, payload.originalId)
+        const payload = body as { scene?: SceneData; originalId?: string | null }
+        const updated = await sceneStore.save((payload.scene || body) as SceneData, payload.originalId ?? undefined)
         return {
           success: true,
           message: 'Scene saved successfully',
@@ -1326,7 +1456,7 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
     {
       body: t.Object({
         scene: t.Any(),
-        originalId: t.Optional(t.String()),
+        originalId: t.Optional(t.Nullable(t.String())),
       }),
     }
   )
@@ -1346,6 +1476,20 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
       }
     }
   )
+  .get('/f1-logos/:filename', async ({ params, set }) => {
+    const filename = basename(params.filename || '')
+    if (!/^[a-z0-9_-]+\.(png|webp|svg)$/i.test(filename)) {
+      set.status = 404
+      return 'Not found'
+    }
+    const file = Bun.file(`${F1_LOGO_DIRECTORY}/${filename}`)
+    if (!(await file.exists())) {
+      set.status = 404
+      return 'Not found'
+    }
+    set.headers['Cache-Control'] = 'no-cache'
+    return file
+  })
   .use(
     staticPlugin({
       assets: 'public',

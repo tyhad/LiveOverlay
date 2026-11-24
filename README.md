@@ -136,12 +136,24 @@ State Control Panel disimpan di `control-state.json` (diabaikan Git, template di
 1. Di editor, buka **Platform Connectors**. Aktifkan TikTok dan/atau YouTube, isi username/API key/videoId, lalu klik **Simpan**. Gunakan **Start Semua** / **Stop Semua** untuk mengaktifkan atau mematikan keduanya sekaligus.
 2. **Chat Stack** — pilih elemen text → **Text Binding** → Source **Chat** → field **Chat Stack**. Atur `lines` (1–30) dan template. Baris terbaru selalu di bawah.
 3. **Chat Notification** — Source **Chat** → field **Chat Notification (Author + Message)**. Lalu di **State Binding** pilih source **Chat Notification** dan klik preset `idle` / `showing`. Atur animasi masuk/keluar lewat **Enter** dan **Transition** seperti state binding biasa. Template default-nya dua baris (`{author}` di atas, `{message}` di bawah); template satu baris dari scene lama dimigrasi otomatis.
+   - **Tampilan Notif (`TikTok Live` vs `F1 Team Radio`)**: Di Editor, pilih dropdown **Tampilan Notif → F1 Team Radio** untuk menampilkan kartu bergaya broadcast radio F1 (latar gelap, animasi waveform ringan, auto-clamp `...` untuk chat panjang, serta **Preview Tema F1** langsung di Editor). Warna tim, logo tim, dan nomor driver menyesuaikan otomatis dengan prioritas:
+     1. **Perintah `!` di awal chat** — penonton bisa memilih tema secara eksplisit, mis. `!12 keren anto` (tampil `"keren anto"` dengan tema Mercedes `#12`), `!ferrari gas!`, `!gas ayo podium!`, atau `!f1 halo` (paksa netral).
+     2. **Username penonton** — mis. `Tifosi_Leclerc16` → Ferrari `#16`.
+     3. **Isi chat** — mention pertama yang muncul menang; abbr rawan tabrakan (`GAS`, `HAM`, `PER`, dll.) wajib HURUF BESAR kecuali memakai prefix `!`.
+     4. **Netral F1** — tema F1 merah `#E10600` jika tidak ada kecocokan.
+   - **Logo tim & keyword manual**: 12 SVG bawaan (11 tim F1 2026 + netral `f1`) ada di `public/f1-logos/`. Drop file `.png`/`.webp`/`.svg` resmi di folder tersebut untuk menimpa otomatis tanpa restart server (prioritas `.png` → `.webp` → `.svg`). Copy `f1-radio-keywords.example.json` menjadi `f1-radio-keywords.json` untuk menambah julukan/keyword custom (auto-reload via `mtime`).
 4. **Template & ikon platform** — tulis `\n` di template untuk baris baru. `{platformTag}` memakai teks tag (`[TT]`/`[YT]`) dari panel connector, dan otomatis berganti ikon kalau ada file `public/chat-icons/tiktok.*` atau `youtube.*` (urutan deteksi `.svg` → `.png` → `.webp` → `.ico`). Ikon hanya berlaku di Chat Stack / Chat Notification; Running Text dan Scroll Text tetap memakai teks tag.
 5. Atur **Tampil** (`displayMs`), **Jeda** (`gapMs`), **Antrean** (`maxQueue`), tag platform, dan **archive toggle** di panel connector. `gapMs` minimal 300 ms dan sebaiknya lebih besar dari durasi animasi keluar supaya state sempat kembali ke `idle`.
 6. **Penyimpanan chat** — chat live dan chat hasil `dev-inject` disimpan ke `chat-archive/YYYYMMDD-HHmmss.jsonl` (satu file per sesi, append-only, diabaikan Git). Sesi dimulai saat connector pertama aktif, ditutup saat semua connector dimatikan atau tombol **End session** ditekan. Kalau archive toggle dimatikan, chat tetap tampil di overlay tetapi tidak ditulis ke arsip.
 7. Buka **[http://localhost:3000/control](http://localhost:3000/control)** → panel **Chat Archive** untuk melihat sesi aktif, memulai **Sesi baru**, mengakhiri sesi, menghapus sesi lama, preview 3 cue, dan mengunduh **SRT / VTT / CSV / JSON**. Panel ini hanya muncul kalau ada **State Binding → Chat Notification** yang di-enable di salah satu scene. Offset bisa diisi manual atau memakai helper **Samakan dengan chat** (pilih chat yang terlihat di video + waktu kemunculannya).
 8. Panel **Chat Review** (juga hanya muncul kalau ada binding `chatNotif`) menampilkan notifikasi yang sedang tampil beserta posisi antrean. Tombol ▲/▼ menelusuri 100 notifikasi terakhir tanpa mengganggu antrean live — badge menunjukkan **LIVE** atau **REVIEW**, animasi elemen diputar ulang tiap pindah, dan semua Browser Source tetap sinkron karena state review disimpan di server.
-9. Untuk tes tanpa live stream, gunakan endpoint dev-only:
+9. Untuk tes tanpa live stream, jalankan script dummy chat bawaan (mengirim 19 skenario chat F1 & `!command` ke `/api/chat/dev-inject`):
+   ```powershell
+   bun run dummy-chat                  # kirim semua dummy chat sekali (jeda 5 detik)
+   bun run dummy-chat -- --loop        # ulang terus sampai Ctrl+C (cocok untuk preview OBS)
+   bun run dummy-chat -- -a "Budi" -m "!12 keren anto"   # kirim 1 chat custom instan
+   ```
+   Atau panggil endpoint dev-only secara langsung:
    ```powershell
    curl.exe -X POST http://localhost:3000/api/chat/dev-inject `
      -H "Content-Type: application/json" `
@@ -257,13 +269,15 @@ LiveOverlay/
 │   ├── control.html          # Control Panel + Chat Archive (/control)
 │   ├── overlay.html          # Transparent OBS Browser Source Overlay (player)
 │   ├── animation-engine.js   # Modul Animation Sequence Engine (dipakai bersama editor & overlay)
-│   ├── chat-format.js        # Formatter template chat bersama editor & overlay
+│   ├── chat-format.js        # Formatter & renderer chat bersama editor & overlay (TikTok Live & F1 Team Radio)
+│   ├── f1-radio-theme.js     # Matcher tema/driver F1 2026 & parser !command untuk F1 Team Radio
 │   ├── text-binding.js       # Helper teks/warna/timer bersama editor & overlay
 │   ├── design.css            # Design tokens bersama + styling Control Panel
 │   ├── editor.css            # Styling editor utama
 │   ├── styles.css            # Compiled Tailwind CSS (jangan diedit manual)
 │   ├── KerasnG.png           # Logo editor
 │   ├── chat-icons/           # Ikon {platformTag} opsional (tiktok.*, youtube.*; lihat README di folder ini)
+│   ├── f1-logos/             # Logo tim F1 Team Radio (12 SVG bawaan; drop .png/.webp/.svg resmi untuk menimpa)
 │   └── uploads/              # Aset hasil upload (dibuat otomatis, tidak masuk Git)
 ├── src/
 │   ├── index.ts              # ElysiaJS Backend Server & API Routes
@@ -295,7 +309,10 @@ LiveOverlay/
 │   ├── scene-store.test.mjs       # Test penyimpanan scene & guard file korup
 │   ├── text-binding.test.mjs      # Test helper teks/timer bersama
 │   ├── overlay-state.test.mjs     # Test integrasi overlay.html di jsdom (via Node)
+│   ├── f1-radio-theme.test.mjs    # Test matcher tim/driver F1, !command, & renderer kartu F1 Radio
 │   └── scene-migration.test.mjs   # Test migrasi scene lama
+├── scripts/
+│   └── dummy-chat.mjs        # Pengirim dummy chat untuk preview OBS (`bun run dummy-chat`)
 ├── chat-archive/             # Arsip chat lokal (dibuat otomatis, tidak masuk Git)
 ├── docs/
 │   ├── screenshots/          # Screenshot untuk README
@@ -306,6 +323,7 @@ LiveOverlay/
 ├── control-state.example.json # Template state Control Panel
 ├── live-stats.example.json   # Template cache data live stats
 ├── f1-text-templates.example.json # Template format teks F1GStats (custom text templates)
+├── f1-radio-keywords.example.json # Template keyword manual tim/driver F1 Team Radio
 ├── Vision.md                 # Visi produk, pilar fitur, arsitektur & prinsip desain (jarang berubah)
 ├── issue.md                  # Backlog & technical debt aktif (selalu up-to-date)
 ├── CHANGELOG.md              # Riwayat lengkap pengembangan tiap fase

@@ -20,6 +20,15 @@ export class ConnectorManager {
       onChat: (payload) => {
         options.chatHub.push(payload)
       },
+      onTopViewers: (viewers) => {
+        options.chatHub.setTopViewers(viewers)
+      },
+      onFollower: (payload) => {
+        options.chatHub.pushFollower(payload)
+      },
+      onJoin: (payload) => {
+        options.chatHub.pushJoin(payload)
+      },
       onStats: (stats) => options.onStatsUpdate(stats),
       connectionFactory: options.tiktokConnectionFactory,
     })

@@ -37,7 +37,12 @@ test('youtube connector respects pollingIntervalMillis, deduplicates messages, a
               {
                 id: 'msg_1',
                 snippet: { publishedAt: '2026-11-10T00:00:01Z', displayMessage: 'Halo YouTube!' },
-                authorDetails: { displayName: 'UserA' },
+                authorDetails: {
+                  displayName: 'UserA',
+                  profileImageUrl: 'https://example.com/yt-avatar.jpg',
+                  isChatModerator: true,
+                  isChatSponsor: true,
+                },
               },
               {
                 id: 'msg_2',
@@ -93,6 +98,11 @@ test('youtube connector respects pollingIntervalMillis, deduplicates messages, a
     assert.equal(receivedChats[0].id, 'msg_1')
     assert.equal(receivedChats[0].author, 'UserA')
     assert.equal(receivedChats[0].message, 'Halo YouTube!')
+    assert.equal(receivedChats[0].avatar, 'https://example.com/yt-avatar.jpg')
+    assert.deepEqual(receivedChats[0].badges, [
+      { type: 'mod', label: 'MOD' },
+      { type: 'sub', label: 'MEMBER' },
+    ])
 
     const status = connector.getStatus()
     assert.equal(status.running, true)

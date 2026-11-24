@@ -189,7 +189,9 @@ interface ClockTextBinding {
 interface ChatTextBinding {
   enabled?: boolean
   source: 'chat'
-  field: 'stack' | 'notif'
+  field: 'stack' | 'notif' | 'topViewers' | 'followers' | 'join'
+  /** Khusus `notif`: gaya tampilan kartu ('tiktok' default | 'f1Radio'). */
+  displayStyle?: 'tiktok' | 'f1Radio'
   /** Khusus `stack`: jumlah baris terakhir, default 5, rentang 1â€“30. */
   lines?: number
   /** Placeholder: {platformTag}, {platform}, {author}, {message}. */

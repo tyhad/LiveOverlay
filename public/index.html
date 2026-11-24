@@ -10,13 +10,14 @@
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="/animation-engine.js"></script>
+  <script src="/f1-radio-theme.js"></script>
   <script src="/chat-format.js"></script>
   <script src="/text-binding.js"></script>
   <!-- Google Fonts for Stream Overlays & Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+    href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Titillium+Web:wght@600;700;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 
   <link rel="stylesheet" href="/editor.css">
 </head>
@@ -879,6 +880,37 @@
                   <input type="number" id="prop-chat-lines" min="1" max="30" step="1" value="5"
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                 </div>
+                <div id="chat-style-group" class="hidden">
+                  <label class="block text-[11px] text-slate-400 mb-1">Tampilan Notif</label>
+                  <select id="prop-chat-display-style"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <option value="tiktok">TikTok Live (Default)</option>
+                    <option value="f1Radio">F1 Team Radio</option>
+                  </select>
+                </div>
+              </div>
+              <div id="chat-f1-preview-group" class="hidden space-y-1">
+                <label class="block text-[11px] text-slate-400">Preview Tema F1 (Editor)</label>
+                <select id="prop-chat-f1-preview"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  <option value="auto">Auto (Chat Live / Default)</option>
+                  <option value="ferrari">Ferrari — Leclerc #16</option>
+                  <option value="redbull">Red Bull — Verstappen #3</option>
+                  <option value="mclaren">McLaren — Piastri #81</option>
+                  <option value="mercedes">Mercedes — Russell #63</option>
+                  <option value="williams">Williams — Albon #23</option>
+                  <option value="haas">Haas — Bearman #87</option>
+                  <option value="astonmartin">Aston Martin — Alonso #14</option>
+                  <option value="alpine">Alpine — Gasly #10</option>
+                  <option value="racingbulls">Racing Bulls — Lawson #30</option>
+                  <option value="audi">Audi — Hulkenberg #27</option>
+                  <option value="cadillac">Cadillac — Perez #11</option>
+                  <option value="teamOnly">Ferrari (Tim saja — Avatar/Kode)</option>
+                  <option value="neutral">Netral F1 (Tanpa match)</option>
+                </select>
+                <p class="text-[10px] text-slate-500">Warna, logo tim, &amp; nomor driver otomatis menyesuaikan
+                  username → isi chat. Taruh logo PNG/SVG di <code>public/f1-logos/</code> &amp; keyword manual di
+                  <code>f1-radio-keywords.json</code>.</p>
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Template</label>
@@ -1849,6 +1881,10 @@
     let editorFollowers = []
     let editorChatTags = { ...DEFAULT_CHAT_TAGS }
     let editorChatIcons = { tiktok: '', youtube: '' }
+    let editorF1Logos = {}
+    let editorF1RadioKeywords = { teams: {}, drivers: [] }
+    let editorF1PreviewKey = 'auto'
+    let lastEditorF1ConfigHash = ''
     let editorPlatformStatus = { tiktok: null, youtube: null }
 
     function formatEditorChatLine(event, template) {
@@ -1892,6 +1928,10 @@
           { platform: 'youtube', author: 'ViewerYouTube', message: 'Gas terus bang!', badges: [{ type: 'mod', label: 'MOD' }] },
         ].slice(-lineCount)
       }
+      if (field === 'notif' && binding?.displayStyle === 'f1Radio' && editorF1PreviewKey !== 'auto') {
+        const preset = window.F1RadioTheme?.EDITOR_PREVIEW_PRESETS?.[editorF1PreviewKey]
+        if (preset) return [{ ...preset }]
+      }
       if (editorChatNotif.author || editorChatNotif.message) {
         return [{
           platform: editorChatNotif.platform,
@@ -1900,6 +1940,10 @@
           avatar: editorChatNotif.avatar || '',
           badges: editorChatNotif.badges || [],
         }]
+      }
+      if (field === 'notif' && binding?.displayStyle === 'f1Radio') {
+        const sample = window.F1RadioTheme?.EDITOR_PREVIEW_PRESETS?.ferrari
+        if (sample) return [{ ...sample }]
       }
       return [{
         platform: 'tiktok',
@@ -2208,6 +2252,8 @@
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
       document.getElementById('chat-binding-group').classList.toggle('hidden', !isChat)
       document.getElementById('chat-lines-group').classList.toggle('hidden', binding?.field === 'notif' || binding?.field === 'join')
+      document.getElementById('chat-style-group')?.classList.toggle('hidden', !isChat || binding?.field !== 'notif')
+      document.getElementById('chat-f1-preview-group')?.classList.toggle('hidden', !isChat || binding?.field !== 'notif' || binding?.displayStyle !== 'f1Radio')
       document.getElementById('f1data-binding-group').classList.toggle('hidden', !isF1Data)
       document.getElementById('clock-binding-group').classList.toggle('hidden', !isClock)
       document.getElementById('control-binding-group').classList.toggle('hidden', !isControl)
@@ -2239,6 +2285,8 @@
           'prop-text-binding-clock-format',
           'prop-chat-field',
           'prop-chat-lines',
+          'prop-chat-display-style',
+          'prop-chat-f1-preview',
           'prop-chat-template'
         ].forEach(id => {
           const input = document.getElementById(id)
@@ -2649,7 +2697,7 @@
         const res = await fetch('/api/scenes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scene, originalId: persistedSceneId })
+          body: JSON.stringify({ scene, ...(persistedSceneId ? { originalId: persistedSceneId } : {}) })
         })
         const payload = await res.json().catch(() => null)
         if (!res.ok) {
@@ -2815,9 +2863,16 @@
           if (el.textBinding?.enabled && el.textBinding?.source === 'chat' && el.textBinding?.field !== 'join' && !el.marquee?.enabled && !el.scroll?.enabled && window.ChatFormat?.renderChatList) {
             window.ChatFormat.renderChatList(textP, resolveEditorChatItems(el.textBinding), {
               mode: el.textBinding.field || 'stack',
+              displayStyle: el.textBinding.displayStyle || 'tiktok',
               tags: editorChatTags,
               icons: editorChatIcons,
               textAlign: el.style?.textAlign || 'left',
+              f1Logos: editorF1Logos,
+              f1Drivers: f1Data?.driverStandings || [],
+              f1RadioKeywords: editorF1RadioKeywords,
+              boxHeight: el.height,
+              fontSize: el.style?.fontSize || 18,
+              padding: el.style?.padding || 0,
             })
           } else if (window.ChatFormat?.renderText) {
             window.ChatFormat.renderText(textP, text, { tags: editorChatTags, icons: editorChatIcons })
@@ -3186,6 +3241,8 @@
         document.getElementById('prop-chat-field').value =
           binding.source === 'chat' && VALID_CHAT_FIELDS.includes(binding.field) ? binding.field : 'stack'
         document.getElementById('prop-chat-lines').value = Math.max(1, Math.min(30, Number(binding.lines) || 5))
+        document.getElementById('prop-chat-display-style').value = binding.displayStyle === 'f1Radio' ? 'f1Radio' : 'tiktok'
+        document.getElementById('prop-chat-f1-preview').value = editorF1PreviewKey || 'auto'
         document.getElementById('prop-chat-template').value = binding.template || ''
         document.getElementById('prop-text-binding-format').value = binding.format || 'raw'
         document.getElementById('prop-text-binding-timezone').value = binding.timezone || 'Asia/Jakarta'
@@ -3937,6 +3994,7 @@
         if (newSource === 'chat') {
           document.getElementById('prop-chat-field').value = binding.field
           document.getElementById('prop-chat-lines').value = binding.lines ?? 5
+          document.getElementById('prop-chat-display-style').value = binding.displayStyle === 'f1Radio' ? 'f1Radio' : 'tiktok'
           document.getElementById('prop-chat-template').value = binding.template || ''
         } else if (newSource === 'platform') {
           syncDeprecatedPlatformFieldOption(binding.field)
@@ -4184,8 +4242,20 @@
         if (!Number.isFinite(Number(binding.lines))) binding.lines = 5
         document.getElementById('prop-chat-template').value = binding.template
         document.getElementById('prop-chat-lines').value = binding.lines
+        document.getElementById('prop-chat-display-style').value = binding.displayStyle === 'f1Radio' ? 'f1Radio' : 'tiktok'
         renderCanvas()
         updateBindingPreview()
+      })
+      document.getElementById('prop-chat-display-style').addEventListener('change', (e) => {
+        const el = getSelected()
+        if (!el) return
+        ensureTextBinding(el).displayStyle = e.target.value === 'f1Radio' ? 'f1Radio' : 'tiktok'
+        renderCanvas()
+        updateBindingPreview()
+      })
+      document.getElementById('prop-chat-f1-preview').addEventListener('change', (e) => {
+        editorF1PreviewKey = e.target.value || 'auto'
+        renderCanvas()
       })
       document.getElementById('prop-chat-lines').addEventListener('input', (e) => {
         const el = getSelected()
@@ -4926,9 +4996,23 @@
 
     function applyChatIcons(data) {
       const icons = data?.chatIcons
-      if (!icons || typeof icons !== 'object') return
-      editorChatIcons.tiktok = String(icons.tiktok || '')
-      editorChatIcons.youtube = String(icons.youtube || '')
+      if (icons && typeof icons === 'object') {
+        editorChatIcons.tiktok = String(icons.tiktok || '')
+        editorChatIcons.youtube = String(icons.youtube || '')
+      }
+      const nextF1 = {
+        f1Logos: data?.f1Logos && typeof data.f1Logos === 'object' ? data.f1Logos : {},
+        f1RadioKeywords: data?.f1RadioKeywords && typeof data.f1RadioKeywords === 'object'
+          ? data.f1RadioKeywords
+          : { teams: {}, drivers: [] },
+      }
+      const hash = JSON.stringify(nextF1)
+      if (hash !== lastEditorF1ConfigHash) {
+        lastEditorF1ConfigHash = hash
+        editorF1Logos = nextF1.f1Logos
+        editorF1RadioKeywords = nextF1.f1RadioKeywords
+        if (typeof renderCanvas === 'function' && scene?.elements) renderCanvas()
+      }
     }
 
     async function loadPlatformConnectorStatus() {

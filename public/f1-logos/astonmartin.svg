@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="48" viewBox="0 0 96 48" fill="none">
+  <path d="M6 15H90L77 33H19L6 15Z" fill="#229971" stroke="#E2E8F0" stroke-width="2"/>
+  <path d="M11 21H85" stroke="#E2E8F0" stroke-width="1.5" stroke-opacity="0.75"/>
+  <path d="M16 27H80" stroke="#E2E8F0" stroke-width="1.5" stroke-opacity="0.75"/>
+  <rect x="27" y="18" width="42" height="12" rx="2" fill="#0B1F19"/>
+  <text x="48" y="27.5" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="9" fill="#FFFFFF" letter-spacing="1.2">ASTON</text>
+</svg>

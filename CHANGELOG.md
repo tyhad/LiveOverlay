@@ -6,6 +6,16 @@ Arsip historis pengembangan **LiveOverlay Studio**. Untuk status implementasi te
 
 ## [Unreleased]
 
+### Chat Notification — Opsi Tampilan F1 Team Radio
+- Menambahkan opsi tampilan **F1 Team Radio** (`textBinding.displayStyle: 'f1Radio'`) pada elemen **Chat Notification** sambil mempertahankan tampilan **TikTok Live** sebagai default.
+- Engine deteksi otomatis (`public/f1-radio-theme.js`) untuk roster F1 2026 (11 tim, 22 driver, julukan populer, sinkronisasi live `/api/f1-data`, serta keyword manual via `f1-radio-keywords.json` auto-reload):
+  - Prioritas: perintah eksplisit `!command` di awal chat (mis. `!12 keren anto`, `!ferrari gas!`, `!f1 halo` — prefix `!command` otomatis dikupas dari teks yang tampil) → username penonton → isi chat (mention paling awal) → tema netral F1 (`#E10600`).
+  - Proteksi anti false-positive untuk abbr ambigu (`GAS`, `HAM`, `PER`, `NOR`, dll.) dan angka polos.
+- Renderer kartu F1 Team Radio (`public/chat-format.js`) dengan animasi waveform CSS GPU-composited, slot kiri adaptif (nomor driver jika match driver, avatar penonton jika match tim/netral, fallback kode tim), skala responsif, auto-clamp `...` untuk chat panjang, dan DOM signature guard anti-flicker.
+- 12 logo SVG bawaan di `public/f1-logos/` + route dinamis `GET /f1-logos/:filename` dengan prioritas `.png` → `.webp` → `.svg` agar logo resmi bisa langsung di-drop tanpa restart server.
+- Dropdown **Tampilan Notif** & **Preview Tema F1 (Editor)** di `public/index.html`, script `bun run dummy-chat` (`scripts/dummy-chat.mjs`), serta 11 unit test di `tests/f1-radio-theme.test.mjs`.
+- Memperbaiki bug pembuatan/duplikasi scene baru (`POST /api/scenes` gagal validasi `Expected string` saat `originalId` bernilai `null`).
+
 ### Control Panel — hide layer & override prefix/suffix
 
 - Setiap section Counter / Event State / Timer / Text di `/control` punya tombol **Hide/Show**. Hide menyembunyikan semua layer (elemen scene) yang binding ke grup itu di overlay, tanpa mengubah file scene; Show mengembalikannya.

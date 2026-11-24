@@ -1,0 +1,25 @@
+{
+  "_comment": "Copy file ini menjadi f1-radio-keywords.json lalu edit bebas untuk menambah/mengubah keyword deteksi tim & driver F1 Radio. Server otomatis me-reload file saat berubah (cek mtime), TIDAK perlu restart.",
+  "teams": {
+    "ferrari": ["kuda jingkrak", "merah maranello", "forza sf"],
+    "mclaren": ["papaya rules"],
+    "redbull": ["banteng merah"],
+    "mercedes": ["panah perak"]
+  },
+  "drivers": [
+    {
+      "name": "Charles Leclerc",
+      "shortName": "LECLERC",
+      "number": "16",
+      "teamId": "ferrari",
+      "keywords": ["sharl", "lord perceval"]
+    },
+    {
+      "name": "Fernando Alonso",
+      "shortName": "ALONSO",
+      "number": "14",
+      "teamId": "astonmartin",
+      "keywords": ["mbah alonso", "el padre"]
+    }
+  ]
+}

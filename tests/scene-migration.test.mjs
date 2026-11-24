@@ -188,3 +188,24 @@ test('normalizeChatBindings mendukung field topViewers, followers, join dan stat
   assert.equal(join.stateBinding.enabled, true)
 })
 
+test('normalizeChatBindings mempertahankan displayStyle notif (f1Radio / tiktok) dan menormalisasi nilai invalid', () => {
+  const f1 = normalizeChatBindings({
+    ...base,
+    textBinding: { enabled: true, source: 'chat', field: 'notif', displayStyle: 'f1Radio' },
+  })
+  assert.equal(f1.textBinding.displayStyle, 'f1Radio')
+
+  const invalid = normalizeChatBindings({
+    ...base,
+    textBinding: { enabled: true, source: 'chat', field: 'notif', displayStyle: 'unknown' },
+  })
+  assert.equal(invalid.textBinding.displayStyle, 'tiktok')
+
+  const legacy = normalizeChatBindings({
+    ...base,
+    textBinding: { enabled: true, source: 'chat', field: 'notif' },
+  })
+  assert.equal(legacy.textBinding.displayStyle, undefined)
+})
+
+

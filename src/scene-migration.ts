@@ -252,6 +252,9 @@ export function normalizeChatBindings<T>(element: T): T {
       } else if (field === 'notif') {
         const legacy = LEGACY_NOTIF_TEMPLATES[String(text.template || '')]
         if (legacy) normalized.template = legacy
+        if (text.displayStyle !== undefined) {
+          normalized.displayStyle = text.displayStyle === 'f1Radio' ? 'f1Radio' : 'tiktok'
+        }
       }
       next = { ...next, textBinding: normalized }
     }

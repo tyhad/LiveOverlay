@@ -8,13 +8,14 @@
   <!-- GSAP Animation Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="/animation-engine.js"></script>
+  <script src="/f1-radio-theme.js"></script>
   <script src="/chat-format.js"></script>
   <script src="/text-binding.js"></script>
   <!-- Google Fonts for Stream Overlays -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+    href="https://fonts.googleapis.com/css2?family=Anton&family=Racing+Sans+One&family=Titillium+Web:wght@600;700;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
   
   <style>
     * {
@@ -108,6 +109,9 @@
     let chatPlatformStatus = { tiktok: null, youtube: null }
     let chatTags = { tiktok: '[TT]', youtube: '[YT]' }
     let chatIcons = { tiktok: '', youtube: '' }
+    let f1Logos = {}
+    let f1RadioKeywords = { teams: {}, drivers: [] }
+    let lastF1RadioConfigHash = ''
     let chatFeedInitialized = false
     // Saat halaman di-load ulang, snapshot notif yang masih "showing" adalah chat lama.
     // Tandai seq-nya dan tampilkan sebagai idle sampai chat BARU masuk, supaya reload
@@ -222,9 +226,16 @@
         if (items.length > 0) {
           window.ChatFormat.renderChatList(textEl, items, {
             mode: el.textBinding.field || 'stack',
+            displayStyle: el.textBinding.displayStyle || 'tiktok',
             tags: chatTags,
             icons: chatIcons,
             textAlign: el.style?.textAlign || 'left',
+            f1Logos,
+            f1Drivers: f1Data?.driverStandings || [],
+            f1RadioKeywords,
+            boxHeight: el.height,
+            fontSize: el.style?.fontSize || 18,
+            padding: el.style?.padding || 0,
           })
           return
         }
@@ -1100,6 +1111,7 @@
           if (tiktokTag) chatTags.tiktok = tiktokTag
           if (youtubeTag) chatTags.youtube = youtubeTag
         }
+        let configChanged = false
         if (data?.chatIcons && typeof data.chatIcons === 'object') {
           const nextIcons = {
             tiktok: String(data.chatIcons.tiktok || ''),
@@ -1107,9 +1119,23 @@
           }
           if (nextIcons.tiktok !== chatIcons.tiktok || nextIcons.youtube !== chatIcons.youtube) {
             chatIcons = nextIcons
-            if (currentScene) requestAnimationFrame(() => renderScene(currentScene))
+            configChanged = true
           }
         }
+        const nextF1Config = {
+          f1Logos: data?.f1Logos && typeof data.f1Logos === 'object' ? data.f1Logos : {},
+          f1RadioKeywords: data?.f1RadioKeywords && typeof data.f1RadioKeywords === 'object'
+            ? data.f1RadioKeywords
+            : { teams: {}, drivers: [] },
+        }
+        const nextF1Hash = JSON.stringify(nextF1Config)
+        if (nextF1Hash !== lastF1RadioConfigHash) {
+          lastF1RadioConfigHash = nextF1Hash
+          f1Logos = nextF1Config.f1Logos
+          f1RadioKeywords = nextF1Config.f1RadioKeywords
+          configChanged = true
+        }
+        if (configChanged && currentScene) requestAnimationFrame(() => renderScene(currentScene))
       } catch (err) {
         console.error('Failed to sync platform connector config:', err)
       }

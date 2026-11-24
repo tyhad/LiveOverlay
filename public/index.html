@@ -208,6 +208,9 @@
               <span class="flex items-center gap-1.5">
                 <span id="connector-tiktok-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
                 <span id="connector-tiktok-state" class="text-[10px] text-slate-500">OFF</span>
+                <button id="connector-tiktok-toggle-btn" type="button" data-enabled="0"
+                  class="px-1.5 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-semibold transition">▶
+                  Start</button>
               </span>
             </div>
             <label class="block text-[10px] text-slate-400">TikTok Username</label>
@@ -226,6 +229,9 @@
               <span class="flex items-center gap-1.5">
                 <span id="connector-youtube-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
                 <span id="connector-youtube-state" class="text-[10px] text-slate-500">OFF</span>
+                <button id="connector-youtube-toggle-btn" type="button" data-enabled="0"
+                  class="px-1.5 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-semibold transition">▶
+                  Start</button>
               </span>
             </div>
             <label class="block text-[10px] text-slate-400">YouTube API Key <span class="text-slate-600">(Data API
@@ -4852,6 +4858,15 @@
       label.textContent = live ? 'LIVE' : connecting ? 'CONNECTING…' : enabled ? 'OFFLINE' : 'OFF'
       label.className = `text-[10px] ${live ? 'text-emerald-400 font-semibold' : enabled ? 'text-amber-400' : 'text-slate-500'}`
 
+      const toggleBtn = document.getElementById(`connector-${platform}-toggle-btn`)
+      if (toggleBtn) {
+        toggleBtn.dataset.enabled = enabled ? '1' : '0'
+        toggleBtn.textContent = enabled ? '■ Stop' : '▶ Start'
+        toggleBtn.className = enabled
+          ? 'px-1.5 py-0.5 rounded bg-rose-600/70 hover:bg-rose-600 text-white text-[10px] font-semibold transition'
+          : 'px-1.5 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-semibold transition'
+      }
+
       if (errorEl) {
         if (status?.lastError) {
           errorEl.textContent = `⚠ ${status.lastError}`
@@ -4994,6 +5009,20 @@
       await savePlatformConnectorConfig()
     }
 
+    async function toggleSingleConnector(platform) {
+      const btn = document.getElementById(`connector-${platform}-toggle-btn`)
+      const checkbox = document.getElementById(`connector-${platform}-enabled`)
+      if (!btn || !checkbox) return
+      const nextEnabled = btn.dataset.enabled !== '1'
+      checkbox.checked = nextEnabled
+      btn.disabled = true
+      try {
+        await savePlatformConnectorConfig()
+      } finally {
+        btn.disabled = false
+      }
+    }
+
     function applyChatIcons(data) {
       const icons = data?.chatIcons
       if (icons && typeof icons === 'object') {
@@ -5054,6 +5083,15 @@
           alert(err.message || 'Failed to stop connectors')
         }
       })
+      for (const platform of ['tiktok', 'youtube']) {
+        document.getElementById(`connector-${platform}-toggle-btn`)?.addEventListener('click', async () => {
+          try {
+            await toggleSingleConnector(platform)
+          } catch (err) {
+            alert(err.message || `Failed to toggle ${platform} connector`)
+          }
+        })
+      }
       document.getElementById('connector-yt-video-id').addEventListener('input', updateYoutubeVideoHint)
       document.getElementById('connector-yt-channel-id').addEventListener('input', updateYoutubeVideoHint)
       document.getElementById('connector-youtube-enabled').addEventListener('change', updateYoutubeVideoHint)

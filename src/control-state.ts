@@ -23,6 +23,7 @@ export interface TextState { value: string }
 export interface TextOverride { prefix: string; suffix: string }
 
 export const CONTROL_KINDS = ['counter', 'eventState', 'timer', 'text'] as const
+export const BUILTIN_PANEL_KEYS = new Set(['panel:chatReview', 'panel:chatArchive'])
 const MAX_OVERRIDE_TEXT_LENGTH = 200
 
 export interface ControlStateData {
@@ -34,6 +35,10 @@ export interface ControlStateData {
   hiddenControls: Record<string, true>
   /** Override prefix/suffix per grup control, menimpa textBinding.prefix/suffix di semua layer. */
   textOverrides: Record<string, TextOverride>
+  /** key panel -> true jika sedang di-minimize di Control Panel. */
+  collapsedPanels: Record<string, true>
+  /** Urutan tampilan panel di Control Panel. */
+  panelOrder: string[]
 }
 
 export interface ControlStatePersistence {
@@ -59,6 +64,12 @@ export function validateControlKey(key: string): string | null {
   return validateControlName(name)
 }
 
+/** Key panel di Control Panel: key control ("<jenis>:<nama>") atau panel bawaan ("panel:chatReview" / "panel:chatArchive"). */
+export function validatePanelKey(key: string): string | null {
+  if (BUILTIN_PANEL_KEYS.has(key)) return null
+  return validateControlKey(key)
+}
+
 export function getTimerDisplayMs(timer: TimerState, now = Date.now()): number {
   const elapsed = timer.pausedAccumMs + (timer.isRunning && timer.startedAtMs !== null ? now - timer.startedAtMs : 0)
   if (timer.mode !== 'countdown') return elapsed
@@ -74,6 +85,8 @@ export function createEmptyControlState(): ControlStateData {
     texts: Object.create(null),
     hiddenControls: Object.create(null),
     textOverrides: Object.create(null),
+    collapsedPanels: Object.create(null),
+    panelOrder: [],
   }
 }
 
@@ -141,6 +154,21 @@ export function normalizeControlState(data: Partial<ControlStateData> | null | u
         prefix: typeof override.prefix === 'string' ? override.prefix.slice(0, MAX_OVERRIDE_TEXT_LENGTH) : '',
         suffix: typeof override.suffix === 'string' ? override.suffix.slice(0, MAX_OVERRIDE_TEXT_LENGTH) : '',
       }
+    }
+  }
+  if (data?.collapsedPanels && typeof data.collapsedPanels === 'object') {
+    for (const [key, collapsed] of Object.entries(data.collapsedPanels)) {
+      if (collapsed === true && !RESERVED_CONTROL_NAMES.has(key) && validatePanelKey(key) === null) {
+        state.collapsedPanels[key] = true
+      }
+    }
+  }
+  if (Array.isArray(data?.panelOrder)) {
+    const seen = new Set<string>()
+    for (const key of data.panelOrder) {
+      if (typeof key !== 'string' || seen.has(key) || RESERVED_CONTROL_NAMES.has(key) || validatePanelKey(key) !== null) continue
+      seen.add(key)
+      state.panelOrder.push(key)
     }
   }
   return state
@@ -217,6 +245,26 @@ export class ControlStateStore {
 
   async clearTextOverride(key: string) {
     return this.mutate((state) => { delete state.textOverrides[key] })
+  }
+
+  async setPanelCollapsed(key: string, collapsed: boolean) {
+    return this.mutate((state) => {
+      if (collapsed) state.collapsedPanels[key] = true
+      else delete state.collapsedPanels[key]
+    })
+  }
+
+  async setPanelOrder(order: string[]) {
+    return this.mutate((state) => {
+      const seen = new Set<string>()
+      const clean: string[] = []
+      for (const key of order) {
+        if (typeof key !== 'string' || seen.has(key) || validatePanelKey(key) !== null) continue
+        seen.add(key)
+        clean.push(key)
+      }
+      state.panelOrder = clean
+    })
   }
 
   async startTimer(name: string, mode?: 'countdown' | 'countup', durationMs?: number, restart = false) {

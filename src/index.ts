@@ -5,7 +5,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
 import { ConnectorManager } from './connectors/manager'
 import { Database } from 'bun:sqlite'
-import { ControlStateStore, validateControlKey, validateControlName, type ControlStateData } from './control-state'
+import { ControlStateStore, validateControlKey, validateControlName, validatePanelKey, type ControlStateData } from './control-state'
 import { migrateLegacyElement, normalizeChatBindings } from './scene-migration'
 import { ChatHub } from './chat-hub'
 import { NotifQueue } from './notif-queue'
@@ -1244,6 +1244,27 @@ const app = new Elysia({ serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES } }
       return { success: true, data }
     },
     { body: t.Object({ prefix: t.Optional(t.String()), suffix: t.Optional(t.String()), reset: t.Optional(t.Boolean()) }) }
+  )
+  .post(
+    '/api/control-state/panels/:key/collapse',
+    async ({ params, body, set }) => {
+      const message = validatePanelKey(params.key)
+      if (message) {
+        set.status = 400
+        return { success: false, message }
+      }
+      const data = await controlStateStore.setPanelCollapsed(params.key, (body as { collapsed: boolean }).collapsed)
+      return { success: true, data }
+    },
+    { body: t.Object({ collapsed: t.Boolean() }) }
+  )
+  .post(
+    '/api/control-state/panels/order',
+    async ({ body }) => {
+      const data = await controlStateStore.setPanelOrder((body as { order: string[] }).order)
+      return { success: true, data }
+    },
+    { body: t.Object({ order: t.Array(t.String()) }) }
   )
   .post(
     '/api/control-state/event-states/:group/options/add',

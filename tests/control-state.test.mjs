@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ControlStateStore, getTimerDisplayMs, validateControlKey, validateControlName } from '../src/control-state.ts'
+import { ControlStateStore, getTimerDisplayMs, validateControlKey, validateControlName, validatePanelKey } from '../src/control-state.ts'
 
 function memoryStore(initial = null, now = () => 1000) {
   let saved = initial
@@ -104,4 +104,25 @@ test('validateControlKey menolak format, jenis, dan nama yang tidak valid', () =
   assert.match(validateControlKey('timer:'), /wajib/)
   assert.match(validateControlKey('timer:__proto__'), /reserved/)
   assert.match(validateControlKey(`timer:${'a'.repeat(65)}`), /64/)
+})
+
+test('collapse dan urutan panel tersimpan serta tervalidasi', async () => {
+  assert.equal(validatePanelKey('panel:chatReview'), null)
+  assert.equal(validatePanelKey('panel:chatArchive'), null)
+  assert.equal(validatePanelKey('counter:Score'), null)
+  assert.match(validatePanelKey('bogus:X'), /Jenis/)
+
+  const { store } = memoryStore()
+  await store.setPanelCollapsed('panel:chatArchive', true)
+  await store.setPanelCollapsed('counter:Score', true)
+  await store.setPanelOrder(['counter:Score', 'panel:chatReview', 'bogus:X', 'counter:Score', 'panel:chatArchive'])
+
+  let state = await store.read()
+  assert.equal(state.collapsedPanels['panel:chatArchive'], true)
+  assert.equal(state.collapsedPanels['counter:Score'], true)
+  assert.deepEqual(state.panelOrder, ['counter:Score', 'panel:chatReview', 'panel:chatArchive'])
+
+  await store.setPanelCollapsed('counter:Score', false)
+  state = await store.read()
+  assert.equal(state.collapsedPanels['counter:Score'], undefined)
 })

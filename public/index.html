@@ -27,22 +27,22 @@
 
   <!-- TOP HEADER -->
   <header
-    class="studio-header h-14 px-4 flex items-center justify-between gap-3 shrink-0 z-30 border-b">
+    class="studio-header min-h-[56px] px-3 xl:px-4 py-1.5 flex items-center justify-between gap-2 xl:gap-3 shrink-0 z-30 border-b flex-wrap">
     <!-- Left: Brand + Scene Switcher & Menu -->
-    <div class="flex items-center gap-2.5 min-w-0">
+    <div class="flex items-center gap-2 min-w-0 shrink">
       <div class="studio-logo w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
         <img src="/KerasnG.png" alt="LiveOverlay Studio" class="w-8 h-8 rounded-xl object-cover" />
       </div>
-      <h1 class="text-sm font-bold tracking-tight text-white shrink-0">LiveOverlay</h1>
-      <span class="header-divider" aria-hidden="true"></span>
+      <h1 class="text-base font-bold tracking-tight text-white shrink-0">LiveOverlay</h1>
+      <span class="header-divider hidden sm:inline-block" aria-hidden="true"></span>
 
-      <div class="flex items-center gap-1.5 min-w-0">
+      <div class="flex items-center gap-1.5 min-w-0 shrink">
         <select id="scene-selector" aria-label="Select scene"
-          class="studio-select h-8 max-w-[180px] rounded-lg px-2.5 text-xs font-semibold text-white">
+          class="studio-select h-8 w-[130px] xl:w-[170px] rounded-lg px-2 text-xs font-semibold text-white truncate">
           <option value="default">default</option>
         </select>
 
-        <div class="relative">
+        <div class="relative shrink-0">
           <button id="scene-menu-btn" type="button"
             class="studio-icon-btn w-8 h-8 flex items-center justify-center rounded-lg border text-xs transition cursor-pointer"
             title="Scene actions" aria-label="Scene actions" aria-haspopup="menu" aria-expanded="false">
@@ -65,7 +65,7 @@
           </div>
         </div>
 
-        <p class="text-[11px] font-mono tabular-nums hidden xl:block truncate ml-1" style="color: var(--color-slate-ash)" id="scene-info">1920 × 1080 • default</p>
+        <p class="text-xs font-mono tabular-nums hidden xl:block truncate ml-1" style="color: var(--color-slate-ash)" id="scene-info">1920 × 1080 • default</p>
       </div>
     </div>
 
@@ -196,7 +196,7 @@
           <button id="assets-add-btn" type="button">+ Upload</button>
         </summary>
         <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
-          <p class="col-span-3 text-[11px] text-slate-500">No uploaded assets yet.</p>
+          <p class="col-span-3 text-xs text-slate-500">No uploaded assets yet.</p>
         </div>
       </details>
 
@@ -204,19 +204,27 @@
       <div class="flex flex-col flex-1 min-h-0">
         <div class="p-3 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 z-10">
           <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
-          <div class="flex items-center space-x-1">
-            <button id="layer-top-btn"
-              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-              title="Bring to Top">⏫</button>
-            <button id="layer-up-btn"
-              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-              title="Move Up">▲</button>
-            <button id="layer-down-btn"
-              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-              title="Move Down">▼</button>
-            <button id="layer-bottom-btn"
-              class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
-              title="Send to Bottom">⏬</button>
+          <div class="flex items-center gap-1" role="group" aria-label="Reorder layer">
+            <button id="layer-top-btn" type="button"
+              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+              title="Bring to Front" aria-label="Bring to Front">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 11-5-5-5 5M17 18l-5-5-5 5" /></svg>
+            </button>
+            <button id="layer-up-btn" type="button"
+              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+              title="Move Up" aria-label="Move Up">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+            </button>
+            <button id="layer-down-btn" type="button"
+              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+              title="Move Down" aria-label="Move Down">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            <button id="layer-bottom-btn" type="button"
+              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+              title="Send to Back" aria-label="Send to Back">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 6 5 5 5-5M7 13l5 5 5-5" /></svg>
+            </button>
           </div>
         </div>
 
@@ -228,12 +236,14 @@
 
     <!-- CENTER: Canvas Workspace -->
     <main id="canvas-container"
-      class="flex-1 canvas-workspace overflow-auto relative flex items-center justify-center p-8">
-      <div id="artboard-scaler" style="transform-origin: center center; transition: transform 0.1s ease-out;">
-        <div id="artboard"
-          class="relative bg-transparent border-2 border-dashed border-slate-700/80 shadow-2xl overflow-hidden"
-          style="width: 1920px; height: 1080px;">
-          <!-- Elements injected dynamically -->
+      class="flex-1 canvas-workspace overflow-auto relative flex p-8">
+      <div id="artboard-stage" class="relative shrink-0 m-auto">
+        <div id="artboard-scaler" style="position: absolute; top: 0; left: 0; transform-origin: top left; transition: transform 0.1s ease-out;">
+          <div id="artboard"
+            class="relative bg-transparent border-2 border-dashed border-slate-700/80 shadow-2xl overflow-hidden"
+            style="width: 1920px; height: 1080px;">
+            <!-- Elements injected dynamically -->
+          </div>
         </div>
       </div>
     </main>
@@ -250,7 +260,7 @@
             <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" />
           </svg>
           <p class="text-xs font-semibold text-white">No element selected</p>
-          <p class="text-[11px] mt-1" style="color: var(--color-slate-ash)">Select a layer on the canvas or in Layers to edit its properties.</p>
+          <p class="text-xs mt-1" style="color: var(--color-slate-ash); text-wrap: pretty;">Select a layer on the canvas or in Layers to edit its&nbsp;properties.</p>
         </div>
 
         <div class="space-y-4">
@@ -479,7 +489,7 @@
             </div>
             <!-- Cards per state -->
             <div id="state-targets-container" class="space-y-1.5"></div>
-            <p class="text-[11px] text-slate-500 mt-1.5">
+            <p class="text-xs text-slate-500 mt-1.5">
               Manual hidden toggle still takes priority. Driven live from <code>/control</code>.
             </p>
           </div>
@@ -539,12 +549,18 @@
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Align</label>
               <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-                <button type="button" id="align-t-left"
-                  class="py-1 text-xs rounded text-slate-300 hover:text-white">◀</button>
-                <button type="button" id="align-t-center"
-                  class="py-1 text-xs rounded text-slate-300 hover:text-white">■</button>
-                <button type="button" id="align-t-right"
-                  class="py-1 text-xs rounded text-slate-300 hover:text-white">▶</button>
+                <button type="button" id="align-t-left" aria-label="Align text left" title="Align Left"
+                  class="h-7 flex items-center justify-center rounded cursor-pointer">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h14" /></svg>
+                </button>
+                <button type="button" id="align-t-center" aria-label="Align text center" title="Align Center"
+                  class="h-7 flex items-center justify-center rounded cursor-pointer">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M5 18h14" /></svg>
+                </button>
+                <button type="button" id="align-t-right" aria-label="Align text right" title="Align Right"
+                  class="h-7 flex items-center justify-center rounded cursor-pointer">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M10 12h10M6 18h14" /></svg>
+                </button>
               </div>
             </div>
             <div>
@@ -656,7 +672,7 @@
                 <option value="ltr">Left → Right</option>
               </select>
             </div>
-            <p class="text-[11px] text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
+            <p class="text-xs text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
           </div>
 
           <div class="studio-subcard space-y-2 rounded-xl p-3">
@@ -704,7 +720,7 @@
                 <span>Yoyo Mode (Ping-pong)</span>
               </label>
             </div>
-            <p class="text-[11px] text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
+            <p class="text-xs text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
           </div>
 
           <div class="studio-subcard space-y-2 rounded-xl p-3">
@@ -715,7 +731,7 @@
                 <span>Enable</span>
               </label>
             </div>
-            <p id="prop-text-binding-status" class="text-[11px] text-slate-400">Source: platform stats</p>
+            <p id="prop-text-binding-status" class="text-xs text-slate-400">Source: platform stats</p>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
@@ -760,7 +776,7 @@
                 <option value="viewerTiktok">Viewers TikTok</option>
                 <option value="viewerYoutube">Viewers YouTube</option>
               </select>
-              <p class="text-[11px] text-slate-500 mt-1">Legacy fields remain readable for older scenes but are hidden for new bindings.</p>
+              <p class="text-xs text-slate-500 mt-1">Legacy fields remain readable for older scenes but are hidden for new bindings.</p>
             </div>
 
             <div id="chat-binding-group" class="hidden space-y-2">
@@ -809,7 +825,7 @@
                   <option value="teamOnly">Ferrari (Team only — Avatar/Code)</option>
                   <option value="neutral">Neutral F1 (No match)</option>
                 </select>
-                <p class="text-[11px] text-slate-500">Team color, logo, and driver number auto-match from username or message. Custom logos live in <code>public/f1-logos/</code>.</p>
+                <p class="text-xs text-slate-500">Team color, logo, and driver number auto-match from username or message. Custom logos live in <code>public/f1-logos/</code>.</p>
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Template</label>
@@ -824,7 +840,7 @@
                   <option value="{author}">{author}</option>
                 </datalist>
               </div>
-              <p class="text-[11px] text-slate-500">Chat Notification and Chat Stack render in styled card mode. The template above is used for Marquee and Scroll modes.</p>
+              <p class="text-xs text-slate-500">Chat Notification and Chat Stack render in styled card mode. The template above is used for Marquee and Scroll modes.</p>
             </div>
 
             <div id="f1data-binding-group" class="hidden space-y-2">
@@ -835,7 +851,7 @@
                   placeholder="driverStandingsText.abbrMarquee">
                 <datalist id="f1-field-paths"></datalist>
               </div>
-              <p class="text-[11px] text-slate-500">Examples: <code>driverStandingsText.abbrMarquee</code>, <code>constructorStandingsText.fullMultiline</code>, <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code>.</p>
+              <p class="text-xs text-slate-500">Examples: <code>driverStandingsText.abbrMarquee</code>, <code>constructorStandingsText.fullMultiline</code>, <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code>.</p>
             </div>
 
             <div id="clock-binding-group" class="hidden space-y-2">
@@ -889,7 +905,7 @@
                   <button id="prop-es-options-save" type="button"
                     class="studio-btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Save</button>
                 </div>
-                <p id="prop-es-options-status" class="text-[11px] text-slate-500 mt-1">Appears as pills on /control. Existing options are kept.</p>
+                <p id="prop-es-options-status" class="text-xs text-slate-500 mt-1">Appears as pills on /control. Existing options are kept.</p>
               </div>
               <div id="control-text-format-group" class="hidden">
                 <label class="block text-[11px] text-slate-400 mb-1">Text Style</label>
@@ -910,7 +926,7 @@
                   <option value="seconds">Seconds (600)</option>
                 </select>
               </div>
-              <p class="text-[11px] text-slate-500">Values are controlled from <code>/control</code>. New groups appear automatically after saving the scene.</p>
+              <p class="text-xs text-slate-500">Values are controlled from <code>/control</code>. New groups appear automatically after saving the scene.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -960,7 +976,7 @@
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
               <option value="">— None (top-level) —</option>
             </select>
-            <p class="text-[11px] text-slate-500 mt-1">Child layers follow parent position and animation (1 level nesting).</p>
+            <p class="text-xs text-slate-500 mt-1">Child layers follow parent position and animation (1 level nesting).</p>
           </div>
 
           <div class="grid grid-cols-2 gap-2 mt-3">
@@ -1094,7 +1110,7 @@
             <button id="anim-transition-tab" type="button" data-animation-mode="transition"
               class="studio-tab-btn py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Transition</button>
           </div>
-          <p id="anim-mode-help" class="text-[11px] text-slate-500">Plays when the layer first appears.</p>
+          <p id="anim-mode-help" class="text-xs text-slate-500">Plays when the layer first appears.</p>
           <!-- List step Q0..Qn, rendered by renderAnimationSequenceEditor() -->
           <div id="anim-step-list" class="space-y-2"></div>
 
@@ -1466,6 +1482,7 @@
 
     // DOM Elements
     const artboard = document.getElementById('artboard')
+    const artboardStage = document.getElementById('artboard-stage')
     const artboardScaler = document.getElementById('artboard-scaler')
     const canvasContainer = document.getElementById('canvas-container')
     const zoomLevelEl = document.getElementById('zoom-level')
@@ -1923,79 +1940,79 @@
       const header = document.createElement('div')
       header.className = 'flex items-center justify-between pb-1 border-b border-slate-800'
       header.innerHTML = `
-        <span class="anim-step-label text-[11px] font-bold text-emerald-400 font-mono flex items-center gap-1.5">
-          ${isCurrentlyPreviewed ? '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" title="State Aktif Preview"></span>' : ''}
+        <span class="anim-step-label text-[11px] font-bold font-mono flex items-center gap-1.5" style="color: var(--color-sage-hover)">
+          ${isCurrentlyPreviewed ? '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" title="Active Preview State"></span>' : ''}
           ${escHtml(stateName)}
-          ${isFallback ? '<span class="text-[9px] font-normal text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.2">fallback</span>' : ''}
-          ${props._visible === false ? '<span class="text-[9px] font-normal text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.2" title="Elemen disembunyikan di state ini">invisible</span>' : ''}
+          ${isFallback ? '<span class="text-[11px] font-normal rounded px-1.5" style="color: var(--color-muted-chalk); background: var(--color-surface-light);">fallback</span>' : ''}
+          ${props._visible === false ? '<span class="text-[11px] font-normal rounded px-1.5" style="color: #f3d28f; background: rgba(233,185,73,0.12);" title="Layer is hidden in this state">invisible</span>' : ''}
         </span>
         <div class="flex items-center gap-1">
           <button type="button" data-st-move="up" data-state="${escHtml(stateName)}" ${index === 0 ? 'disabled' : ''}
-            class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Pindah ke atas">▲</button>
+            class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Move up" aria-label="Move state up">▲</button>
           <button type="button" data-st-move="down" data-state="${escHtml(stateName)}" ${index === total - 1 ? 'disabled' : ''}
-            class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Pindah ke bawah">▼</button>
+            class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Move down" aria-label="Move state down">▼</button>
           <button type="button" data-st-preview data-state="${escHtml(stateName)}"
-            class="px-1.5 py-0.5 rounded ${isCurrentlyPreviewed ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'} text-[10px] font-semibold transition cursor-pointer"
-            title="Tampilkan preview state ini di canvas">
-            ${isCurrentlyPreviewed ? '✓ Active' : '▶ Preview'}
+            class="px-2 py-0.5 rounded text-[11px] font-semibold transition cursor-pointer ${isCurrentlyPreviewed ? 'studio-btn-primary' : 'studio-btn-secondary'}"
+            title="Preview this state on canvas">
+            ${isCurrentlyPreviewed ? 'Active' : 'Preview'}
           </button>
           <button type="button" data-st-delete data-state="${escHtml(stateName)}"
-            class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px] font-bold transition cursor-pointer"
-            title="Hapus state">✕</button>
+            class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[11px] font-bold transition cursor-pointer"
+            title="Delete state" aria-label="Delete state">✕</button>
         </div>`
       card.appendChild(header)
 
       const propsSection = document.createElement('div')
       propsSection.className = 'pt-1'
-      propsSection.innerHTML = `<label class="block text-[10px] text-slate-400 mb-1.5 font-semibold">Target Properties</label>`
+      propsSection.innerHTML = `<label class="block text-[11px] text-slate-400 mb-1.5 font-semibold">Target Properties</label>`
 
       const grid = document.createElement('div')
-      grid.className = 'grid grid-cols-2 gap-1.5'
+      grid.className = 'grid grid-cols-1 gap-1.5'
 
       for (const p of STATE_TARGET_PROPS) {
         const hasVal = Object.prototype.hasOwnProperty.call(props, p.key)
         const fallbackVal = getBaselineProp(el, p.key)
         const cell = document.createElement('label')
-        cell.className = 'flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer select-none'
+        cell.className = 'flex items-center gap-2 text-[11px] text-slate-400 cursor-pointer select-none'
         cell.innerHTML = `
           <input type="checkbox" data-st-toggle data-state="${escHtml(stateName)}" data-prop="${p.key}"
             ${hasVal ? 'checked' : ''}
-            class="rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500 shrink-0">
-          <span class="w-14 shrink-0 font-mono text-[10px] ${hasVal ? 'text-slate-200 font-bold' : 'text-slate-400'}">${p.label}</span>
+            class="studio-checkbox shrink-0">
+          <span class="w-20 shrink-0 font-mono text-[11px] ${hasVal ? 'text-slate-200 font-bold' : 'text-slate-400'}">${p.label}</span>
           <input type="number" step="${p.step}" min="${p.min ?? ''}" max="${p.max ?? ''}"
             data-st-input data-state="${escHtml(stateName)}" data-prop="${p.key}"
             value="${hasVal ? props[p.key] : ''}"
             placeholder="${fallbackVal}"
             ${hasVal ? '' : 'disabled'}
-            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40 font-mono focus:outline-none focus:border-emerald-500">`
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-[72px] disabled:opacity-40 font-mono tabular-nums focus:outline-none">`
         grid.appendChild(cell)
       }
       propsSection.appendChild(grid)
       card.appendChild(propsSection)
 
       const visibility = document.createElement('div')
-      visibility.className = 'flex items-center justify-between pt-1.5 border-t border-slate-800 text-[10px]'
+      visibility.className = 'flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800 text-[11px]'
       visibility.innerHTML = `
-        <label class="text-slate-400 font-semibold flex items-center gap-1 select-none">
-          <span title="Visible = elemen tampil di state ini. Invisible = elemen disembunyikan (setelah transition selesai), terpisah dari opacity.">Visibilitas:</span>
+        <label class="text-slate-400 font-semibold flex items-center gap-1 select-none shrink-0">
+          <span title="Visible = shown in this state. Invisible = hidden after transition ends, separate from opacity.">Visibility:</span>
         </label>
         <select data-st-visible data-state="${escHtml(stateName)}"
-          class="bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-emerald-300 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer">
-          <option value="visible" ${props._visible === false ? '' : 'selected'}>Visible (tampil)</option>
-          <option value="invisible" ${props._visible === false ? 'selected' : ''}>Invisible (sembunyi)</option>
+          class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-[11px] text-white font-mono whitespace-nowrap focus:outline-none cursor-pointer">
+          <option value="visible" ${props._visible === false ? '' : 'selected'}>Visible</option>
+          <option value="invisible" ${props._visible === false ? 'selected' : ''}>Invisible</option>
         </select>`
       card.appendChild(visibility)
 
       const footer = document.createElement('div')
-      footer.className = 'flex items-center justify-between pt-1.5 border-t border-slate-800 text-[10px]'
+      footer.className = 'flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800 text-[11px]'
       footer.innerHTML = `
-        <label class="text-slate-400 font-semibold flex items-center gap-1 cursor-pointer select-none">
-          <span title="Urutan step di tab Transition saat elemen berpindah MASUK ke state ini">Arah transisi masuk:</span>
+        <label class="text-slate-400 font-semibold flex items-center gap-1 cursor-pointer select-none shrink-0">
+          <span title="Order of Transition steps when entering this state">Direction:</span>
         </label>
         <select data-st-direction data-state="${escHtml(stateName)}"
-          class="bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-emerald-300 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer">
+          class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-[11px] text-white font-mono whitespace-nowrap focus:outline-none cursor-pointer">
           <option value="forward" ${props._direction === 'reverse' ? '' : 'selected'}>Forward (T0 → T1)</option>
           <option value="reverse" ${props._direction === 'reverse' ? 'selected' : ''}>Reverse (T1 → T0)</option>
         </select>`
@@ -2535,9 +2552,17 @@
       updateBindingControls()
     }
 
+    function syncArtboardStageSize() {
+      if (!artboardStage) return
+      const { width, height } = getSceneCanvasSize()
+      artboardStage.style.width = `${Math.round(width * zoom)}px`
+      artboardStage.style.height = `${Math.round(height * zoom)}px`
+    }
+
     function setZoom(val) {
       zoom = Math.max(0.15, Math.min(1.5, val))
       artboardScaler.style.transform = `scale(${zoom})`
+      syncArtboardStageSize()
       zoomLevelEl.textContent = `${Math.round(zoom * 100)}%`
     }
 
@@ -2939,6 +2964,7 @@
       const canvasHeight = Number(scene?.canvas?.height) || 1080
       artboard.style.width = `${canvasWidth}px`
       artboard.style.height = `${canvasHeight}px`
+      syncArtboardStageSize()
       artboard.style.backgroundColor = scene?.canvas?.backgroundColor || 'transparent'
       artboard.innerHTML = ''
 
@@ -3258,46 +3284,68 @@
       if (e.target === artboard) selectElement(null)
     })
 
+    // Inline semantic SVG icons (no emoji / CSS mask hacks)
+    const STUDIO_ICONS = {
+      text: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
+      shape: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>',
+      image: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
+      child: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4v10a2 2 0 0 0 2 2h10"/><path d="m14 12 4 4-4 4"/></svg>',
+      anim: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8"/></svg>',
+      locked: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+      unlocked: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></svg>',
+      lockedSm: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+      visible: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>',
+      hidden: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.2A10.9 10.9 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.2 3.2M6.6 6.6A17.7 17.7 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.4-1.6M2 2l20 20"/></svg>',
+      hiddenSm: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.2A10.9 10.9 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.2 3.2M6.6 6.6A17.7 17.7 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.4-1.6M2 2l20 20"/></svg>',
+    }
+
     // Render Layers
     function renderLayers() {
       layersListEl.innerHTML = ''
       // Show top-most layer (highest zIndex) first in the panel
       const orderedElements = [...scene.elements].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
-
       const byId = new Map(scene.elements.map(item => [item.id, item]))
 
       orderedElements.forEach(el => {
+        const isSelected = el.id === selectedElementId
         const item = document.createElement('div')
-        item.className = `px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer border transition ${el.id === selectedElementId
-          ? 'bg-indigo-600/25 border-indigo-500/70 text-white shadow-md'
-          : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-          }`
+        item.setAttribute('role', 'button')
+        item.setAttribute('tabindex', '0')
+        item.setAttribute('aria-pressed', isSelected ? 'true' : 'false')
+        item.className = `layer-row px-2.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 cursor-pointer border transition ${isSelected ? 'layer-row-selected' : ''}`
 
         const hasAnim = Array.isArray(el.animation?.enter?.sequence) && el.animation.enter.sequence.length > 0
-        // Fase 9 — tandai child (parentId valid & bukan multi-level) dengan indent + ikon.
         const parentId = getEffectiveParentId(el, byId)
         const parentEl = parentId ? byId.get(parentId) : null
         const indentStyle = parentEl ? 'style="margin-left:14px"' : ''
-        const childBadge = parentEl
-          ? `<span title="Child dari: ${parentEl.name || parentEl.id}" class="text-cyan-400">⤷</span>`
-          : ''
+        const typeIcon = el.type === 'text' ? STUDIO_ICONS.text : el.type === 'image' ? STUDIO_ICONS.image : STUDIO_ICONS.shape
+        const leadIcon = parentEl
+          ? `<span title="Child of ${escHtml(parentEl.name || parentEl.id)}" style="color: var(--color-sage-hover)">${STUDIO_ICONS.child}</span>`
+          : `<span style="color: var(--color-sage-hover)">${typeIcon}</span>`
 
         item.innerHTML = `
-          <div class="flex items-center space-x-2 truncate" ${indentStyle}>
-            <span>${childBadge || (el.type === 'text' ? '🔤' : '⬛')}</span>
-            <span class="truncate font-semibold ${el.hidden ? 'line-through opacity-50' : ''}">${el.name || el.id}</span>
+          <div class="flex items-center gap-2 min-w-0 truncate" ${indentStyle}>
+            ${leadIcon}
+            <span class="truncate font-semibold ${el.hidden ? 'line-through layer-name-hidden' : ''}">${escHtml(el.name || el.id)}</span>
           </div>
-          <div class="flex items-center space-x-1.5">
-            ${hasAnim ? '<span title="Has Animation" class="text-purple-400">✨</span>' : ''}
-            <span class="text-[10px] text-slate-500 font-mono">z:${el.zIndex || 1}</span>
-            <span>${el.locked ? '🔒' : ''}</span>
-            <span>${el.hidden ? '🚫' : ''}</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${hasAnim ? `<span title="Has Enter Animation" style="color: var(--color-sage-hover)">${STUDIO_ICONS.anim}</span>` : ''}
+            <span class="text-[11px] font-mono tabular-nums" style="color: var(--color-slate-ash)">z:${el.zIndex || 1}</span>
+            ${el.locked ? `<span title="Locked" style="color: #f3a29b">${STUDIO_ICONS.lockedSm}</span>` : ''}
+            ${el.hidden ? `<span title="Hidden" style="color: var(--color-slate-ash)">${STUDIO_ICONS.hiddenSm}</span>` : ''}
           </div>
         `
 
         item.addEventListener('click', (e) => {
           e.stopPropagation()
           selectElement(el.id)
+        })
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.stopPropagation()
+            selectElement(el.id)
+          }
         })
 
         layersListEl.appendChild(item)
@@ -3389,8 +3437,22 @@
       document.getElementById('prop-opacity-num').value = op
       document.getElementById('prop-opacity-val').textContent = `${op}%`
 
-      document.getElementById('lock-icon').textContent = el.locked ? '🔒' : '🔓'
-      document.getElementById('visibility-icon').textContent = el.hidden ? '🚫' : '👁️'
+      const lockBtn = document.getElementById('lock-toggle-btn')
+      const lockIcon = document.getElementById('lock-icon')
+      if (lockIcon && lockBtn) {
+        lockIcon.innerHTML = el.locked ? STUDIO_ICONS.locked : STUDIO_ICONS.unlocked
+        lockBtn.setAttribute('aria-pressed', el.locked ? 'true' : 'false')
+        lockBtn.title = el.locked ? 'Unlock layer' : 'Lock layer'
+        lockBtn.setAttribute('aria-label', lockBtn.title)
+      }
+      const visBtn = document.getElementById('visibility-toggle-btn')
+      const visIcon = document.getElementById('visibility-icon')
+      if (visIcon && visBtn) {
+        visIcon.innerHTML = el.hidden ? STUDIO_ICONS.hidden : STUDIO_ICONS.visible
+        visBtn.setAttribute('aria-pressed', el.hidden ? 'true' : 'false')
+        visBtn.title = el.hidden ? 'Show layer' : 'Hide layer'
+        visBtn.setAttribute('aria-label', visBtn.title)
+      }
 
       // State Binding (semua tipe elemen)
       const stateBinding = ensureStateBinding(el)
@@ -3663,18 +3725,18 @@
         // dan handler yang sudah terpasang -- mis. tombol X -- hilang.)
         card.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-indigo-300 font-mono">T${index}${isDelay ? ' · delay' : ''}</span>
-            <button type="button" data-delete class="text-red-400 hover:text-red-300 px-1" title="Hapus step">✕</button>
+            <span class="text-[11px] font-bold font-mono" style="color: var(--color-sage-hover)">T${index}${isDelay ? ' · delay' : ''}</span>
+            <button type="button" data-delete class="text-red-400 hover:text-red-300 px-1 cursor-pointer" title="Delete step" aria-label="Delete step">✕</button>
           </div>
           ${isDelay ? `
-            <label class="block text-[10px] text-slate-400">Delay (detik)
+            <label class="block text-[11px] text-slate-400">Delay (s)
               <input data-duration type="number" min="0" step="0.01" class="${inputCls}">
             </label>` : `
             <div class="grid grid-cols-2 gap-1.5">
-              <label class="text-[10px] text-slate-400">Duration (s)
+              <label class="text-[11px] text-slate-400">Duration (s)
                 <input data-duration type="number" min="0" step="0.01" class="${inputCls}">
               </label>
-              <label class="text-[10px] text-slate-400">Ease
+              <label class="text-[11px] text-slate-400">Ease
                 <select data-ease class="${inputCls}"></select>
               </label>
             </div>
@@ -3726,7 +3788,7 @@
       if (anim.transition.sequence.length === 0) {
         const empty = document.createElement('p')
         empty.className = 'text-[11px] text-slate-500 italic text-center py-2'
-        empty.textContent = 'Belum ada transition step. State akan berpindah langsung.'
+        empty.textContent = 'No transition steps yet. State changes apply immediately.'
         listEl.appendChild(empty)
       }
     }
@@ -3738,7 +3800,7 @@
         const btn = document.createElement('button')
         btn.type = 'button'
         btn.textContent = label
-        btn.className = 'px-2 py-1 rounded-lg bg-slate-800 hover:bg-indigo-600/60 border border-slate-700 text-[10px] text-slate-300 hover:text-white transition'
+        btn.className = 'px-2 py-1.5 rounded-lg text-[11px] font-semibold transition cursor-pointer'
         btn.addEventListener('click', () => {
           const el = scene.elements.find(item => item.id === selectedElementId)
           if (!el) return
@@ -3783,7 +3845,7 @@
       if (sequence.length === 0) {
         const empty = document.createElement('p')
         empty.className = 'text-[11px] text-slate-500 italic text-center py-2'
-        empty.textContent = 'Belum ada step. Tambah manual atau pakai Quick Insert Preset di bawah.'
+        empty.textContent = 'No steps yet. Add a step or choose a Quick Insert Preset below.'
         listEl.appendChild(empty)
         return
       }
@@ -3912,7 +3974,7 @@
             // dari target state aktif ke dirinya sendiri, tidak ada yang bergerak.
             const otherState = Object.keys(el.stateTargets || {}).find(name => name !== activeState)
             if (!otherState) {
-              window.alert('Preview transition butuh minimal 2 state di State Targets (mis. "default" dan "alert").')
+              showStudioToast('Transition preview needs at least 2 State Targets (e.g. "default" and "alert").', { variant: 'warn' })
               return
             }
             AnimationEngine.setStateBaseline(node, el, getElementStateTarget(el, otherState))
@@ -4045,7 +4107,7 @@
         probe.onload = () => {
           // SVG tanpa width/height (cuma viewBox) tidak punya ukuran intrinsik.
           if (!probe.naturalWidth || !probe.naturalHeight) {
-            alert('Cannot fit box: this asset has no intrinsic size (SVG without width/height).')
+            showStudioToast('Cannot fit box: this SVG asset has no intrinsic width/height.', { variant: 'warn' })
             return
           }
           if (mode === 'height') {
@@ -4074,21 +4136,21 @@
 
       // Lock / Unlock
       document.getElementById('lock-toggle-btn').addEventListener('click', () => {
-        const el = getSelected(); if (el) { el.locked = !el.locked; renderCanvas(); renderLayers(); updateInspectorValues(); }
+        const el = getSelected(); if (el) { el.locked = !el.locked; commitSceneChange(); renderCanvas(); renderLayers(); updateInspectorValues(); }
       })
 
       // Visibility
       document.getElementById('visibility-toggle-btn').addEventListener('click', () => {
-        const el = getSelected(); if (el) { el.hidden = !el.hidden; renderCanvas(); renderLayers(); updateInspectorValues(); }
+        const el = getSelected(); if (el) { el.hidden = !el.hidden; commitSceneChange(); renderCanvas(); renderLayers(); updateInspectorValues(); }
       })
 
       // Alignments
-      document.getElementById('align-left-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = 0; renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-center-h-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = Math.round((getSceneCanvasSize().width - el.width) / 2); renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-right-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = getSceneCanvasSize().width - el.width; renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-top-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = 0; renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-center-v-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = Math.round((getSceneCanvasSize().height - el.height) / 2); renderCanvas(); updateInspectorValues(); } })
-      document.getElementById('align-bottom-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = getSceneCanvasSize().height - el.height; renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-left-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = 0; commitSceneChange(); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-center-h-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = Math.round((getSceneCanvasSize().width - el.width) / 2); commitSceneChange(); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-right-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.x = getSceneCanvasSize().width - el.width; commitSceneChange(); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-top-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = 0; commitSceneChange(); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-center-v-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = Math.round((getSceneCanvasSize().height - el.height) / 2); commitSceneChange(); renderCanvas(); updateInspectorValues(); } })
+      document.getElementById('align-bottom-btn').addEventListener('click', () => { const el = getSelected(); if (el) { el.y = getSceneCanvasSize().height - el.height; commitSceneChange(); renderCanvas(); updateInspectorValues(); } })
 
       // Transforms
       document.getElementById('prop-x').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.x = parseInt(e.target.value) || 0; renderCanvas(); } })
@@ -4772,7 +4834,7 @@
         await uploadAsset(file)
       } catch (err) {
         console.error('Failed to upload asset:', err)
-        alert(err.message || 'Failed to upload asset')
+        showStudioToast(err.message || 'Failed to upload asset', { variant: 'error' })
       } finally {
         assetFileInput.value = ''
       }
@@ -5040,7 +5102,14 @@
           deleteSelectedElement()
         }
       }
-      if (e.key === 'Escape') selectElement(null)
+      if (e.key === 'Escape') {
+        if (sceneMenuPopover && !sceneMenuPopover.classList.contains('hidden')) {
+          setSceneMenuOpen(false)
+          sceneMenuBtn?.focus()
+          return
+        }
+        selectElement(null)
+      }
     })
 
     document.addEventListener('DOMContentLoaded', async () => {

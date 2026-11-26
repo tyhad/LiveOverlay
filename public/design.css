@@ -37,6 +37,7 @@ input, textarea {
 /* Asset and animation controls live in editor.css. */
 
 .control-page {
+  color-scheme: dark;
   background: var(--color-studio-canvas) !important;
   color: var(--color-pure-white) !important;
   font-family: var(--font-manrope) !important;
@@ -51,7 +52,7 @@ input, textarea {
 .control-page button:focus-visible, .control-page input:focus-visible, .control-page textarea:focus-visible { outline: 2px solid var(--color-sage-hover); outline-offset: 2px; }
 .control-page .counter-btn, .control-page .timer-controls button, .control-page .pill,
 .control-page .text-send, .control-page .add-option-row button { box-shadow: var(--shadow-neu-flat); }
-.control-page .timer-controls button.start, .control-page .text-send.dirty { background: var(--ok); }
-.control-page .timer-controls button.stop, .control-page .tool-btn.danger, .control-page .pill-remove { background: var(--danger); }
-.control-page #status-dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-.control-page #status-dot.err { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+.control-page .timer-controls button.start, .control-page .text-send.dirty { background: var(--color-ok-bg); }
+.control-page .timer-controls button.stop, .control-page .tool-btn.danger, .control-page .pill-remove { background: var(--color-danger-bg); }
+.control-page #status-dot.live { background: var(--ok); }
+.control-page #status-dot.err { background: var(--danger); }

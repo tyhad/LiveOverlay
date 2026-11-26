@@ -1,5 +1,6 @@
 /* Editor-only layer. Keep page-specific rules here; shared tokens live in design.css. */
 .editor-page {
+  color-scheme: dark;
   background: var(--color-studio-canvas) !important;
   color: var(--color-pure-white) !important;
   font-family: var(--font-manrope) !important;
@@ -143,6 +144,27 @@
   box-shadow: var(--shadow-neu-pressed) !important;
 }
 
+.editor-page .layer-row {
+  background: var(--color-studio-canvas);
+  border-color: var(--color-surface-light);
+  color: var(--color-muted-chalk);
+  box-shadow: var(--shadow-neu-flat);
+}
+.editor-page .layer-row:hover {
+  background: var(--color-surface-light);
+  color: var(--color-pure-white);
+  border-color: var(--color-sage-olive);
+}
+.editor-page .layer-row-selected {
+  background: var(--color-dark-trench) !important;
+  border-color: var(--color-sage-olive) !important;
+  color: var(--color-pure-white) !important;
+  box-shadow: var(--shadow-neu-pressed), var(--shadow-sage-glow) !important;
+}
+.editor-page .layer-name-hidden {
+  color: var(--color-slate-ash) !important;
+}
+
 .editor-page .canvas-workspace {
   background-color: var(--color-studio-canvas) !important;
   background-image: linear-gradient(45deg, #24282c 25%, transparent 25%), linear-gradient(-45deg, #24282c 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #24282c 75%), linear-gradient(-45deg, transparent 75%, #24282c 75%) !important;
@@ -169,9 +191,6 @@
 .editor-page .text-slate-400 { color: var(--color-muted-chalk) !important; }
 .editor-page .text-slate-500,
 .editor-page .text-slate-600 { color: var(--color-slate-ash) !important; }
-.editor-page .bg-indigo-600 { background-color: var(--color-sage-primary) !important; }
-.editor-page .bg-indigo-600\/15 { background-color: rgba(123, 132, 114, .16) !important; }
-.editor-page .bg-indigo-600\/25 { background-color: rgba(123, 132, 114, .25) !important; }
 .editor-page .text-indigo-400,
 .editor-page .text-indigo-300,
 .editor-page .text-indigo-200 { color: var(--color-sage-hover) !important; }
@@ -179,8 +198,6 @@
 .editor-page .border-indigo-500\/40,
 .editor-page .border-indigo-500\/50,
 .editor-page .border-indigo-500\/70 { border-color: var(--color-sage-olive) !important; }
-.editor-page .hover\\:bg-indigo-500:hover,
-.editor-page .hover\\:bg-indigo-600:hover { background-color: var(--color-sage-primary-hover) !important; }
 
 .editor-page .studio-logo img {
   display: block;

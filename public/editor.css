@@ -182,6 +182,20 @@
 .editor-page .layer-name-hidden {
   color: var(--color-slate-ash) !important;
 }
+.editor-page .layer-row-actions {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.editor-page .layer-row:hover .layer-row-actions,
+.editor-page .layer-row:focus-within .layer-row-actions,
+.editor-page .layer-row-selected .layer-row-actions,
+.editor-page .layer-row-actions[data-has-active="true"] {
+  opacity: 1;
+}
+.editor-page .layer-row.layer-drag-over {
+  border-color: var(--color-sage-hover) !important;
+  box-shadow: 0 0 0 1px var(--color-sage-hover), var(--shadow-neu-flat) !important;
+}
 
 .editor-page .canvas-workspace {
   background-color: var(--color-studio-canvas) !important;

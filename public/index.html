@@ -58,9 +58,18 @@
                 class="studio-dialog-input h-8 w-full rounded-lg px-2.5 text-xs font-semibold text-white">
             </div>
             <div class="flex flex-col gap-1">
-              <button id="new-scene-btn" type="button" role="menuitem" class="studio-menu-item">New Scene</button>
-              <button id="duplicate-scene-btn" type="button" role="menuitem" class="studio-menu-item">Duplicate Scene</button>
-              <button id="delete-scene-btn" type="button" role="menuitem" class="studio-menu-item studio-menu-item-danger">Delete Scene</button>
+              <button id="new-scene-btn" type="button" role="menuitem" class="studio-menu-item flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                <span>New Scene</span>
+              </button>
+              <button id="duplicate-scene-btn" type="button" role="menuitem" class="studio-menu-item flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></svg>
+                <span>Duplicate Scene</span>
+              </button>
+              <button id="delete-scene-btn" type="button" role="menuitem" class="studio-menu-item studio-menu-item-danger flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <span>Delete Scene</span>
+              </button>
             </div>
           </div>
         </div>
@@ -105,6 +114,9 @@
             <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
           </svg>
         </button>
+        <button id="shortcuts-help-btn" type="button"
+          class="studio-icon-btn w-7 h-7 flex items-center justify-center rounded-lg border text-xs font-bold transition cursor-pointer"
+          title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts">?</button>
       </div>
 
       <button id="play-all-animations-btn" type="button"
@@ -212,28 +224,38 @@
 
       <!-- Section 3: Layers List -->
       <div class="flex flex-col flex-1 min-h-0">
-        <div class="p-3 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 z-10">
-          <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
-          <div class="flex items-center gap-1" role="group" aria-label="Reorder layer">
-            <button id="layer-top-btn" type="button"
-              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
-              title="Bring to Front" aria-label="Bring to Front">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 11-5-5-5 5M17 18l-5-5-5 5" /></svg>
-            </button>
-            <button id="layer-up-btn" type="button"
-              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
-              title="Move Up" aria-label="Move Up">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
-            </button>
-            <button id="layer-down-btn" type="button"
-              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
-              title="Move Down" aria-label="Move Down">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-            </button>
-            <button id="layer-bottom-btn" type="button"
-              class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
-              title="Send to Back" aria-label="Send to Back">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 6 5 5 5-5M7 13l5 5 5-5" /></svg>
+        <div class="p-3 border-b border-slate-800 space-y-2 sticky top-0 bg-slate-900/95 z-10">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
+            <div class="flex items-center gap-1" role="group" aria-label="Reorder layer">
+              <button id="layer-top-btn" type="button"
+                class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+                title="Bring to Front" aria-label="Bring to Front">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 11-5-5-5 5M17 18l-5-5-5 5" /></svg>
+              </button>
+              <button id="layer-up-btn" type="button"
+                class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+                title="Move Up" aria-label="Move Up">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+              </button>
+              <button id="layer-down-btn" type="button"
+                class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+                title="Move Down" aria-label="Move Down">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <button id="layer-bottom-btn" type="button"
+                class="w-6 h-6 flex items-center justify-center rounded-md transition cursor-pointer"
+                title="Send to Back" aria-label="Send to Back">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 6 5 5 5-5M7 13l5 5 5-5" /></svg>
+              </button>
+            </div>
+          </div>
+          <div class="relative">
+            <input id="layer-search-input" type="search" placeholder="Filter layers..." aria-label="Filter layers"
+              class="studio-select w-full h-7 rounded-lg pl-2.5 pr-7 text-xs text-white placeholder:text-slate-400 focus:outline-none">
+            <button id="layer-search-clear" type="button" aria-label="Clear layer filter" title="Clear filter"
+              class="hidden absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 items-center justify-center rounded text-slate-400 hover:text-white cursor-pointer">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
         </div>
@@ -287,6 +309,7 @@
             <label for="canvas-scene-id" class="block text-[11px] text-slate-400 mb-1">Scene ID (Slug)</label>
             <input type="text" id="canvas-scene-id" placeholder="scene-slug"
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono">
+            <p id="canvas-scene-id-error" class="hidden text-[11px] mt-1" style="color: #f3a29b"></p>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
@@ -656,6 +679,10 @@
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>Dynamic Content</span>
           </summary>
+
+          <p id="marquee-scroll-conflict-note" class="hidden text-[11px] font-medium rounded-lg px-2.5 py-1.5" style="color: #f3d28f; background: rgba(233, 185, 73, 0.1); border: 1px solid rgba(233, 185, 73, 0.3);">
+            Both Marquee and Scroll Text are enabled — horizontal and vertical scrolling may overlap in OBS.
+          </p>
 
           <div class="studio-subcard rounded-xl p-3">
             <div class="flex items-center justify-between">
@@ -1468,6 +1495,29 @@
   <!-- Studio Toast Host (non-blocking status & Undo notifications) -->
   <div id="studio-toast-host" class="studio-toast-host" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <!-- Keyboard Shortcuts Cheat-Sheet Modal -->
+  <div id="studio-shortcuts-backdrop" class="studio-dialog-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="studio-shortcuts-title">
+    <div class="studio-dialog-card" style="max-width: 440px;">
+      <div class="flex items-center justify-between mb-3">
+        <h2 id="studio-shortcuts-title" class="text-sm font-bold text-white">Keyboard Shortcuts</h2>
+        <button id="studio-shortcuts-close" type="button" aria-label="Close shortcuts"
+          class="studio-icon-btn w-7 h-7 flex items-center justify-center rounded-lg border text-xs cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="space-y-1 text-xs">
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Save Scene</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + S</kbd></div>
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Undo / Redo</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + Z / Shift+Z</kbd></div>
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Duplicate / Delete Layer</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + D / Del</kbd></div>
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Nudge Layer (1px / 10px)</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Arrow / Shift+Arrow</kbd></div>
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Pan Canvas</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Space + Drag</kbd></div>
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Zoom In / Out / Fit</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + / - / 0</kbd></div>
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Toggle Focus Stage</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + \</kbd></div>
+        <div class="flex items-center justify-between py-2"><span style="color: var(--color-muted-chalk)">Deselect / Close Menu</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Esc</kbd></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Studio Dark Neumorphic Dialog (Confirm / Prompt) -->
   <div id="studio-dialog-backdrop" class="studio-dialog-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="studio-dialog-title">
     <div class="studio-dialog-card">
@@ -1497,7 +1547,16 @@
       const response = await nativeFetch(input, init)
       if (response.status !== 401 || method === 'GET' || !String(input).includes('/api/')) return response
 
-      const token = sessionStorage.getItem('liveoverlay-secret') || window.prompt('Masukkan secret key LiveOverlay')
+      let token = sessionStorage.getItem('liveoverlay-secret')
+      if (!token) {
+        const authResult = await openStudioDialog({
+          title: 'Authentication Required',
+          message: 'Enter the LiveOverlay secret key to save or modify data.',
+          confirmLabel: 'Unlock',
+          fields: [{ name: 'token', label: 'Secret Key', type: 'password', placeholder: 'Enter secret key' }],
+        })
+        token = authResult?.token?.trim() || ''
+      }
       if (!token) return response
       sessionStorage.setItem('liveoverlay-secret', token)
       const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined))
@@ -1861,7 +1920,7 @@
     function updateSceneInfo() {
       const width = Number(scene?.canvas?.width) || 1920
       const height = Number(scene?.canvas?.height) || 1080
-      sceneInfoEl.textContent = `${width} × ${height} • ${scene.id}`
+      sceneInfoEl.textContent = `${width} × ${height}`
     }
 
     function ensureTextBinding(el) {
@@ -1911,6 +1970,23 @@
       document.getElementById('marquee-body')?.classList.toggle('hidden', !el?.marquee?.enabled)
       document.getElementById('scroll-body')?.classList.toggle('hidden', !el?.scroll?.enabled)
       document.getElementById('data-binding-body')?.classList.toggle('hidden', !el?.textBinding?.enabled)
+      document.getElementById('marquee-scroll-conflict-note')?.classList.toggle('hidden', !(el?.marquee?.enabled && el?.scroll?.enabled))
+    }
+
+    function setInputValidity(inputEl, valid, errorEl = null, msg = '') {
+      if (!inputEl) return
+      inputEl.setAttribute('aria-invalid', valid ? 'false' : 'true')
+      inputEl.style.borderColor = valid ? '' : '#b9362c'
+      if (errorEl) {
+        errorEl.textContent = valid ? '' : msg
+        errorEl.classList.toggle('hidden', valid)
+      }
+    }
+
+    function isValidCssColor(val) {
+      const s = String(val || '').trim()
+      if (!s || s === 'transparent') return true
+      return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' ? CSS.supports('color', s) : true
     }
 
     function syncAlignButtonStates(el) {
@@ -2365,9 +2441,9 @@
       const b = el?.textBinding
       const group = (b?.group ?? b?.name ?? '').trim()
       const statusEl = document.getElementById('prop-es-options-status')
-      if (!group) { statusEl.textContent = 'Isi nama grup dulu.'; return }
+      if (!group) { statusEl.textContent = 'Enter a group name first.'; return }
       const options = [...new Set(document.getElementById('prop-es-options').value.split(',').map(v => v.trim()).filter(Boolean))]
-      if (options.length === 0) { statusEl.textContent = 'Isi minimal satu opsi.'; return }
+      if (options.length === 0) { statusEl.textContent = 'Enter at least one option.'; return }
       try {
         for (const option of options) {
           const res = await fetch(`/api/control-state/event-states/${encodeURIComponent(group)}/options/add`, {
@@ -2375,13 +2451,13 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ option })
           })
-          if (!res.ok) throw new Error('gagal menyimpan opsi')
+          if (!res.ok) throw new Error('failed to save option')
         }
         await loadControlStateForEditor()
-        statusEl.textContent = `Tersimpan ${options.length} opsi ke grup "${group}".`
+        statusEl.textContent = `Saved ${options.length} option(s) to "${group}".`
         refreshControlDatalists()
       } catch (err) {
-        statusEl.textContent = 'Gagal menyimpan opsi: ' + err.message
+        statusEl.textContent = 'Failed to save options: ' + err.message
       }
     }
 
@@ -2451,7 +2527,7 @@
       }
       const option = existing || document.createElement('option')
       option.value = field
-      option.textContent = `Lama: ${label}`
+      option.textContent = `Legacy: ${label}`
       option.dataset.deprecatedField = '1'
       option.disabled = true
       if (!existing) select.appendChild(option)
@@ -2462,27 +2538,27 @@
         return `Source: Current Time (Clock) | Timezone: ${binding.timezone || 'Asia/Jakarta'}`
       }
       if (binding?.source === 'counter') {
-        return `Source: Counter "${binding.group || binding.name || '-'}" | Dikontrol dari /control`
+        return `Source: Counter "${binding.group || binding.name || '-'}" | Controlled via /control`
       }
       if (binding?.source === 'text') {
-        return `Source: Text "${binding.group || '-'}" | Isi ditulis dari /control`
+        return `Source: Text "${binding.group || '-'}" | Controlled via /control`
       }
       if (binding?.source === 'eventState') {
-        return `Source: Event State "${binding.group || '-'}" | Dikontrol dari /control`
+        return `Source: Event State "${binding.group || '-'}" | Controlled via /control`
       }
       if (binding?.source === 'timer') {
         const t = controlStateEditor.timers?.[binding.group]
-        const state = t ? (t.isRunning ? 'running' : 'paused/stopped') : 'belum dibuat'
-        return `Source: Timer "${binding.group || '-'}" | Status: ${state} | Dikontrol dari /control`
+        const state = t ? (t.isRunning ? 'running' : 'paused/stopped') : 'not created yet'
+        return `Source: Timer "${binding.group || '-'}" | Status: ${state} | Controlled via /control`
       }
       if (binding?.source === 'chat') {
         const field = VALID_CHAT_FIELDS.includes(binding.field) ? binding.field : 'stack'
         const label = CHAT_FIELD_LABELS[field] || 'Chat Stack'
         if (field === 'notif') {
           const notifState = editorChatNotif?.state === 'showing' ? 'showing' : 'idle'
-          return `Source: ${label} | ${editorChatEvents.length} chat di feed | State: ${notifState}`
+          return `Source: ${label} | ${editorChatEvents.length} chats in feed | State: ${notifState}`
         }
-        return `Source: ${label} | ${editorChatEvents.length} chat di feed`
+        return `Source: ${label} | ${editorChatEvents.length} chats in feed`
       }
       if (binding?.source === 'f1data') {
         if (!f1Data.available) return `Source: F1GStats (Local DB) | Status: unavailable${f1Data.error ? ` | Error: ${f1Data.error}` : ''}`
@@ -2491,7 +2567,7 @@
       }
 
       if (['statusTiktok', 'statusYoutube', 'viewerTiktok', 'viewerYoutube'].includes(binding?.field)) {
-        return `Source: ${binding.field} | Status per platform (feed chat)`
+        return `Source: ${binding.field} | Per-platform status (chat feed)`
       }
 
       const stamp = liveStats.lastUpdatedAt ? new Date(liveStats.lastUpdatedAt).toLocaleString() : 'never'
@@ -3115,6 +3191,7 @@
 
         if (el.type === 'image' && el.src) {
           const image = document.createElement('img')
+          image.dataset.assetImage = '1'
           image.src = el.src
           image.alt = el.name || 'Image asset'
           image.draggable = false
@@ -3184,8 +3261,9 @@
             badge.style.borderRadius = '6px'
             badge.style.fontSize = '10px'
             badge.style.fontWeight = '700'
-            badge.style.background = 'rgba(236,72,153,0.85)'
-            badge.style.color = '#fff'
+            badge.style.background = 'rgba(22, 24, 26, 0.9)'
+            badge.style.border = '1px solid #7b8472'
+            badge.style.color = '#f4f5f6'
             badge.style.pointerEvents = 'none'
             badge.style.zIndex = '20'
             div.appendChild(badge)
@@ -3203,8 +3281,9 @@
             badge.style.borderRadius = '6px'
             badge.style.fontSize = '10px'
             badge.style.fontWeight = '700'
-            badge.style.background = 'rgba(6,182,212,0.85)'
-            badge.style.color = '#fff'
+            badge.style.background = 'rgba(22, 24, 26, 0.9)'
+            badge.style.border = '1px solid #949ba3'
+            badge.style.color = '#f4f5f6'
             badge.style.pointerEvents = 'none'
             badge.style.zIndex = '20'
             div.appendChild(badge)
@@ -3368,48 +3447,151 @@
       hiddenSm: '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.2A10.9 10.9 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-2.2 3.2M6.6 6.6A17.7 17.7 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.4-1.6M2 2l20 20"/></svg>',
     }
 
+    let layerSearchQuery = ''
+    let draggedLayerId = null
+    const collapsedLayerGroups = new Set()
+
     // Render Layers
     function renderLayers() {
       layersListEl.innerHTML = ''
       // Show top-most layer (highest zIndex) first in the panel
       const orderedElements = [...scene.elements].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
       const byId = new Map(scene.elements.map(item => [item.id, item]))
+      const childCounts = new Map()
+      scene.elements.forEach(item => {
+        const pid = getEffectiveParentId(item, byId)
+        if (pid) childCounts.set(pid, (childCounts.get(pid) || 0) + 1)
+      })
+      const q = layerSearchQuery.trim().toLowerCase()
 
-      orderedElements.forEach(el => {
+      const visibleElements = orderedElements.filter(el => {
+        const parentId = getEffectiveParentId(el, byId)
+        if (!q && parentId && collapsedLayerGroups.has(parentId)) return false
+        if (!q) return true
+        const name = String(el.name || el.id).toLowerCase()
+        const type = String(el.type || '').toLowerCase()
+        return name.includes(q) || type.includes(q)
+      })
+
+      if (visibleElements.length === 0) {
+        const empty = document.createElement('p')
+        empty.className = 'text-xs text-slate-500 text-center py-4'
+        empty.textContent = q ? 'No matching layers.' : 'No layers yet.'
+        layersListEl.appendChild(empty)
+        return
+      }
+
+      visibleElements.forEach(el => {
         const isSelected = el.id === selectedElementId
         const item = document.createElement('div')
         item.setAttribute('role', 'button')
         item.setAttribute('tabindex', '0')
         item.setAttribute('aria-pressed', isSelected ? 'true' : 'false')
-        item.className = `layer-row px-2.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 cursor-pointer border transition ${isSelected ? 'layer-row-selected' : ''}`
+        item.setAttribute('draggable', 'true')
+        item.dataset.layerId = el.id
+        item.className = `layer-row px-2 py-1.5 rounded-xl text-xs flex items-center justify-between gap-1.5 cursor-pointer border transition ${isSelected ? 'layer-row-selected' : ''}`
 
         const hasAnim = Array.isArray(el.animation?.enter?.sequence) && el.animation.enter.sequence.length > 0
         const parentId = getEffectiveParentId(el, byId)
         const parentEl = parentId ? byId.get(parentId) : null
-        const indentStyle = parentEl ? 'style="margin-left:14px"' : ''
+        const childCount = childCounts.get(el.id) || 0
+        const isCollapsed = collapsedLayerGroups.has(el.id)
+        const indentStyle = parentEl && !q ? 'style="margin-left:14px"' : ''
         const typeIcon = el.type === 'text' ? STUDIO_ICONS.text : el.type === 'image' ? STUDIO_ICONS.image : STUDIO_ICONS.shape
         const leadIcon = parentEl
           ? `<span title="Child of ${escHtml(parentEl.name || parentEl.id)}" style="color: var(--color-sage-hover)">${STUDIO_ICONS.child}</span>`
           : `<span style="color: var(--color-sage-hover)">${typeIcon}</span>`
+        const collapseBtnHtml = childCount > 0 && !q
+          ? `<button type="button" data-layer-collapse="${escHtml(el.id)}" aria-label="${isCollapsed ? 'Expand group' : 'Collapse group'}" aria-expanded="${isCollapsed ? 'false' : 'true'}" title="${isCollapsed ? 'Expand group' : 'Collapse group'}" class="w-4 h-4 flex items-center justify-center rounded text-[10px] text-slate-400 hover:text-white shrink-0 cursor-pointer"><span class="inline-block transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}">▸</span></button>`
+          : ''
 
         item.innerHTML = `
-          <div class="flex items-center gap-2 min-w-0 truncate" ${indentStyle}>
+          <div class="flex items-center gap-1.5 min-w-0 truncate" ${indentStyle}>
+            ${collapseBtnHtml}
             ${leadIcon}
             <span class="truncate font-semibold ${el.hidden ? 'line-through layer-name-hidden' : ''}">${escHtml(el.name || el.id)}</span>
+            ${childCount > 0 && isCollapsed ? `<span class="text-[10px] font-mono px-1 rounded bg-slate-800 text-slate-400 shrink-0">${childCount}</span>` : ''}
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1 shrink-0">
             ${hasAnim ? `<span title="Has Enter Animation" style="color: var(--color-sage-hover)">${STUDIO_ICONS.anim}</span>` : ''}
             <span class="text-[11px] font-mono tabular-nums" style="color: var(--color-slate-ash)">z:${el.zIndex || 1}</span>
-            ${el.locked ? `<span title="Locked" style="color: #f3a29b">${STUDIO_ICONS.lockedSm}</span>` : ''}
-            ${el.hidden ? `<span title="Hidden" style="color: var(--color-slate-ash)">${STUDIO_ICONS.hiddenSm}</span>` : ''}
+            <span class="layer-row-actions flex items-center gap-0.5" data-has-active="${el.locked || el.hidden ? 'true' : 'false'}">
+              <button type="button" data-layer-lock="${escHtml(el.id)}" aria-label="${el.locked ? 'Unlock layer' : 'Lock layer'}" aria-pressed="${el.locked ? 'true' : 'false'}" title="${el.locked ? 'Unlock' : 'Lock'}"
+                class="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-800 cursor-pointer" style="color: ${el.locked ? '#f3a29b' : 'var(--color-muted-chalk)'}">
+                ${el.locked ? STUDIO_ICONS.lockedSm : '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></svg>'}
+              </button>
+              <button type="button" data-layer-vis="${escHtml(el.id)}" aria-label="${el.hidden ? 'Show layer' : 'Hide layer'}" aria-pressed="${el.hidden ? 'true' : 'false'}" title="${el.hidden ? 'Show' : 'Hide'}"
+                class="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-800 cursor-pointer" style="color: ${el.hidden ? 'var(--color-slate-ash)' : 'var(--color-muted-chalk)'}">
+                ${el.hidden ? STUDIO_ICONS.hiddenSm : '<svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>'}
+              </button>
+            </span>
           </div>
         `
+
+        item.querySelector('[data-layer-collapse]')?.addEventListener('click', (e) => {
+          e.stopPropagation()
+          if (collapsedLayerGroups.has(el.id)) collapsedLayerGroups.delete(el.id)
+          else collapsedLayerGroups.add(el.id)
+          renderLayers()
+        })
+        item.querySelector('[data-layer-lock]')?.addEventListener('click', (e) => {
+          e.stopPropagation()
+          el.locked = !el.locked
+          commitSceneChange()
+          renderCanvas()
+          renderLayers()
+          if (el.id === selectedElementId) updateInspectorValues()
+        })
+        item.querySelector('[data-layer-vis]')?.addEventListener('click', (e) => {
+          e.stopPropagation()
+          el.hidden = !el.hidden
+          commitSceneChange()
+          renderCanvas()
+          renderLayers()
+          if (el.id === selectedElementId) updateInspectorValues()
+        })
+
+        item.addEventListener('dragstart', (e) => {
+          draggedLayerId = el.id
+          e.dataTransfer.effectAllowed = 'move'
+          e.dataTransfer.setData('text/plain', el.id)
+          item.classList.add('opacity-50')
+        })
+        item.addEventListener('dragend', () => {
+          draggedLayerId = null
+          item.classList.remove('opacity-50')
+          layersListEl.querySelectorAll('.layer-drag-over').forEach(n => n.classList.remove('layer-drag-over'))
+        })
+        item.addEventListener('dragover', (e) => {
+          if (!draggedLayerId || draggedLayerId === el.id) return
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'move'
+          item.classList.add('layer-drag-over')
+        })
+        item.addEventListener('dragleave', () => item.classList.remove('layer-drag-over'))
+        item.addEventListener('drop', (e) => {
+          e.preventDefault()
+          item.classList.remove('layer-drag-over')
+          if (!draggedLayerId || draggedLayerId === el.id) return
+          const topToBottom = [...scene.elements].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
+          const fromIdx = topToBottom.findIndex(x => x.id === draggedLayerId)
+          const toIdx = topToBottom.findIndex(x => x.id === el.id)
+          if (fromIdx === -1 || toIdx === -1) return
+          const [moved] = topToBottom.splice(fromIdx, 1)
+          topToBottom.splice(toIdx, 0, moved)
+          normalizeZIndex([...topToBottom].reverse())
+          commitSceneChange()
+          renderCanvas()
+          renderLayers()
+          updateInspectorValues()
+        })
 
         item.addEventListener('click', (e) => {
           e.stopPropagation()
           selectElement(el.id)
         })
         item.addEventListener('keydown', (e) => {
+          if (e.target !== item) return
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             e.stopPropagation()
@@ -3544,9 +3726,13 @@
         textSection.classList.remove('hidden')
         dynamicContentSection.classList.remove('hidden')
         document.getElementById('prop-text-content').value = el.style?.text || ''
-        document.getElementById('prop-font-family').value = el.style?.fontFamily || 'Inter, sans-serif'
+        const fontSelect = document.getElementById('prop-font-family')
+        const rawFont = el.style?.fontFamily || 'Manrope, sans-serif'
+        const matchedFont = [...fontSelect.options].find(o => o.value === rawFont || o.value.startsWith(rawFont + ','))?.value
+        fontSelect.value = matchedFont || 'Manrope, sans-serif'
         document.getElementById('prop-font-size').value = el.style?.fontSize || 18
-        document.getElementById('prop-font-weight').value = el.style?.fontWeight || 'normal'
+        const rawWeight = String(el.style?.fontWeight || '400')
+        document.getElementById('prop-font-weight').value = rawWeight === 'normal' ? '400' : rawWeight === 'bold' ? '700' : rawWeight
         document.getElementById('prop-text-transform').value = el.style?.textTransform || 'none'
         document.getElementById('prop-letter-spacing').value = el.style?.letterSpacing || 0
         document.getElementById('prop-text-color').value = el.style?.color || '#ffffff'
@@ -4801,8 +4987,8 @@
       document.getElementById('align-v-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'center'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
       document.getElementById('align-v-bottom').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'bottom'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
 
-      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderSelectedElement(); } })
-      document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; const inp = document.getElementById('prop-text-color'); inp.value = e.target.value; setInputValidity(inp, true); renderSelectedElement(); } })
+      document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { const ok = isValidCssColor(e.target.value); setInputValidity(e.target, ok); if (ok) { el.style.color = e.target.value; renderSelectedElement(); } } })
 
       document.getElementById('prop-text-shadow-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; document.getElementById('prop-text-shadow-color').value = e.target.value; renderSelectedElement(); } })
       document.getElementById('prop-text-shadow-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.textShadowColor = e.target.value; renderSelectedElement(); } })
@@ -4821,8 +5007,8 @@
         }
       })
 
-      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; document.getElementById('prop-bg-color').value = e.target.value; renderSelectedElement(); } })
-      document.getElementById('prop-bg-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; renderSelectedElement(); } })
+      document.getElementById('prop-bg-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.backgroundColor = e.target.value; const inp = document.getElementById('prop-bg-color'); inp.value = e.target.value; setInputValidity(inp, true); renderSelectedElement(); } })
+      document.getElementById('prop-bg-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { const ok = isValidCssColor(e.target.value); setInputValidity(e.target, ok); if (ok) { el.style.backgroundColor = e.target.value; renderSelectedElement(); } } })
 
       document.getElementById('prop-grad-from-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; document.getElementById('prop-grad-from').value = e.target.value; renderSelectedElement(); } })
       document.getElementById('prop-grad-from').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.gradient.from = e.target.value; renderSelectedElement(); } })
@@ -4864,8 +5050,19 @@
 
       // Canvas properties listeners
       document.getElementById('canvas-scene-id').addEventListener('input', (e) => {
+        const errEl = document.getElementById('canvas-scene-id-error')
+        const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '')
+        if (!sanitized) {
+          setInputValidity(e.target, false, errEl, 'Scene ID cannot be empty.')
+          return
+        }
+        const duplicate = availableScenes.some((item) => item.id === sanitized && item.id !== currentSceneId)
+        if (duplicate) {
+          setInputValidity(e.target, false, errEl, `Scene ID "${sanitized}" already exists.`)
+          return
+        }
+        setInputValidity(e.target, true, errEl)
         const oldId = currentSceneId
-        const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9_-]+/g, '-')
         scene.id = sanitized
         currentSceneId = sanitized
         availableScenes = availableScenes.map((item) => (item.id === oldId ? { ...item, id: sanitized } : item))
@@ -4875,13 +5072,21 @@
       })
       document.getElementById('canvas-width').addEventListener('input', (e) => {
         if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
-        scene.canvas.width = parseInt(e.target.value) || 1920
+        const val = parseInt(e.target.value, 10)
+        const valid = Number.isFinite(val) && val >= 100 && val <= 7680
+        setInputValidity(e.target, valid)
+        if (!valid) return
+        scene.canvas.width = val
         renderCanvas()
         updateSceneInfo()
       })
       document.getElementById('canvas-height').addEventListener('input', (e) => {
         if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
-        scene.canvas.height = parseInt(e.target.value) || 1080
+        const val = parseInt(e.target.value, 10)
+        const valid = Number.isFinite(val) && val >= 100 && val <= 7680
+        setInputValidity(e.target, valid)
+        if (!valid) return
+        scene.canvas.height = val
         renderCanvas()
         updateSceneInfo()
       })
@@ -4892,6 +5097,9 @@
       canvasBgInput.addEventListener('input', (e) => {
         if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
         const val = e.target.value || 'transparent'
+        const ok = isValidCssColor(val)
+        setInputValidity(canvasBgInput, ok)
+        if (!ok) return
         scene.canvas.backgroundColor = val
         if (val.startsWith('#')) {
           canvasBgPicker.value = val
@@ -4904,6 +5112,7 @@
         const val = e.target.value
         scene.canvas.backgroundColor = val
         canvasBgInput.value = val
+        setInputValidity(canvasBgInput, true)
         renderCanvas()
       })
     }
@@ -4956,7 +5165,7 @@
         zIndex: scene.elements.length + 1,
         style: {
           text: 'STREAM HEADLINE',
-          fontFamily: 'Anton',
+          fontFamily: 'Anton, sans-serif',
           fontSize: 32,
           fontWeight: '800',
           color: '#ffffff',
@@ -5179,6 +5388,53 @@
       e.returnValue = ''
     })
 
+    const shortcutsBackdrop = document.getElementById('studio-shortcuts-backdrop')
+    const shortcutsHelpBtn = document.getElementById('shortcuts-help-btn')
+    const shortcutsCloseBtn = document.getElementById('studio-shortcuts-close')
+    function setShortcutsModalOpen(open) {
+      if (!shortcutsBackdrop) return
+      shortcutsBackdrop.classList.toggle('hidden', !open)
+      if (open) shortcutsCloseBtn?.focus()
+    }
+    shortcutsHelpBtn?.addEventListener('click', () => setShortcutsModalOpen(true))
+    shortcutsCloseBtn?.addEventListener('click', () => setShortcutsModalOpen(false))
+    shortcutsBackdrop?.addEventListener('click', (e) => {
+      if (e.target === shortcutsBackdrop) setShortcutsModalOpen(false)
+    })
+
+    let isSpaceHeld = false
+    let isPanningCanvas = false
+    let panStartX = 0, panStartY = 0, panScrollLeft = 0, panScrollTop = 0
+
+    canvasContainer?.addEventListener('mousedown', (e) => {
+      if (!isSpaceHeld) return
+      e.preventDefault()
+      e.stopPropagation()
+      isPanningCanvas = true
+      panStartX = e.clientX
+      panStartY = e.clientY
+      panScrollLeft = canvasContainer.scrollLeft
+      panScrollTop = canvasContainer.scrollTop
+      canvasContainer.style.cursor = 'grabbing'
+    }, true)
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanningCanvas || !canvasContainer) return
+      canvasContainer.scrollLeft = panScrollLeft - (e.clientX - panStartX)
+      canvasContainer.scrollTop = panScrollTop - (e.clientY - panStartY)
+    })
+    window.addEventListener('mouseup', () => {
+      if (!isPanningCanvas) return
+      isPanningCanvas = false
+      if (canvasContainer) canvasContainer.style.cursor = isSpaceHeld ? 'grab' : ''
+    })
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && isSpaceHeld) {
+        isSpaceHeld = false
+        isPanningCanvas = false
+        if (canvasContainer) canvasContainer.style.cursor = ''
+      }
+    })
+
     window.addEventListener('keydown', (e) => {
       const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
@@ -5187,6 +5443,36 @@
         return
       }
       if (inField) return
+      if (e.code === 'Space' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!document.activeElement?.closest('button, a, [role="button"]')) {
+          e.preventDefault()
+          if (!isSpaceHeld) {
+            isSpaceHeld = true
+            if (canvasContainer) canvasContainer.style.cursor = 'grab'
+          }
+          return
+        }
+      }
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault()
+        setShortcutsModalOpen(shortcutsBackdrop?.classList.contains('hidden'))
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault()
+        fitZoom()
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+        e.preventDefault()
+        setZoom(zoom + 0.1)
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+        e.preventDefault()
+        setZoom(zoom - 0.1)
+        return
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         if (e.shiftKey) performRedo()
@@ -5234,6 +5520,11 @@
         }
       }
       if (e.key === 'Escape') {
+        if (shortcutsBackdrop && !shortcutsBackdrop.classList.contains('hidden')) {
+          setShortcutsModalOpen(false)
+          shortcutsHelpBtn?.focus()
+          return
+        }
         if (sceneMenuPopover && !sceneMenuPopover.classList.contains('hidden')) {
           setSceneMenuOpen(false)
           sceneMenuBtn?.focus()
@@ -5253,6 +5544,21 @@
       loadLiveStats()
       loadAssets()
       loadPlatformConnectorStatus()
+      const layerSearchEl = document.getElementById('layer-search-input')
+      const layerSearchClearEl = document.getElementById('layer-search-clear')
+      layerSearchEl?.addEventListener('input', (e) => {
+        layerSearchQuery = e.target.value
+        layerSearchClearEl?.classList.toggle('hidden', !layerSearchQuery)
+        layerSearchClearEl?.classList.toggle('flex', Boolean(layerSearchQuery))
+        renderLayers()
+      })
+      layerSearchClearEl?.addEventListener('click', () => {
+        layerSearchQuery = ''
+        if (layerSearchEl) { layerSearchEl.value = ''; layerSearchEl.focus() }
+        layerSearchClearEl.classList.add('hidden')
+        layerSearchClearEl.classList.remove('flex')
+        renderLayers()
+      })
       fitZoom()
       setInterval(loadLiveStats, 2000)
       setInterval(loadF1Data, 30000)

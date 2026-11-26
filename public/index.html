@@ -98,6 +98,13 @@
           title="Zoom In" aria-label="Zoom In">+</button>
         <button id="zoom-fit-btn" type="button"
           class="h-7 px-2.5 flex items-center justify-center text-xs font-semibold rounded-lg transition cursor-pointer">Fit</button>
+        <button id="stage-toggle-btn" type="button" aria-pressed="false"
+          class="studio-icon-btn w-7 h-7 flex items-center justify-center rounded-lg border text-xs transition cursor-pointer"
+          title="Toggle Focus Stage (Ctrl+\)" aria-label="Toggle Focus Stage">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+          </svg>
+        </button>
       </div>
 
       <button id="play-all-animations-btn" type="button"
@@ -143,6 +150,7 @@
         </svg>
         <span>Control Panel</span>
         <span id="editor-connector-dot" class="w-2 h-2 rounded-full bg-slate-600 shrink-0" title="Connectors: OFF" aria-hidden="true"></span>
+        <span id="editor-connector-sr" class="sr-only">Connectors: OFF</span>
       </a>
     </div>
   </header>
@@ -185,20 +193,22 @@
       </details>
 
       <!-- Section 2: Uploaded Assets -->
-      <details data-accordion-id="assets" class="p-3 border-b border-slate-800 group">
-        <summary
-          class="flex items-center justify-between mb-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-          <span class="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-slate-400">
-            <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
-            <span>Assets</span>
-          </span>
-          <button id="assets-add-btn" type="button">+ Upload</button>
-        </summary>
-        <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
-          <p class="col-span-3 text-xs text-slate-500">No uploaded assets yet.</p>
-        </div>
-      </details>
+      <div class="relative p-3 border-b border-slate-800">
+        <button id="assets-add-btn" type="button" class="absolute top-2.5 right-3 z-10">+ Upload</button>
+        <details data-accordion-id="assets" class="group">
+          <summary
+            class="flex items-center justify-between pr-20 py-0.5 mb-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-slate-400">
+              <span
+                class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+              <span>Assets</span>
+            </span>
+          </summary>
+          <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
+            <p class="col-span-3 text-xs text-slate-500">No uploaded assets yet.</p>
+          </div>
+        </details>
+      </div>
 
       <!-- Section 3: Layers List -->
       <div class="flex flex-col flex-1 min-h-0">
@@ -305,10 +315,10 @@
       </div>
 
       <!-- Properties Form -->
-      <div id="selection-form" data-active-tab="style" class="hidden p-4 space-y-4">
+      <div id="selection-form" data-active-tab="style" class="hidden px-4 pb-4 space-y-4">
 
-        <!-- Header Info & Quick Element Actions -->
-        <div class="pb-3 border-b border-slate-800">
+        <!-- Sticky Header Info, Quick Element Actions & 2-Tab Switcher -->
+        <div class="inspector-sticky-header sticky top-0 z-10 -mx-4 px-4 pt-4 pb-3 border-b border-slate-800">
           <div class="flex items-center justify-between mb-2">
             <span id="prop-type-badge"
               class="studio-badge px-2 py-0.5 rounded-md text-[11px] font-extrabold uppercase tracking-wider">TEXT</span>
@@ -345,11 +355,11 @@
 
           <!-- 2-Tab Inspector Switcher -->
           <div class="grid grid-cols-2 gap-1.5 mt-3" role="tablist" aria-label="Inspector sections">
-            <button id="inspector-tab-style" type="button" role="tab" aria-selected="true" data-inspector-tab="style"
+            <button id="inspector-tab-style" type="button" role="tab" aria-selected="true" aria-controls="transform-props-section" data-inspector-tab="style"
               class="studio-tab-btn studio-tab-active py-1.5 rounded-lg text-xs font-semibold cursor-pointer">
               Style
             </button>
-            <button id="inspector-tab-motion" type="button" role="tab" aria-selected="false" data-inspector-tab="motion"
+            <button id="inspector-tab-motion" type="button" role="tab" aria-selected="false" aria-controls="animation-sequence-section" data-inspector-tab="motion"
               class="studio-tab-btn py-1.5 rounded-lg text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5">
               <span>Motion &amp; Data</span>
               <span id="motion-tab-indicator" class="hidden w-1.5 h-1.5 rounded-full" style="background: var(--color-sage-hover)" title="Active motion or data bindings" aria-hidden="true"></span>
@@ -407,20 +417,21 @@
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>State Binding</span>
           </summary>
-          <div class="studio-subcard space-y-2.5 rounded-xl p-3 mt-2">
+          <div class="studio-subcard rounded-xl p-3 mt-2">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Active State</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Active State</span>
+              <label for="prop-vis-enabled" class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
                 <input id="prop-vis-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
+            <div id="state-binding-body" class="hidden space-y-2.5 mt-2.5 pt-2.5 border-t" style="border-color: var(--color-surface-light)">
             <p id="state-binding-disabled-note" class="hidden text-[11px] font-medium rounded-lg px-2.5 py-1.5" style="color: #f3d28f; background: rgba(233, 185, 73, 0.1); border: 1px solid rgba(233, 185, 73, 0.3);">
               State Binding is off — State Targets will not be applied to this layer.
             </p>
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Source</label>
+                <label for="prop-vis-source" class="block text-[11px] text-slate-400 mb-1">Source</label>
                 <select id="prop-vis-source"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="counter">Counter</option>
@@ -430,7 +441,7 @@
                 </select>
               </div>
               <div id="prop-vis-name-wrap">
-                <label class="block text-[11px] text-slate-400 mb-1">Group Name</label>
+                <label for="prop-vis-name" class="block text-[11px] text-slate-400 mb-1">Group Name</label>
                 <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="e.g. raceStatus"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                 <datalist id="vis-group-names"></datalist>
@@ -446,7 +457,7 @@
             </button>
             <div class="grid grid-cols-2 gap-2">
               <div id="prop-vis-comparator-wrap">
-                <label class="block text-[11px] text-slate-400 mb-1">Condition</label>
+                <label for="prop-vis-comparator" class="block text-[11px] text-slate-400 mb-1">Condition</label>
                 <select id="prop-vis-comparator"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="eq">= equals</option>
@@ -458,7 +469,7 @@
                 </select>
               </div>
               <div id="prop-vis-value-wrap" class="col-span-1">
-                <label class="block text-[11px] text-slate-400 mb-1">Fallback State</label>
+                <label for="prop-vis-value" class="block text-[11px] text-slate-400 mb-1">Fallback State</label>
                 <input type="text" id="prop-vis-value" list="vis-value-options" placeholder="default"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                 <datalist id="vis-value-options"></datalist>
@@ -466,7 +477,7 @@
             </div>
             <!-- State Target Cards header -->
             <div class="flex items-center justify-between mb-1.5">
-              <label class="text-[11px] text-slate-400 font-semibold">State Targets</label>
+              <span class="text-[11px] text-slate-400 font-semibold">State Targets</span>
               <button id="state-target-add-btn" type="button"
                 class="studio-btn-secondary text-[11px] font-semibold flex items-center gap-0.5 px-2.5 py-1 rounded-lg transition cursor-pointer">
                 + Add State
@@ -475,7 +486,7 @@
             <!-- Inline add-state form (hidden by default) -->
             <div id="state-target-add-form" class="hidden mb-2 flex gap-1.5 items-center">
               <input id="state-target-new-name" type="text" list="state-target-name-suggestions"
-                placeholder="state name (e.g. MAIN)"
+                placeholder="state name (e.g. MAIN)" aria-label="New state name"
                 class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
               <datalist id="state-target-name-suggestions"></datalist>
               <button id="state-target-add-confirm" type="button"
@@ -492,6 +503,7 @@
             <p class="text-xs text-slate-500 mt-1.5">
               Manual hidden toggle still takes priority. Driven live from <code>/control</code>.
             </p>
+            </div>
           </div>
         </details>
 
@@ -506,16 +518,16 @@
           </summary>
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Text Content</label>
+            <label for="prop-text-content" class="block text-[11px] text-slate-400 mb-1">Text Content</label>
             <textarea id="prop-text-content" rows="2"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none resize-none"></textarea>
           </div>
 
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Font Family</label>
+            <label for="prop-font-family" class="block text-[11px] text-slate-400 mb-1">Font Family</label>
             <select id="prop-font-family"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
               <option value="Anton, sans-serif">Anton (Bold Display)</option>
               <option value="Racing Sans One, sans-serif">Racing Sans One (Sporty)</option>
               <option value="Manrope, sans-serif">Manrope (Modern Friendly)</option>
@@ -525,14 +537,14 @@
 
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Font Size (px)</label>
+              <label for="prop-font-size" class="block text-[11px] text-slate-400 mb-1">Font Size (px)</label>
               <input type="number" id="prop-font-size" min="8" max="180"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Weight</label>
+              <label for="prop-font-weight" class="block text-[11px] text-slate-400 mb-1">Weight</label>
               <select id="prop-font-weight"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 <option value="300">Light (300)</option>
                 <option value="400">Regular (400)</option>
                 <option value="500">Medium (500)</option>
@@ -547,26 +559,26 @@
           <!-- Text Align & Transform -->
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Align</label>
-              <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-                <button type="button" id="align-t-left" aria-label="Align text left" title="Align Left"
+              <span class="block text-[11px] text-slate-400 mb-1">Align</span>
+              <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700" role="group" aria-label="Text horizontal alignment">
+                <button type="button" id="align-t-left" aria-label="Align text left" aria-pressed="false" title="Align Left"
                   class="h-7 flex items-center justify-center rounded cursor-pointer">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h14" /></svg>
                 </button>
-                <button type="button" id="align-t-center" aria-label="Align text center" title="Align Center"
+                <button type="button" id="align-t-center" aria-label="Align text center" aria-pressed="false" title="Align Center"
                   class="h-7 flex items-center justify-center rounded cursor-pointer">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M5 18h14" /></svg>
                 </button>
-                <button type="button" id="align-t-right" aria-label="Align text right" title="Align Right"
+                <button type="button" id="align-t-right" aria-label="Align text right" aria-pressed="false" title="Align Right"
                   class="h-7 flex items-center justify-center rounded cursor-pointer">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M10 12h10M6 18h14" /></svg>
                 </button>
               </div>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Transform</label>
+              <label for="prop-text-transform" class="block text-[11px] text-slate-400 mb-1">Transform</label>
               <select id="prop-text-transform"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 <option value="none">Normal</option>
                 <option value="uppercase">UPPERCASE</option>
                 <option value="lowercase">lowercase</option>
@@ -577,21 +589,21 @@
 
           <!-- Vertical Align -->
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Vertical Align</label>
-            <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-              <button type="button" id="align-v-top" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Top</button>
-              <button type="button" id="align-v-center" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Center</button>
-              <button type="button" id="align-v-bottom" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Bottom</button>
+            <span class="block text-[11px] text-slate-400 mb-1">Vertical Align</span>
+            <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700" role="group" aria-label="Text vertical alignment">
+              <button type="button" id="align-v-top" aria-pressed="false" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Top</button>
+              <button type="button" id="align-v-center" aria-pressed="false" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Center</button>
+              <button type="button" id="align-v-bottom" aria-pressed="false" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Bottom</button>
             </div>
           </div>
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
+            <label for="prop-letter-spacing" class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
             <input type="number" id="prop-letter-spacing" step="0.5" min="-5" max="30"
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
           </div>
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
+            <label for="prop-text-color" class="block text-[11px] text-slate-400 mb-1">Text Color</label>
             <div class="flex items-center gap-2">
               <input type="color" id="prop-text-color-picker" aria-label="Text color picker"
                 class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
@@ -600,11 +612,14 @@
             </div>
           </div>
 
-          <!-- Text Drop Shadow & Glow -->
-          <div class="pt-2 border-t border-slate-800/60 space-y-2">
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow &amp; Glow</label>
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
+          <!-- Text Drop Shadow & Glow (collapsed sub-disclosure) -->
+          <details data-accordion-id="text-shadow" class="pt-2 border-t border-slate-800/60 space-y-2 group/sub">
+            <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+              <span class="inline-block transition-transform duration-150 group-open/sub:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+              <span>Text Shadow &amp; Glow</span>
+            </summary>
+            <div class="pt-1">
+              <label for="prop-text-shadow-color" class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
               <div class="flex items-center gap-2">
                 <input type="color" id="prop-text-shadow-color-picker" aria-label="Text shadow color picker"
                   class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
@@ -615,22 +630,22 @@
 
             <div class="grid grid-cols-3 gap-2">
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Blur (px)</label>
+                <label for="prop-text-shadow-blur" class="block text-[11px] text-slate-400 mb-1">Blur (px)</label>
                 <input type="number" id="prop-text-shadow-blur" min="0" max="100"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Offset X</label>
+                <label for="prop-text-shadow-x" class="block text-[11px] text-slate-400 mb-1">Offset X</label>
                 <input type="number" id="prop-text-shadow-x" min="-100" max="100"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Offset Y</label>
+                <label for="prop-text-shadow-y" class="block text-[11px] text-slate-400 mb-1">Offset Y</label>
                 <input type="number" id="prop-text-shadow-y" min="-100" max="100"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
               </div>
             </div>
-          </div>
+          </details>
         </details>
 
         <!-- Dynamic Content: Running Text (Marquee) & Data Binding -->
@@ -642,100 +657,105 @@
             <span>Dynamic Content</span>
           </summary>
 
-          <div class="studio-subcard space-y-2 rounded-xl p-3">
+          <div class="studio-subcard rounded-xl p-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Running Text (Marquee)</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Running Text (Marquee)</span>
+              <label for="prop-marquee-enabled" class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
                 <input id="prop-marquee-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Speed (px/s)</label>
-                <input type="number" id="prop-marquee-speed" min="10" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+            <div id="marquee-body" class="hidden space-y-2 mt-2.5 pt-2.5 border-t" style="border-color: var(--color-surface-light)">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="prop-marquee-speed" class="block text-[11px] text-slate-400 mb-1">Speed (px/s)</label>
+                  <input type="number" id="prop-marquee-speed" min="10" max="500" step="5"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                </div>
+                <div>
+                  <label for="prop-marquee-gap" class="block text-[11px] text-slate-400 mb-1">Gap (px)</label>
+                  <input type="number" id="prop-marquee-gap" min="0" max="500" step="5"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                </div>
               </div>
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Gap (px)</label>
-                <input type="number" id="prop-marquee-gap" min="0" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
-              </div>
-            </div>
 
-            <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Direction</label>
-              <select id="prop-marquee-direction"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
-                <option value="rtl">Right → Left (standard ticker)</option>
-                <option value="ltr">Left → Right</option>
-              </select>
+              <div>
+                <label for="prop-marquee-direction" class="block text-[11px] text-slate-400 mb-1">Direction</label>
+                <select id="prop-marquee-direction"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                  <option value="rtl">Right → Left</option>
+                  <option value="ltr">Left → Right</option>
+                </select>
+              </div>
+              <p class="text-xs text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
             </div>
-            <p class="text-xs text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
           </div>
 
-          <div class="studio-subcard space-y-2 rounded-xl p-3">
+          <div class="studio-subcard rounded-xl p-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Scroll Text (Up / Down)</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Scroll Text (Up / Down)</span>
+              <label for="prop-scroll-enabled" class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
                 <input id="prop-scroll-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Speed (px/s)</label>
-                <input type="number" id="prop-scroll-speed" min="10" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+            <div id="scroll-body" class="hidden space-y-2 mt-2.5 pt-2.5 border-t" style="border-color: var(--color-surface-light)">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="prop-scroll-speed" class="block text-[11px] text-slate-400 mb-1">Speed (px/s)</label>
+                  <input type="number" id="prop-scroll-speed" min="10" max="500" step="5"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                </div>
+                <div>
+                  <label for="prop-scroll-gap" class="block text-[11px] text-slate-400 mb-1">Gap (px)</label>
+                  <input type="number" id="prop-scroll-gap" min="0" max="500" step="5"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                </div>
               </div>
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Gap (px)</label>
-                <input type="number" id="prop-scroll-gap" min="0" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
-              </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Direction</label>
-                <select id="prop-scroll-direction"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
-                  <option value="up">Bottom → Up (Scroll Up)</option>
-                  <option value="down">Top → Down (Scroll Down)</option>
-                </select>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="prop-scroll-direction" class="block text-[11px] text-slate-400 mb-1">Direction</label>
+                  <select id="prop-scroll-direction"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                    <option value="up">Scroll Up (↑)</option>
+                    <option value="down">Scroll Down (↓)</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="prop-scroll-yoyo-delay" class="block text-[11px] text-slate-400 mb-1">Yoyo Delay (s)</label>
+                  <input type="number" id="prop-scroll-yoyo-delay" min="0" max="10" step="0.1"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
+                    placeholder="1">
+                </div>
               </div>
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Yoyo Delay (s)</label>
-                <input type="number" id="prop-scroll-yoyo-delay" min="0" max="10" step="0.1"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
-                  placeholder="1">
-              </div>
-            </div>
 
-            <div class="pt-1">
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
-                <input id="prop-scroll-yoyo" type="checkbox" class="studio-checkbox">
-                <span>Yoyo Mode (Ping-pong)</span>
-              </label>
+              <div class="pt-1">
+                <label for="prop-scroll-yoyo" class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                  <input id="prop-scroll-yoyo" type="checkbox" class="studio-checkbox">
+                  <span>Yoyo Mode (Ping-pong)</span>
+                </label>
+              </div>
+              <p class="text-xs text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
             </div>
-            <p class="text-xs text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
           </div>
 
-          <div class="studio-subcard space-y-2 rounded-xl p-3">
+          <div class="studio-subcard rounded-xl p-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Data Binding</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Data Binding</span>
+              <label for="prop-text-binding-enabled" class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
                 <input id="prop-text-binding-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
+            <div id="data-binding-body" class="hidden space-y-2 mt-2.5 pt-2.5 border-t" style="border-color: var(--color-surface-light)">
             <p id="prop-text-binding-status" class="text-xs text-slate-400">Source: platform stats</p>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Binding Source</label>
+                <label for="prop-text-binding-source" class="block text-[11px] text-slate-400 mb-1">Binding Source</label>
                 <select id="prop-text-binding-source"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="platform">Platform Stats</option>
@@ -746,7 +766,7 @@
                 </select>
               </div>
               <div id="control-type-group" class="hidden">
-                <label class="block text-[11px] text-slate-400 mb-1">Control Type</label>
+                <label for="prop-control-type" class="block text-[11px] text-slate-400 mb-1">Control Type</label>
                 <select id="prop-control-type"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="counter">Counter</option>
@@ -756,7 +776,7 @@
                 </select>
               </div>
               <div id="standard-format-group">
-                <label class="block text-[11px] text-slate-400 mb-1">Format</label>
+                <label for="prop-text-binding-format" class="block text-[11px] text-slate-400 mb-1">Format</label>
                 <select id="prop-text-binding-format"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="raw">Raw</option>
@@ -768,7 +788,7 @@
             </div>
 
             <div id="platform-binding-group">
-              <label class="block text-[11px] text-slate-400 mb-1">Platform Field</label>
+              <label for="prop-text-binding-field" class="block text-[11px] text-slate-400 mb-1">Platform Field</label>
               <select id="prop-text-binding-field"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 <option value="statusTiktok">Status TikTok</option>
@@ -782,7 +802,7 @@
             <div id="chat-binding-group" class="hidden space-y-2">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Chat Field</label>
+                  <label for="prop-chat-field" class="block text-[11px] text-slate-400 mb-1">Chat Field</label>
                   <select id="prop-chat-field"
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                     <option value="stack">Chat Stack</option>
@@ -793,12 +813,12 @@
                   </select>
                 </div>
                 <div id="chat-lines-group">
-                  <label class="block text-[11px] text-slate-400 mb-1">Line Count</label>
+                  <label for="prop-chat-lines" class="block text-[11px] text-slate-400 mb-1">Line Count</label>
                   <input type="number" id="prop-chat-lines" min="1" max="30" step="1" value="5"
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 </div>
                 <div id="chat-style-group" class="hidden">
-                  <label class="block text-[11px] text-slate-400 mb-1">Notification Style</label>
+                  <label for="prop-chat-display-style" class="block text-[11px] text-slate-400 mb-1">Notification Style</label>
                   <select id="prop-chat-display-style"
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                     <option value="tiktok">TikTok Live (Default)</option>
@@ -807,7 +827,7 @@
                 </div>
               </div>
               <div id="chat-f1-preview-group" class="hidden space-y-1">
-                <label class="block text-[11px] text-slate-400">F1 Theme Preview (Editor)</label>
+                <label for="prop-chat-f1-preview" class="block text-[11px] text-slate-400">F1 Theme Preview (Editor)</label>
                 <select id="prop-chat-f1-preview"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="auto">Auto (Live Chat / Default)</option>
@@ -828,7 +848,7 @@
                 <p class="text-xs text-slate-500">Team color, logo, and driver number auto-match from username or message. Custom logos live in <code>public/f1-logos/</code>.</p>
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Template</label>
+                <label for="prop-chat-template" class="block text-[11px] text-slate-400 mb-1">Template</label>
                 <input type="text" id="prop-chat-template" list="chat-template-presets"
                   placeholder="{platformTag} {author}: {message}"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
@@ -845,7 +865,7 @@
 
             <div id="f1data-binding-group" class="hidden space-y-2">
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">F1 Field Path</label>
+                <label for="prop-text-binding-f1-field-path" class="block text-[11px] text-slate-400 mb-1">F1 Field Path</label>
                 <input type="text" id="prop-text-binding-f1-field-path" list="f1-field-paths"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
                   placeholder="driverStandingsText.abbrMarquee">
@@ -857,7 +877,7 @@
             <div id="clock-binding-group" class="hidden space-y-2">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Timezone</label>
+                  <label for="prop-text-binding-timezone" class="block text-[11px] text-slate-400 mb-1">Timezone</label>
                   <select id="prop-text-binding-timezone"
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                     <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
@@ -874,7 +894,7 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Clock Format</label>
+                  <label for="prop-text-binding-clock-format" class="block text-[11px] text-slate-400 mb-1">Clock Format</label>
                   <input type="text" id="prop-text-binding-clock-format" list="clock-format-presets"
                     class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono"
                     placeholder="HH:mm:ss">
@@ -892,13 +912,13 @@
 
             <div id="control-binding-group" class="hidden space-y-2">
               <div>
-                <label id="prop-control-group-label" class="block text-[11px] text-slate-400 mb-1">Group Name</label>
+                <label id="prop-control-group-label" for="prop-control-group" class="block text-[11px] text-slate-400 mb-1">Group Name</label>
                 <input type="text" id="prop-control-group" list="control-group-names" placeholder="e.g. killCount"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                 <datalist id="control-group-names"></datalist>
               </div>
               <div id="eventstate-options-group" class="hidden">
-                <label class="block text-[11px] text-slate-400 mb-1">Options (comma-separated)</label>
+                <label for="prop-es-options" class="block text-[11px] text-slate-400 mb-1">Options (comma-separated)</label>
                 <div class="flex gap-2">
                   <input type="text" id="prop-es-options" placeholder="green, yellow, red, vsc, sc, finish"
                     class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
@@ -908,7 +928,7 @@
                 <p id="prop-es-options-status" class="text-xs text-slate-500 mt-1">Appears as pills on /control. Existing options are kept.</p>
               </div>
               <div id="control-text-format-group" class="hidden">
-                <label class="block text-[11px] text-slate-400 mb-1">Text Style</label>
+                <label for="prop-control-text-format" class="block text-[11px] text-slate-400 mb-1">Text Style</label>
                 <select id="prop-control-text-format"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="raw">Raw</option>
@@ -918,7 +938,7 @@
                 </select>
               </div>
               <div id="timer-format-group" class="hidden">
-                <label class="block text-[11px] text-slate-400 mb-1">Timer Format</label>
+                <label for="prop-timer-format" class="block text-[11px] text-slate-400 mb-1">Timer Format</label>
                 <select id="prop-timer-format"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="mm:ss">mm:ss (10:00)</option>
@@ -931,28 +951,29 @@
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Prefix</label>
+                <label for="prop-text-binding-prefix" class="block text-[11px] text-slate-400 mb-1">Prefix</label>
                 <input type="text" id="prop-text-binding-prefix"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Suffix</label>
+                <label for="prop-text-binding-suffix" class="block text-[11px] text-slate-400 mb-1">Suffix</label>
                 <input type="text" id="prop-text-binding-suffix"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
             </div>
 
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Fallback</label>
+              <label for="prop-text-binding-fallback" class="block text-[11px] text-slate-400 mb-1">Fallback</label>
               <input type="text" id="prop-text-binding-fallback"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
             </div>
 
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Preview</label>
+              <span class="block text-[11px] text-slate-400 mb-1">Preview</span>
               <div id="prop-text-binding-preview"
                 class="rounded-lg border border-slate-700 bg-slate-950/60 px-2.5 py-2 text-xs text-slate-200 font-mono whitespace-pre-line max-h-32 overflow-auto break-words">
                 -</div>
+            </div>
             </div>
           </div>
         </details>
@@ -971,7 +992,7 @@
           </summary>
 
           <div class="mt-3">
-            <label class="block text-[11px] text-slate-400 mb-1">Parent (Grouping)</label>
+            <label for="prop-parent" class="block text-[11px] text-slate-400 mb-1">Parent (Grouping)</label>
             <select id="prop-parent"
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
               <option value="">— None (top-level) —</option>
@@ -981,117 +1002,120 @@
 
           <div class="grid grid-cols-2 gap-2 mt-3">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">X (px)</label>
+              <label for="prop-x" class="block text-[11px] text-slate-400 mb-1">X (px)</label>
               <input type="number" id="prop-x"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Y (px)</label>
+              <label for="prop-y" class="block text-[11px] text-slate-400 mb-1">Y (px)</label>
               <input type="number" id="prop-y"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
+              <label for="prop-width" class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
               <input type="number" id="prop-width" min="10"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
+              <label for="prop-height" class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
               <input type="number" id="prop-height" min="10"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
           </div>
 
-          <!-- Rotation & 3D Tilt -->
+          <!-- Rotation, Scale, Opacity & Collapsible 3D Transform -->
           <div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Rotation Z (Roll)</span>
+              <label for="prop-rotation-num">Rotation Z (Roll)</label>
               <span id="prop-rotation-val" class="font-mono text-white">0°</span>
             </div>
             <div class="flex items-center gap-2">
-              <input type="range" id="prop-rotation" min="-180" max="180" value="0" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-rotation-num" min="-180" max="180"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+              <input type="range" id="prop-rotation" aria-label="Rotation Z slider" min="-180" max="180" value="0" class="flex-1">
+              <input type="number" id="prop-rotation-num" aria-label="Rotation Z degrees" min="-180" max="180"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none text-center font-mono">
             </div>
           </div>
 
           <div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Tilt X (Pitch)</span>
-              <span id="prop-rotation-x-val" class="font-mono text-white">0°</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="range" id="prop-rotation-x" min="-60" max="60" value="0" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-rotation-x-num" min="-60" max="60"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Yaw Y (Tilt Y)</span>
-              <span id="prop-rotation-y-val" class="font-mono text-white">0°</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="range" id="prop-rotation-y" min="-60" max="60" value="0" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-rotation-y-num" min="-60" max="60"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Perspective Distance</span>
-              <span id="prop-perspective-val" class="font-mono text-white">1000px</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="range" id="prop-perspective" min="300" max="2500" value="1000" step="10" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-perspective-num" min="300" max="2500" value="1000"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Scale</span>
+              <label for="prop-scale-num">Scale</label>
               <span id="prop-scale-val" class="font-mono text-white">1.00x</span>
             </div>
             <div class="flex items-center gap-2">
-              <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1"
-                class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-scale-num" min="0.1" max="3" step="0.01"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+              <input type="range" id="prop-scale" aria-label="Scale slider" min="0.1" max="3" step="0.01" value="1" class="flex-1">
+              <input type="number" id="prop-scale-num" aria-label="Scale factor" min="0.1" max="3" step="0.01"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none text-center font-mono">
             </div>
           </div>
 
           <div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-              <span>Opacity</span>
+              <label for="prop-opacity-num">Opacity</label>
               <span id="prop-opacity-val" class="font-mono text-white">100%</span>
             </div>
             <div class="flex items-center gap-2">
-              <input type="range" id="prop-opacity" min="0" max="100" value="100" class="flex-1 accent-indigo-500">
-              <input type="number" id="prop-opacity-num" min="0" max="100"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 text-center font-mono">
+              <input type="range" id="prop-opacity" aria-label="Opacity slider" min="0" max="100" value="100" class="flex-1">
+              <input type="number" id="prop-opacity-num" aria-label="Opacity percent" min="0" max="100"
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none text-center font-mono">
             </div>
           </div>
+
+          <details data-accordion-id="transform-3d" class="pt-2 border-t border-slate-800/60 space-y-2.5 group/sub">
+            <summary class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+              <span class="inline-block transition-transform duration-150 group-open/sub:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+              <span>3D Tilt &amp; Perspective</span>
+            </summary>
+
+            <div class="pt-1">
+              <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                <label for="prop-rotation-x-num">Tilt X (Pitch)</label>
+                <span id="prop-rotation-x-val" class="font-mono text-white">0°</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="range" id="prop-rotation-x" aria-label="Tilt X slider" min="-60" max="60" value="0" class="flex-1">
+                <input type="number" id="prop-rotation-x-num" aria-label="Tilt X degrees" min="-60" max="60"
+                  class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none text-center font-mono">
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                <label for="prop-rotation-y-num">Yaw Y (Tilt Y)</label>
+                <span id="prop-rotation-y-val" class="font-mono text-white">0°</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="range" id="prop-rotation-y" aria-label="Yaw Y slider" min="-60" max="60" value="0" class="flex-1">
+                <input type="number" id="prop-rotation-y-num" aria-label="Yaw Y degrees" min="-60" max="60"
+                  class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none text-center font-mono">
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                <label for="prop-perspective-num">Perspective Distance</label>
+                <span id="prop-perspective-val" class="font-mono text-white">1000px</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="range" id="prop-perspective" aria-label="Perspective distance slider" min="300" max="2500" value="1000" step="10" class="flex-1">
+                <input type="number" id="prop-perspective-num" aria-label="Perspective distance pixels" min="300" max="2500" value="1000"
+                  class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none text-center font-mono">
+              </div>
+            </div>
+          </details>
         </details>
 
         <!-- Animation Sequence Editor -->
         <details id="animation-sequence-section" data-inspector-pane="motion" data-accordion-id="animation" open
           class="studio-subcard space-y-3 p-3 rounded-2xl group">
           <summary
-            class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center justify-between gap-1.5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5 min-w-0">
               <span
                 class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs shrink-0" style="color: var(--color-sage-hover)">▸</span>
-              <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8" />
-              </svg>
-              <h3 class="text-xs font-bold uppercase tracking-wider text-white whitespace-nowrap truncate">Animation Sequence</h3>
+              <h3 class="text-[11px] font-bold uppercase tracking-wide text-white whitespace-nowrap">Animation Sequence</h3>
             </span>
             <button id="test-element-animation-btn" type="button"
-              class="studio-btn-secondary px-2.5 py-1 rounded-lg font-semibold text-[11px] transition flex items-center gap-1 shrink-0 cursor-pointer">
+              class="studio-btn-secondary px-2 py-1 rounded-lg font-semibold text-[11px] transition flex items-center gap-1 shrink-0 cursor-pointer">
               <svg class="w-3 h-3 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="m8 5 11 7-11 7V5Z" />
               </svg>
@@ -1099,7 +1123,7 @@
             </button>
           </summary>
 
-          <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none mt-3">
+          <label for="anim-loop-toggle" class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none mt-3">
             <input type="checkbox" id="anim-loop-toggle" class="studio-checkbox">
             <span>Loop sequence from Q0 after final step</span>
           </label>
@@ -1126,7 +1150,7 @@
           </div>
 
           <div class="pt-2 border-t space-y-1.5" style="border-color: var(--color-surface-light)">
-            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</label>
+            <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</span>
             <div class="grid grid-cols-2 gap-1.5" id="anim-preset-buttons"></div>
           </div>
         </details>
@@ -1137,68 +1161,80 @@
               <span class="anim-step-label text-[11px] font-bold font-mono" style="color: var(--color-sage-hover)"></span>
               <div class="flex items-center gap-1">
                 <button type="button" data-action="move-up" title="Move up" aria-label="Move step up"
-                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↑</button>
+                  class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+                </button>
                 <button type="button" data-action="move-down" title="Move down" aria-label="Move step down"
-                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↓</button>
+                  class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
                 <button type="button" data-action="duplicate" title="Duplicate step" aria-label="Duplicate step"
-                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">⧉</button>
+                  class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></svg>
+                </button>
                 <button type="button" data-action="delete" title="Delete step" aria-label="Delete step"
-                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[11px] cursor-pointer">✕</button>
+                  class="studio-icon-btn studio-icon-btn-danger w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-1.5">
               <div>
-                <label class="block text-[11px] text-slate-400 mb-0.5">Type</label>
-                <select data-field="type"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
-                  <option value="to">to (toward target)</option>
-                  <option value="from">from (initial offset)</option>
-                </select>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Type
+                  <select data-field="type"
+                    class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
+                    <option value="to">To (target)</option>
+                    <option value="from">From (offset)</option>
+                  </select>
+                </label>
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-0.5">Ease</label>
-                <select data-field="ease"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
-                  <option value="power2.out">Power2 Out</option>
-                  <option value="power3.out">Power3 Out</option>
-                  <option value="power1.inOut">Power1 InOut</option>
-                  <option value="back.out(1.7)">Back Out</option>
-                  <option value="bounce.out">Bounce Out</option>
-                  <option value="elastic.out(1, 0.4)">Elastic Out</option>
-                  <option value="sine.inOut">Sine InOut</option>
-                  <option value="none">Linear</option>
-                </select>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Ease
+                  <select data-field="ease"
+                    class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
+                    <option value="power2.out">Power2 Out</option>
+                    <option value="power3.out">Power3 Out</option>
+                    <option value="power1.inOut">Power1 InOut</option>
+                    <option value="back.out(1.7)">Back Out</option>
+                    <option value="bounce.out">Bounce Out</option>
+                    <option value="elastic.out(1, 0.4)">Elastic Out</option>
+                    <option value="sine.inOut">Sine InOut</option>
+                    <option value="none">Linear</option>
+                  </select>
+                </label>
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-0.5">Duration (s)</label>
-                <input type="number" data-field="duration" step="0.01" min="0"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                <label class="block text-[11px] text-slate-400 mb-0.5">Duration (s)
+                  <input type="number" data-field="duration" step="0.01" min="0"
+                    class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono tabular-nums">
+                </label>
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-0.5">Repeat (-1=loop)</label>
-                <input type="number" data-field="repeat" step="1" min="-1"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                <label class="block text-[11px] text-slate-400 mb-0.5">Repeat (-1=loop)
+                  <input type="number" data-field="repeat" step="1" min="-1"
+                    class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono tabular-nums">
+                </label>
               </div>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none">
+              <label class="col-span-2 flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none pt-0.5">
                 <input type="checkbox" data-field="yoyo" class="studio-checkbox">
                 <span>Yoyo (ping-pong)</span>
               </label>
             </div>
 
             <div class="pt-1.5 border-t border-slate-700/40">
-              <label class="block text-[11px] text-slate-400 mb-1">Target Properties</label>
-              <div class="grid grid-cols-2 gap-1.5" data-role="properties"></div>
+              <span class="block text-[11px] text-slate-400 mb-1.5 font-semibold">Target Properties</span>
+              <div class="grid grid-cols-1 gap-1.5" data-role="properties"></div>
             </div>
           </div>
         </template>
 
         <template id="anim-property-row-template">
-          <label class="flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer select-none">
+          <label class="flex items-center gap-2 text-[11px] text-slate-400 cursor-pointer select-none">
             <input type="checkbox" data-role="prop-toggle" class="studio-checkbox shrink-0">
-            <span class="w-10 shrink-0" data-role="prop-name"></span>
+            <span class="w-20 shrink-0 font-mono" data-role="prop-name"></span>
             <input type="number" step="0.01" data-role="prop-value" disabled
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40">
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-[72px] font-mono tabular-nums disabled:opacity-40">
           </label>
         </template>
 
@@ -1206,21 +1242,29 @@
           <div
             class="anim-step-card flex items-center gap-2 border border-dashed rounded-xl p-2.5">
             <span class="anim-step-label text-[11px] font-bold text-slate-400 font-mono shrink-0"></span>
-            <div class="flex-1 flex items-center gap-1.5">
-              <label class="text-[11px] text-slate-400 shrink-0">Wait</label>
+            <label class="flex-1 flex items-center gap-1.5 text-[11px] text-slate-400">
+              <span class="shrink-0">Wait</span>
               <input type="number" data-field="duration" step="0.01" min="0"
-                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
+                class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono tabular-nums">
               <span class="text-[11px] text-slate-500 shrink-0">s</span>
-            </div>
+            </label>
             <div class="flex items-center gap-1 shrink-0">
               <button type="button" data-action="move-up" title="Move up" aria-label="Move delay up"
-                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↑</button>
+                class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+              </button>
               <button type="button" data-action="move-down" title="Move down" aria-label="Move delay down"
-                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↓</button>
+                class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
               <button type="button" data-action="duplicate" title="Duplicate step" aria-label="Duplicate delay"
-                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">⧉</button>
+                class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></svg>
+              </button>
               <button type="button" data-action="delete" title="Delete step" aria-label="Delete delay"
-                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[11px] cursor-pointer">✕</button>
+                class="studio-icon-btn studio-icon-btn-danger w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
             </div>
           </div>
         </template>
@@ -1235,19 +1279,19 @@
             <span>Image / SVG</span>
           </summary>
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Asset URL</label>
+            <label for="prop-image-src" class="block text-[11px] text-slate-400 mb-1">Asset URL</label>
             <div class="flex items-center gap-1.5">
               <input type="text" id="prop-image-src"
-                class="flex-1 min-w-0 bg-slate-800/60 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-mono truncate focus:outline-none focus:border-indigo-500">
+                class="flex-1 min-w-0 bg-slate-800/60 border border-slate-700 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-mono truncate focus:outline-none">
               <button type="button" id="prop-image-pick"
-                class="shrink-0 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">Replace</button>
+                class="studio-btn-secondary shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer">Replace</button>
             </div>
             <div id="asset-picker" class="hidden grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto mt-1.5"></div>
           </div>
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Fit</label>
+            <label for="prop-image-fit" class="block text-[11px] text-slate-400 mb-1">Fit</label>
             <select id="prop-image-fit"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
               <option value="contain">Contain (show whole asset)</option>
               <option value="cover">Cover (crop to fill)</option>
               <option value="fill">Fill (stretch)</option>
@@ -1255,82 +1299,83 @@
               <option value="scale-down">Scale Down</option>
             </select>
             <div class="flex items-center gap-1.5 mt-1.5">
-              <select id="prop-image-fit-mode"
-                class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white focus:outline-none focus:border-indigo-500">
+              <select id="prop-image-fit-mode" aria-label="Fit box mode"
+                class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white focus:outline-none">
                 <option value="width">Fit box: keep width</option>
                 <option value="height">Fit box: keep height</option>
               </select>
               <button type="button" id="prop-image-fit-box"
-                class="shrink-0 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300">Fit box</button>
+                class="studio-btn-secondary shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer">Fit box</button>
             </div>
           </div>
         </details>
 
         <!-- Fill & Gradient Section -->
-        <details data-inspector-pane="style" data-accordion-id="fill" class="space-y-3 pt-2 border-t border-slate-800 group">
-          <summary
-            class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="flex items-center gap-1.5">
-              <span
-                class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 inline">Fill &amp; Background</h3>
-            </span>
-            <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300"
-              onclick="event.stopPropagation()">
-              <input type="checkbox" id="prop-gradient-toggle" class="studio-checkbox">
-              <span class="text-[11px]">Gradient</span>
-            </label>
-          </summary>
+        <div data-inspector-pane="style" class="relative pt-2 border-t border-slate-800">
+          <label for="prop-gradient-toggle" class="absolute top-2 right-0 z-10 flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300">
+            <input type="checkbox" id="prop-gradient-toggle" class="studio-checkbox">
+            <span class="text-[11px]">Gradient</span>
+          </label>
+          <details data-accordion-id="fill" class="space-y-3 group">
+            <summary
+              class="flex items-center justify-between pr-20 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+              <span class="flex items-center gap-1.5">
+                <span
+                  class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 inline">Fill &amp; Background</h3>
+              </span>
+            </summary>
 
-          <!-- Solid BG Color -->
-          <div id="solid-fill-section">
-            <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
-            <div class="flex items-center gap-2">
-              <input type="color" id="prop-bg-color-picker" aria-label="Background color picker"
-                class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
-              <input type="text" id="prop-bg-color"
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono">
+            <!-- Solid BG Color -->
+            <div id="solid-fill-section">
+              <label for="prop-bg-color" class="block text-[11px] text-slate-400 mb-1">Background Color</label>
+              <div class="flex items-center gap-2">
+                <input type="color" id="prop-bg-color-picker" aria-label="Background color picker"
+                  class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
+                <input type="text" id="prop-bg-color"
+                  class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono">
+              </div>
             </div>
-          </div>
 
-          <!-- Gradient Controls -->
-          <div id="gradient-fill-section"
-            class="hidden space-y-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Color From</label>
-                <div class="flex items-center gap-1">
-                  <input type="color" id="prop-grad-from-picker" aria-label="Gradient start color"
-                    class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
-                  <input type="text" id="prop-grad-from"
-                    class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+            <!-- Gradient Controls -->
+            <div id="gradient-fill-section"
+              class="hidden space-y-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="prop-grad-from" class="block text-[11px] text-slate-400 mb-1">Color From</label>
+                  <div class="flex items-center gap-1">
+                    <input type="color" id="prop-grad-from-picker" aria-label="Gradient start color"
+                      class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+                    <input type="text" id="prop-grad-from"
+                      class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+                  </div>
+                </div>
+                <div>
+                  <label for="prop-grad-to" class="block text-[11px] text-slate-400 mb-1">Color To</label>
+                  <div class="flex items-center gap-1">
+                    <input type="color" id="prop-grad-to-picker" aria-label="Gradient end color"
+                      class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+                    <input type="text" id="prop-grad-to"
+                      class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+                  </div>
                 </div>
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-1">Color To</label>
-                <div class="flex items-center gap-1">
-                  <input type="color" id="prop-grad-to-picker" aria-label="Gradient end color"
-                    class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
-                  <input type="text" id="prop-grad-to"
-                    class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
+                <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                  <label for="prop-grad-angle">Angle</label>
+                  <span id="prop-grad-angle-val" class="font-mono text-white">90°</span>
                 </div>
+                <input type="range" id="prop-grad-angle" aria-label="Gradient angle" min="0" max="360" value="90" class="w-full">
               </div>
             </div>
+
             <div>
-              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
-                <span>Angle</span>
-                <span id="prop-grad-angle-val" class="font-mono text-white">90°</span>
-              </div>
-              <input type="range" id="prop-grad-angle" min="0" max="360" value="90" class="w-full">
+              <label for="prop-padding" class="block text-[11px] text-slate-400 mb-1">Internal Padding (px)</label>
+              <input type="number" id="prop-padding" min="0" max="100"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
-          </div>
-
-          <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Internal Padding (px)</label>
-            <input type="number" id="prop-padding" min="0" max="100"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
-          </div>
-        </details>
+          </details>
+        </div>
 
         <!-- Borders & Corners Section -->
         <details data-inspector-pane="style" data-accordion-id="borders" class="space-y-3 pt-2 border-t border-slate-800 group">
@@ -1343,12 +1388,12 @@
 
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Border Radius (px)</label>
+              <label for="prop-border-radius" class="block text-[11px] text-slate-400 mb-1">Border Radius (px)</label>
               <input type="number" id="prop-border-radius" min="0" max="200"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Border Width (px)</label>
+              <label for="prop-border-width" class="block text-[11px] text-slate-400 mb-1">Border Width (px)</label>
               <input type="number" id="prop-border-width" min="0" max="30"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
@@ -1356,7 +1401,7 @@
 
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Border Style</label>
+              <label for="prop-border-style" class="block text-[11px] text-slate-400 mb-1">Border Style</label>
               <select id="prop-border-style"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 <option value="solid">Solid</option>
@@ -1366,7 +1411,7 @@
               </select>
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Border Color</label>
+              <label for="prop-border-color" class="block text-[11px] text-slate-400 mb-1">Border Color</label>
               <div class="flex items-center gap-1.5">
                 <input type="color" id="prop-border-color-picker" aria-label="Border color picker"
                   class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
@@ -1383,13 +1428,13 @@
             class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
               class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
-            <span>Drop Shadow &amp; Glow</span>
+            <span>Box Shadow &amp; Glow</span>
           </summary>
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
+            <label for="prop-shadow-color" class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="prop-shadow-color-picker" aria-label="Shadow color picker"
+              <input type="color" id="prop-shadow-color-picker" aria-label="Box shadow color picker"
                 class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
               <input type="text" id="prop-shadow-color" placeholder="rgba(0,0,0,0.5)"
                 class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
@@ -1398,17 +1443,17 @@
 
           <div class="grid grid-cols-3 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Blur (px)</label>
+              <label for="prop-shadow-blur" class="block text-[11px] text-slate-400 mb-1">Blur (px)</label>
               <input type="number" id="prop-shadow-blur" min="0" max="100"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Offset X</label>
+              <label for="prop-shadow-x" class="block text-[11px] text-slate-400 mb-1">Offset X</label>
               <input type="number" id="prop-shadow-x" min="-100" max="100"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Offset Y</label>
+              <label for="prop-shadow-y" class="block text-[11px] text-slate-400 mb-1">Offset Y</label>
               <input type="number" id="prop-shadow-y" min="-100" max="100"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
@@ -1861,10 +1906,29 @@
       return String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     }
 
+    function syncFeatureCardBodies(el) {
+      document.getElementById('state-binding-body')?.classList.toggle('hidden', !el?.stateBinding?.enabled)
+      document.getElementById('marquee-body')?.classList.toggle('hidden', !el?.marquee?.enabled)
+      document.getElementById('scroll-body')?.classList.toggle('hidden', !el?.scroll?.enabled)
+      document.getElementById('data-binding-body')?.classList.toggle('hidden', !el?.textBinding?.enabled)
+    }
+
+    function syncAlignButtonStates(el) {
+      const hAlign = el?.style?.textAlign || 'left'
+      const vAlign = el?.style?.verticalAlign || 'center'
+      document.getElementById('align-t-left')?.setAttribute('aria-pressed', hAlign === 'left' ? 'true' : 'false')
+      document.getElementById('align-t-center')?.setAttribute('aria-pressed', hAlign === 'center' ? 'true' : 'false')
+      document.getElementById('align-t-right')?.setAttribute('aria-pressed', hAlign === 'right' ? 'true' : 'false')
+      document.getElementById('align-v-top')?.setAttribute('aria-pressed', vAlign === 'top' ? 'true' : 'false')
+      document.getElementById('align-v-center')?.setAttribute('aria-pressed', vAlign === 'center' ? 'true' : 'false')
+      document.getElementById('align-v-bottom')?.setAttribute('aria-pressed', vAlign === 'bottom' ? 'true' : 'false')
+    }
+
     function updateStateBindingControls() {
       const el = scene?.elements?.find(item => item.id === selectedElementId)
       const binding = el?.stateBinding
       const enabled = !!binding?.enabled
+      syncFeatureCardBodies(el)
       const isChatNotif = binding?.source === 'chatNotif' || binding?.source === 'joinNotif'
       document.getElementById('prop-vis-comparator-wrap')?.classList.add('hidden')
       document.getElementById('prop-vis-name-wrap')?.classList.toggle('hidden', isChatNotif)
@@ -1941,32 +2005,38 @@
       header.className = 'flex items-center justify-between pb-1 border-b border-slate-800'
       header.innerHTML = `
         <span class="anim-step-label text-[11px] font-bold font-mono flex items-center gap-1.5" style="color: var(--color-sage-hover)">
-          ${isCurrentlyPreviewed ? '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" title="Active Preview State"></span>' : ''}
+          ${isCurrentlyPreviewed ? '<span class="w-2 h-2 rounded-full inline-block" style="background: var(--color-sage-hover)" title="Active Preview State"></span>' : ''}
           ${escHtml(stateName)}
           ${isFallback ? '<span class="text-[11px] font-normal rounded px-1.5" style="color: var(--color-muted-chalk); background: var(--color-surface-light);">fallback</span>' : ''}
           ${props._visible === false ? '<span class="text-[11px] font-normal rounded px-1.5" style="color: #f3d28f; background: rgba(233,185,73,0.12);" title="Layer is hidden in this state">invisible</span>' : ''}
         </span>
         <div class="flex items-center gap-1">
           <button type="button" data-st-move="up" data-state="${escHtml(stateName)}" ${index === 0 ? 'disabled' : ''}
-            class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Move up" aria-label="Move state up">▲</button>
+            class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Move up" aria-label="Move state up">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+          </button>
           <button type="button" data-st-move="down" data-state="${escHtml(stateName)}" ${index === total - 1 ? 'disabled' : ''}
-            class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Move down" aria-label="Move state down">▼</button>
+            class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Move down" aria-label="Move state down">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
           <button type="button" data-st-preview data-state="${escHtml(stateName)}"
             class="px-2 py-0.5 rounded text-[11px] font-semibold transition cursor-pointer ${isCurrentlyPreviewed ? 'studio-btn-primary' : 'studio-btn-secondary'}"
             title="Preview this state on canvas">
             ${isCurrentlyPreviewed ? 'Active' : 'Preview'}
           </button>
           <button type="button" data-st-delete data-state="${escHtml(stateName)}"
-            class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[11px] font-bold transition cursor-pointer"
-            title="Delete state" aria-label="Delete state">✕</button>
+            class="studio-icon-btn studio-icon-btn-danger w-6 h-6 flex items-center justify-center rounded border transition cursor-pointer"
+            title="Delete state" aria-label="Delete state">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
         </div>`
       card.appendChild(header)
 
       const propsSection = document.createElement('div')
       propsSection.className = 'pt-1'
-      propsSection.innerHTML = `<label class="block text-[11px] text-slate-400 mb-1.5 font-semibold">Target Properties</label>`
+      propsSection.innerHTML = `<span class="block text-[11px] text-slate-400 mb-1.5 font-semibold">Target Properties</span>`
 
       const grid = document.createElement('div')
       grid.className = 'grid grid-cols-1 gap-1.5'
@@ -1995,10 +2065,9 @@
       const visibility = document.createElement('div')
       visibility.className = 'flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800 text-[11px]'
       visibility.innerHTML = `
-        <label class="text-slate-400 font-semibold flex items-center gap-1 select-none shrink-0">
-          <span title="Visible = shown in this state. Invisible = hidden after transition ends, separate from opacity.">Visibility:</span>
-        </label>
-        <select data-st-visible data-state="${escHtml(stateName)}"
+        <span class="text-slate-400 font-semibold flex items-center gap-1 select-none shrink-0"
+          title="Visible = shown in this state. Invisible = hidden after transition ends, separate from opacity.">Visibility:</span>
+        <select data-st-visible data-state="${escHtml(stateName)}" aria-label="State visibility"
           class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-[11px] text-white font-mono whitespace-nowrap focus:outline-none cursor-pointer">
           <option value="visible" ${props._visible === false ? '' : 'selected'}>Visible</option>
           <option value="invisible" ${props._visible === false ? 'selected' : ''}>Invisible</option>
@@ -2008,10 +2077,9 @@
       const footer = document.createElement('div')
       footer.className = 'flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800 text-[11px]'
       footer.innerHTML = `
-        <label class="text-slate-400 font-semibold flex items-center gap-1 cursor-pointer select-none shrink-0">
-          <span title="Order of Transition steps when entering this state">Direction:</span>
-        </label>
-        <select data-st-direction data-state="${escHtml(stateName)}"
+        <span class="text-slate-400 font-semibold flex items-center gap-1 select-none shrink-0"
+          title="Order of Transition steps when entering this state">Direction:</span>
+        <select data-st-direction data-state="${escHtml(stateName)}" aria-label="Transition direction"
           class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-[11px] text-white font-mono whitespace-nowrap focus:outline-none cursor-pointer">
           <option value="forward" ${props._direction === 'reverse' ? '' : 'selected'}>Forward (T0 → T1)</option>
           <option value="reverse" ${props._direction === 'reverse' ? 'selected' : ''}>Reverse (T1 → T0)</option>
@@ -2440,6 +2508,7 @@
       const isChat = binding?.source === 'chat'
       const isPlatform = !isF1Data && !isClock && !isControl && !isChat
       const isEnabled = !!(binding?.enabled && (el?.type === 'text' || el?.style?.text !== undefined))
+      syncFeatureCardBodies(el)
 
       document.getElementById('platform-binding-group').classList.toggle('hidden', !isPlatform)
       document.getElementById('chat-binding-group').classList.toggle('hidden', !isChat)
@@ -3580,6 +3649,8 @@
       document.getElementById('prop-shadow-x').value = el.style?.shadowOffsetX || 0
       document.getElementById('prop-shadow-y').value = el.style?.shadowOffsetY || 0
 
+      syncFeatureCardBodies(el)
+      syncAlignButtonStates(el)
       updateMotionTabIndicator(el)
     }
 
@@ -3609,18 +3680,34 @@
         const active = btn.dataset.inspectorTab === next
         btn.classList.toggle('studio-tab-active', active)
         btn.setAttribute('aria-selected', active ? 'true' : 'false')
+        btn.setAttribute('tabindex', active ? '0' : '-1')
       })
       try { localStorage.setItem(INSPECTOR_TAB_STORAGE_KEY, next) } catch {}
     }
 
     function initInspectorTabsAndAccordions() {
+      let initialTab = 'style'
       try {
         const savedTab = localStorage.getItem(INSPECTOR_TAB_STORAGE_KEY)
-        if (savedTab === 'motion' || savedTab === 'style') setActiveInspectorTab(savedTab)
+        if (savedTab === 'motion' || savedTab === 'style') initialTab = savedTab
       } catch {}
+      setActiveInspectorTab(initialTab)
 
-      document.querySelectorAll('[data-inspector-tab]').forEach((btn) => {
+      const tabButtons = [...document.querySelectorAll('[data-inspector-tab]')]
+      tabButtons.forEach((btn, idx) => {
         btn.addEventListener('click', () => setActiveInspectorTab(btn.dataset.inspectorTab))
+        btn.addEventListener('keydown', (e) => {
+          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return
+          e.preventDefault()
+          e.stopPropagation()
+          const nextIdx = e.key === 'Home' ? 0 : e.key === 'End' ? tabButtons.length - 1
+            : (idx + (e.key === 'ArrowRight' ? 1 : -1) + tabButtons.length) % tabButtons.length
+          const target = tabButtons[nextIdx]
+          if (target) {
+            setActiveInspectorTab(target.dataset.inspectorTab)
+            target.focus()
+          }
+        })
       })
 
       let savedAccordions = {}
@@ -3715,7 +3802,8 @@
     function renderTransitionSequenceEditor(el, anim) {
       const listEl = document.getElementById('anim-step-list')
       listEl.innerHTML = ''
-      const inputCls = 'w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500'
+      const inputCls = 'mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono tabular-nums focus:outline-none'
+      const selectCls = 'mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none'
       anim.transition.sequence.forEach((step, index) => {
         const isDelay = step.type === 'delay'
         const card = document.createElement('div')
@@ -3726,7 +3814,9 @@
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold font-mono" style="color: var(--color-sage-hover)">T${index}${isDelay ? ' · delay' : ''}</span>
-            <button type="button" data-delete class="text-red-400 hover:text-red-300 px-1 cursor-pointer" title="Delete step" aria-label="Delete step">✕</button>
+            <button type="button" data-delete class="studio-icon-btn studio-icon-btn-danger w-6 h-6 flex items-center justify-center rounded border cursor-pointer" title="Delete step" aria-label="Delete step">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
           </div>
           ${isDelay ? `
             <label class="block text-[11px] text-slate-400">Delay (s)
@@ -3737,10 +3827,10 @@
                 <input data-duration type="number" min="0" step="0.01" class="${inputCls}">
               </label>
               <label class="text-[11px] text-slate-400">Ease
-                <select data-ease class="${inputCls}"></select>
+                <select data-ease class="${selectCls}"></select>
               </label>
             </div>
-            <div data-properties class="grid grid-cols-2 gap-1"></div>`}`
+            <div data-properties class="grid grid-cols-2 gap-1.5 pt-1"></div>`}`
 
         card.querySelector('[data-delete]').onclick = () => {
           anim.transition.sequence.splice(index, 1)
@@ -3770,16 +3860,17 @@
           const propsEl = card.querySelector('[data-properties]')
           TRANSITION_PROPERTIES.forEach(name => {
             const label = document.createElement('label')
-            label.className = 'text-[10px] text-slate-400 flex items-center gap-1 cursor-pointer'
+            label.className = 'text-[11px] font-mono text-slate-400 flex items-center gap-1.5 cursor-pointer select-none'
             const checkbox = document.createElement('input')
             checkbox.type = 'checkbox'
+            checkbox.className = 'studio-checkbox shrink-0'
             checkbox.checked = step.properties.includes(name)
             checkbox.onchange = e => {
               if (e.target.checked && !step.properties.includes(name)) step.properties.push(name)
               if (!e.target.checked) step.properties = step.properties.filter(item => item !== name)
             }
             label.appendChild(checkbox)
-            label.appendChild(document.createTextNode(' ' + name))
+            label.appendChild(document.createTextNode(name))
             propsEl.appendChild(label)
           })
         }
@@ -4256,6 +4347,8 @@
         const binding = ensureTextBinding(el)
         binding.enabled = e.target.checked
         if (!binding.fallback) binding.fallback = el.style?.text || ''
+        syncFeatureCardBodies(el)
+        updateMotionTabIndicator(el)
         renderCanvas()
         updateBindingPreview()
       })
@@ -4353,8 +4446,12 @@
       // State Binding controls
       const getStateBinding = () => { const el = getSelected(); return el ? ensureStateBinding(el) : null }
       document.getElementById('prop-vis-enabled').addEventListener('change', (e) => {
-        const binding = getStateBinding(); if (!binding) return
+        const el = getSelected()
+        const binding = el ? ensureStateBinding(el) : null
+        if (!binding) return
         binding.enabled = e.target.checked
+        syncFeatureCardBodies(el)
+        updateMotionTabIndicator(el)
         updateStateBindingControls()
       })
       document.getElementById('prop-vis-source').addEventListener('change', (e) => {
@@ -4627,6 +4724,8 @@
         const el = getSelected()
         if (!el) return
         ensureMarqueeConfig(el).enabled = e.target.checked
+        syncFeatureCardBodies(el)
+        updateMotionTabIndicator(el)
         renderCanvas()
         renderLayers()
       })
@@ -4654,6 +4753,8 @@
         const el = getSelected()
         if (!el) return
         ensureScrollConfig(el).enabled = e.target.checked
+        syncFeatureCardBodies(el)
+        updateMotionTabIndicator(el)
         renderCanvas()
         renderLayers()
       })
@@ -4693,12 +4794,12 @@
       document.getElementById('prop-text-transform').addEventListener('change', (e) => { const el = getSelected(); if (el) { el.style.textTransform = e.target.value; renderCanvas(); } })
       document.getElementById('prop-letter-spacing').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.letterSpacing = parseFloat(e.target.value) || 0; renderCanvas(); } })
 
-      document.getElementById('align-t-left').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'left'; renderCanvas(); } })
-      document.getElementById('align-t-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'center'; renderCanvas(); } })
-      document.getElementById('align-t-right').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'right'; renderCanvas(); } })
-      document.getElementById('align-v-top').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'top'; renderCanvas(); } })
-      document.getElementById('align-v-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'center'; renderCanvas(); } })
-      document.getElementById('align-v-bottom').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'bottom'; renderCanvas(); } })
+      document.getElementById('align-t-left').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'left'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
+      document.getElementById('align-t-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'center'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
+      document.getElementById('align-t-right').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.textAlign = 'right'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
+      document.getElementById('align-v-top').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'top'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
+      document.getElementById('align-v-center').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'center'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
+      document.getElementById('align-v-bottom').addEventListener('click', () => { const el = getSelected(); if (el) { el.style.verticalAlign = 'bottom'; syncAlignButtonStates(el); commitSceneChange(); renderCanvas(); } })
 
       document.getElementById('prop-text-color-picker').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; document.getElementById('prop-text-color').value = e.target.value; renderSelectedElement(); } })
       document.getElementById('prop-text-color').addEventListener('input', (e) => { const el = getSelected(); if (el) { el.style.color = e.target.value; renderSelectedElement(); } })
@@ -4981,6 +5082,14 @@
     document.getElementById('zoom-out-btn').addEventListener('click', () => setZoom(zoom - 0.1))
     document.getElementById('zoom-fit-btn').addEventListener('click', fitZoom)
 
+    function toggleStageZen() {
+      const active = document.body.classList.toggle('stage-zen')
+      const btn = document.getElementById('stage-toggle-btn')
+      if (btn) btn.setAttribute('aria-pressed', active ? 'true' : 'false')
+      requestAnimationFrame(() => fitZoom())
+    }
+    document.getElementById('stage-toggle-btn')?.addEventListener('click', toggleStageZen)
+
     document.getElementById('undo-btn')?.addEventListener('click', performUndo)
     document.getElementById('redo-btn')?.addEventListener('click', performRedo)
 
@@ -5089,12 +5198,34 @@
         performRedo()
         return
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+        e.preventDefault()
+        toggleStageZen()
+        return
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
         if (selectedElementId) {
           e.preventDefault()
           duplicateSelectedElement()
         }
         return
+      }
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (selectedElementId && !document.activeElement?.closest('[role="tablist"]')) {
+          const el = scene.elements.find((item) => item.id === selectedElementId)
+          if (el && !el.locked) {
+            e.preventDefault()
+            const step = e.shiftKey ? 10 : 1
+            if (e.key === 'ArrowLeft') el.x -= step
+            else if (e.key === 'ArrowRight') el.x += step
+            else if (e.key === 'ArrowUp') el.y -= step
+            else if (e.key === 'ArrowDown') el.y += step
+            renderCanvas()
+            updateInspectorValues()
+            scheduleDebouncedCommit()
+            return
+          }
+        }
       }
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedElementId) {
@@ -5179,6 +5310,7 @@
 
     function updateEditorConnectorIndicator(data) {
       const dot = document.getElementById('editor-connector-dot')
+      const sr = document.getElementById('editor-connector-sr')
       if (!dot) return
       const statuses = data?.statusV2 || {}
       const tiktok = statuses.tiktok || null
@@ -5186,7 +5318,9 @@
       const anyLive = !!(tiktok?.running && tiktok?.isLive) || !!(youtube?.running && youtube?.isLive)
       const anyEnabled = !!tiktok?.enabled || !!youtube?.enabled
       dot.className = `w-2 h-2 rounded-full shrink-0 ${anyLive ? 'bg-emerald-500 animate-pulse' : anyEnabled ? 'bg-amber-500' : 'bg-slate-600'}`
-      dot.title = anyLive ? 'Connectors: LIVE (manage in Control Panel)' : anyEnabled ? 'Connectors: Connecting (manage in Control Panel)' : 'Connectors: OFF (manage in Control Panel)'
+      const statusText = anyLive ? 'Connectors: LIVE (manage in Control Panel)' : anyEnabled ? 'Connectors: Connecting (manage in Control Panel)' : 'Connectors: OFF (manage in Control Panel)'
+      dot.title = statusText
+      if (sr) sr.textContent = statusText
     }
 
     async function loadPlatformConnectorStatus() {

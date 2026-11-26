@@ -113,6 +113,24 @@
 #selection-form[data-active-tab="style"] [data-inspector-pane="motion"] { display: none !important; }
 #selection-form[data-active-tab="motion"] [data-inspector-pane="style"] { display: none !important; }
 
+.editor-page .inspector-sticky-header {
+  background: var(--color-studio-canvas);
+  box-shadow: 0 6px 14px rgba(20, 22, 24, 0.55);
+}
+
+.editor-page.stage-zen #left-sidebar,
+.editor-page.stage-zen #properties-panel {
+  display: none !important;
+}
+
+#align-t-left[aria-pressed="true"], #align-t-center[aria-pressed="true"], #align-t-right[aria-pressed="true"],
+#align-v-top[aria-pressed="true"], #align-v-center[aria-pressed="true"], #align-v-bottom[aria-pressed="true"] {
+  background: var(--color-dark-trench) !important;
+  border-color: var(--color-sage-olive) !important;
+  color: var(--color-pure-white) !important;
+  box-shadow: var(--shadow-neu-pressed) !important;
+}
+
 /* Tactile editor controls. */
 #zoom-fit-btn, #zoom-out-btn, #zoom-in-btn,
 #layer-top-btn, #layer-up-btn, #layer-down-btn, #layer-bottom-btn {

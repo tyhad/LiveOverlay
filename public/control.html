@@ -585,8 +585,78 @@
     background: var(--indigo); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer;
   }
   .archive-status { margin: 8px 0 0; font-size: 11px; color: var(--text-dim); }
+
+  /* Platform Connectors panel */
+  .conn-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .conn-card {
+    background: var(--color-dark-trench, #16181a);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .conn-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .conn-check-label { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; }
+  .conn-check-label input { width: 15px; height: 15px; accent-color: var(--indigo); }
+  .conn-status-cluster { display: flex; align-items: center; gap: 6px; }
+  .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; flex-shrink: 0; }
+  .conn-dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .conn-dot.connecting { background: #e9b949; }
+  .conn-state { font-size: 11px; font-weight: 700; color: var(--color-slate-ash, #949ba3); }
+  .conn-state.live { color: #34d399; }
+  .conn-state.connecting { color: #f3d28f; }
+  .conn-field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .conn-field input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    user-select: text;
+  }
+  .conn-mini-btn {
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    background: var(--color-ok-bg, #157a55);
+  }
+  .conn-mini-btn.stop { background: var(--color-danger-bg, #b9362c); }
+  .conn-mini-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .conn-hint { margin: 0; font-size: 11px; color: #f3d28f; }
+  .conn-meta { margin: 0; font-size: 11px; color: var(--color-slate-ash, #949ba3); }
+  .conn-err { margin: 0; font-size: 11px; color: #fca5a5; }
+  .conn-err.hidden { display: none; }
+  .conn-notif-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .conn-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .conn-actions button { flex: 1; min-width: 100px; }
+  .conn-btn-ok { background: var(--color-ok-bg, #157a55); border-color: var(--color-ok-bg, #157a55); color: #fff; }
+  .conn-btn-stop { background: var(--color-danger-bg, #b9362c); border-color: var(--color-danger-bg, #b9362c); color: #fff; }
+  .conn-btn-save { background: var(--color-sage-primary, #5f6856); border-color: var(--indigo); color: #fff; }
+  .conn-footer {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--color-dark-trench, #16181a);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--color-slate-ash, #949ba3);
+  }
+
   @media (max-width: 520px) {
-    .archive-grid { grid-template-columns: 1fr; }
+    .archive-grid, .conn-grid, .conn-notif-grid { grid-template-columns: 1fr; }
   }
 </style>
 <link rel="stylesheet" href="/design.css" />
@@ -599,6 +669,125 @@
 
   <main id="app">
     <div id="empty-state" class="empty-state">Memuat binding dari scene…</div>
+
+    <!-- Platform Connectors (TikTok & YouTube live chat & stats) -->
+    <section id="platform-connectors-panel" class="group" data-panel-key="panel:platformConnectors">
+      <div class="group-title">
+        <span class="group-title-left">
+          <span class="drag-handle" data-drag-handle title="Drag to reorder" aria-label="Reorder panel">⋮⋮</span>
+          <span>Platform Connectors</span>
+        </span>
+        <span class="group-title-right">
+          <span id="platform-connector-dot" class="conn-dot" aria-hidden="true"></span>
+          <span id="platform-connector-state-label" class="conn-state">OFF</span>
+          <span class="kind">Live Feed</span>
+          <button class="collapse-btn" type="button" data-panel-collapse="panel:platformConnectors" title="Minimize" aria-label="Minimize">▾</button>
+        </span>
+      </div>
+      <div class="panel-body">
+        <p class="conn-meta" style="margin-bottom: 10px;">TikTok &amp; YouTube can run simultaneously. Credentials are saved locally.</p>
+
+        <div class="conn-grid">
+          <!-- TikTok -->
+          <div class="conn-card">
+            <div class="conn-card-head">
+              <label class="conn-check-label">
+                <input id="connector-tiktok-enabled" type="checkbox" />
+                <span>TikTok</span>
+              </label>
+              <span class="conn-status-cluster">
+                <span id="connector-tiktok-dot" class="conn-dot" aria-hidden="true"></span>
+                <span id="connector-tiktok-state" class="conn-state">OFF</span>
+                <button id="connector-tiktok-toggle-btn" type="button" data-enabled="0" class="conn-mini-btn">Start</button>
+              </span>
+            </div>
+            <div class="conn-field">
+              <label for="connector-tiktok-username">TikTok Username</label>
+              <input type="text" id="connector-tiktok-username" placeholder="@username" autocomplete="off" />
+            </div>
+            <p id="connector-tiktok-error" class="conn-err hidden"></p>
+          </div>
+
+          <!-- YouTube -->
+          <div class="conn-card">
+            <div class="conn-card-head">
+              <label class="conn-check-label">
+                <input id="connector-youtube-enabled" type="checkbox" />
+                <span>YouTube</span>
+              </label>
+              <span class="conn-status-cluster">
+                <span id="connector-youtube-dot" class="conn-dot" aria-hidden="true"></span>
+                <span id="connector-youtube-state" class="conn-state">OFF</span>
+                <button id="connector-youtube-toggle-btn" type="button" data-enabled="0" class="conn-mini-btn">Start</button>
+              </span>
+            </div>
+            <div class="conn-field">
+              <label for="connector-yt-api-key">YouTube API Key (Data API v3)</label>
+              <input type="password" id="connector-yt-api-key" placeholder="AIza..." autocomplete="off" />
+            </div>
+            <div class="conn-field">
+              <label for="connector-yt-video-id">Video ID (recommended, saves quota)</label>
+              <input type="text" id="connector-yt-video-id" placeholder="dQw4w9WgXcQ" autocomplete="off" />
+            </div>
+            <div class="conn-field">
+              <label for="connector-yt-channel-id">Channel ID (fallback if Video ID empty)</label>
+              <input type="text" id="connector-yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+            </div>
+            <p id="connector-youtube-video-hint" class="conn-hint"></p>
+            <p class="conn-meta">Quota used today: <strong id="connector-youtube-quota" style="color: var(--text);">—</strong></p>
+            <p id="connector-youtube-error" class="conn-err hidden"></p>
+          </div>
+        </div>
+
+        <details class="archive-details">
+          <summary><span>Chat Notification, Polling &amp; Archive Settings</span></summary>
+          <div class="conn-notif-grid" style="margin-bottom: 10px;">
+            <div class="conn-field">
+              <label for="connector-notif-display-ms">Display (ms)</label>
+              <input type="number" id="connector-notif-display-ms" min="1500" max="15000" step="250" value="4000" />
+            </div>
+            <div class="conn-field">
+              <label for="connector-notif-gap-ms">Gap (ms ≥ 300)</label>
+              <input type="number" id="connector-notif-gap-ms" min="300" max="15000" step="100" value="600" />
+            </div>
+            <div class="conn-field">
+              <label for="connector-notif-max-queue">Max Queue</label>
+              <input type="number" id="connector-notif-max-queue" min="1" max="500" step="1" value="20" />
+            </div>
+          </div>
+          <div class="conn-notif-grid" style="margin-bottom: 10px;">
+            <div class="conn-field">
+              <label for="connector-poll-interval">Stats Poll (s)</label>
+              <input type="number" id="connector-poll-interval" min="10" max="300" value="30" />
+            </div>
+            <div class="conn-field">
+              <label for="connector-tiktok-tag">TikTok Tag</label>
+              <input type="text" id="connector-tiktok-tag" placeholder="[TT]" />
+            </div>
+            <div class="conn-field">
+              <label for="connector-youtube-tag">YouTube Tag</label>
+              <input type="text" id="connector-youtube-tag" placeholder="[YT]" />
+            </div>
+          </div>
+          <label class="conn-check-label" style="font-size: 12px; font-weight: 600;">
+            <input id="connector-archive-enabled" type="checkbox" checked />
+            <span>Archive chat sessions to <code>chat-archive/</code></span>
+          </label>
+        </details>
+
+        <div class="conn-actions">
+          <button id="connector-save-btn" type="button" class="archive-btn conn-btn-save">Save Config</button>
+          <button id="connector-start-all-btn" type="button" class="archive-btn conn-btn-ok">Start All</button>
+          <button id="connector-stop-all-btn" type="button" class="archive-btn conn-btn-stop">Stop All</button>
+        </div>
+
+        <div class="conn-footer">
+          <span>Updated: <strong id="connector-status-updated" style="color: var(--text);">—</strong></span>
+          <span id="connector-save-feedback" style="color: #8e9884; font-weight: 700;"></span>
+        </div>
+        <p id="connector-status-error" class="conn-err hidden" style="margin-top: 6px;"></p>
+      </div>
+    </section>
 
     <!-- Review chat notification: DOM dipertahankan supaya tombol tidak ikut di-render ulang. -->
     <section id="chat-review-panel" class="group hidden" data-panel-key="panel:chatReview">
@@ -1203,6 +1392,7 @@
       const timerGroups = [...usedGroups.timers].sort()
       const textGroups = [...usedGroups.texts].sort()
 
+      syncStaticPanelCollapse('platform-connectors-panel', 'panel:platformConnectors')
       syncStaticPanelCollapse('chat-review-panel', 'panel:chatReview')
       syncStaticPanelCollapse('chat-archive-panel', 'panel:chatArchive')
 
@@ -1250,11 +1440,14 @@
       }
 
       if (!editingInput) {
+        const connPanel = document.getElementById('platform-connectors-panel')
         const saved = {}
         app.querySelectorAll('input[id]').forEach(inp => {
+          if (connPanel && connPanel.contains(inp)) return
           saved[inp.id] = inp.type === 'checkbox' ? inp.checked : inp.value
         })
-        const focusedId = document.activeElement && app.contains(document.activeElement) ? document.activeElement.id : null
+        const focusedInConn = Boolean(connPanel && document.activeElement && connPanel.contains(document.activeElement))
+        const focusedId = !focusedInConn && document.activeElement && app.contains(document.activeElement) ? document.activeElement.id : null
         const selStart = focusedId ? document.activeElement.selectionStart : null
 
         let anyReplaced = false
@@ -1293,11 +1486,13 @@
       }
 
       const targetOrder = orderedPanelKeys([
+        'panel:platformConnectors',
         'panel:chatReview',
         'panel:chatArchive',
         ...specs.map(s => s.key),
       ])
       const nodeForKey = (key) => {
+        if (key === 'panel:platformConnectors') return document.getElementById('platform-connectors-panel')
         if (key === 'panel:chatReview') return document.getElementById('chat-review-panel')
         if (key === 'panel:chatArchive') return document.getElementById('chat-archive-panel')
         return dynamicPanelNodes.get(key)
@@ -1762,6 +1957,225 @@
       setInterval(loadArchiveSessions, 5000)
     }
 
+    // ─── Platform Connectors (TikTok & YouTube) ────────────────────────────
+    const DEFAULT_CHAT_TAGS = { tiktok: '[TT]', youtube: '[YT]' }
+
+    function setConnectorPlatformStatus(platform, status) {
+      const dot = document.getElementById(`connector-${platform}-dot`)
+      const label = document.getElementById(`connector-${platform}-state`)
+      const errorEl = document.getElementById(`connector-${platform}-error`)
+      if (!dot || !label) return
+
+      const enabled = !!status?.enabled
+      const live = !!(enabled && status?.running && status?.isLive)
+      const connecting = !!(enabled && status?.running && !status?.isLive)
+      dot.className = `conn-dot ${live ? 'live' : enabled ? 'connecting' : ''}`
+      label.textContent = live ? 'LIVE' : connecting ? 'CONNECTING…' : enabled ? 'OFFLINE' : 'OFF'
+      label.className = `conn-state ${live ? 'live' : enabled ? 'connecting' : ''}`
+
+      const toggleBtn = document.getElementById(`connector-${platform}-toggle-btn`)
+      if (toggleBtn) {
+        toggleBtn.dataset.enabled = enabled ? '1' : '0'
+        toggleBtn.textContent = enabled ? 'Stop' : 'Start'
+        toggleBtn.classList.toggle('stop', enabled)
+      }
+
+      if (errorEl) {
+        if (status?.lastError) {
+          errorEl.textContent = status.lastError
+          errorEl.classList.remove('hidden')
+        } else {
+          errorEl.classList.add('hidden')
+        }
+      }
+    }
+
+    function updateYoutubeVideoHint() {
+      const hint = document.getElementById('connector-youtube-video-hint')
+      if (!hint) return
+      const enabled = document.getElementById('connector-youtube-enabled')?.checked
+      const videoId = document.getElementById('connector-yt-video-id')?.value.trim() || ''
+      const channelId = document.getElementById('connector-yt-channel-id')?.value.trim() || ''
+      if (!enabled) {
+        hint.textContent = ''
+      } else if (!videoId) {
+        hint.textContent = channelId
+          ? 'Tip: Provide Video ID when known; Channel ID lookup uses more YouTube quota.'
+          : 'Tip: Enter a Video ID (or Channel ID) so the connector can locate live chat.'
+      } else {
+        hint.textContent = ''
+      }
+    }
+
+    function renderConnectorStatus(data) {
+      const statuses = data?.statusV2 || {}
+      const tiktok = statuses.tiktok || null
+      const youtube = statuses.youtube || null
+      setConnectorPlatformStatus('tiktok', tiktok)
+      setConnectorPlatformStatus('youtube', youtube)
+
+      const anyLive = !!(tiktok?.running && tiktok?.isLive) || !!(youtube?.running && youtube?.isLive)
+      const anyEnabled = !!tiktok?.enabled || !!youtube?.enabled
+      const dot = document.getElementById('platform-connector-dot')
+      const label = document.getElementById('platform-connector-state-label')
+      if (dot && label) {
+        dot.className = `conn-dot ${anyLive ? 'live' : anyEnabled ? 'connecting' : ''}`
+        label.textContent = anyLive ? 'LIVE' : anyEnabled ? 'CONNECTING…' : 'OFF'
+        label.className = `conn-state ${anyLive ? 'live' : anyEnabled ? 'connecting' : ''}`
+      }
+
+      const quotaEl = document.getElementById('connector-youtube-quota')
+      if (quotaEl) {
+        const quota = Number(youtube?.quotaUnitsUsedToday)
+        quotaEl.textContent = Number.isFinite(quota) && quota > 0 ? quota.toLocaleString() + ' units' : '0 units'
+      }
+
+      const updatedEl = document.getElementById('connector-status-updated')
+      if (updatedEl) {
+        const stamps = [tiktok?.lastSuccessAt, youtube?.lastSuccessAt].filter(Boolean).map(s => new Date(s).getTime())
+        updatedEl.textContent = stamps.length ? new Date(Math.max(...stamps)).toLocaleTimeString() : '—'
+      }
+
+      const errorEl = document.getElementById('connector-status-error')
+      if (errorEl) {
+        const errors = [tiktok?.lastError, youtube?.lastError].filter(Boolean)
+        if (errors.length) {
+          errorEl.textContent = errors.join(' · ')
+          errorEl.classList.remove('hidden')
+        } else {
+          errorEl.classList.add('hidden')
+        }
+      }
+      updateYoutubeVideoHint()
+    }
+
+    function applyConnectorConfigToForm(configV2) {
+      const cfg = configV2 || {}
+      document.getElementById('connector-tiktok-enabled').checked = !!cfg.tiktok?.enabled
+      document.getElementById('connector-tiktok-username').value = cfg.tiktok?.username || ''
+      document.getElementById('connector-youtube-enabled').checked = !!cfg.youtube?.enabled
+      document.getElementById('connector-yt-api-key').value = cfg.youtube?.apiKey || ''
+      document.getElementById('connector-yt-video-id').value = cfg.youtube?.videoId || ''
+      document.getElementById('connector-yt-channel-id').value = cfg.youtube?.channelId || ''
+      document.getElementById('connector-poll-interval').value = Math.round((cfg.stats?.pollIntervalMs || 30000) / 1000)
+      document.getElementById('connector-notif-display-ms').value = cfg.notif?.displayMs ?? 4000
+      document.getElementById('connector-notif-gap-ms').value = cfg.notif?.gapMs ?? 600
+      document.getElementById('connector-notif-max-queue').value = cfg.notif?.maxQueue ?? 20
+      document.getElementById('connector-tiktok-tag').value = cfg.chatFormat?.tiktokTag || DEFAULT_CHAT_TAGS.tiktok
+      document.getElementById('connector-youtube-tag').value = cfg.chatFormat?.youtubeTag || DEFAULT_CHAT_TAGS.youtube
+      document.getElementById('connector-archive-enabled').checked = cfg.archive?.enabled !== false
+      updateYoutubeVideoHint()
+    }
+
+    function readConnectorForm() {
+      const pollIntervalSec = Math.max(10, Math.min(300, parseInt(document.getElementById('connector-poll-interval').value, 10) || 30))
+      const displayMs = Math.max(1500, Math.min(15000, parseInt(document.getElementById('connector-notif-display-ms').value, 10) || 4000))
+      const gapMs = Math.max(300, Math.min(15000, parseInt(document.getElementById('connector-notif-gap-ms').value, 10) || 600))
+      const maxQueue = Math.max(1, Math.min(500, parseInt(document.getElementById('connector-notif-max-queue').value, 10) || 20))
+      return {
+        tiktok: {
+          enabled: document.getElementById('connector-tiktok-enabled').checked,
+          username: document.getElementById('connector-tiktok-username').value.trim(),
+        },
+        youtube: {
+          enabled: document.getElementById('connector-youtube-enabled').checked,
+          apiKey: document.getElementById('connector-yt-api-key').value.trim(),
+          videoId: document.getElementById('connector-yt-video-id').value.trim(),
+          channelId: document.getElementById('connector-yt-channel-id').value.trim(),
+        },
+        stats: { pollIntervalMs: pollIntervalSec * 1000 },
+        notif: { displayMs, gapMs, maxQueue },
+        chatFormat: {
+          tiktokTag: document.getElementById('connector-tiktok-tag').value.trim() || DEFAULT_CHAT_TAGS.tiktok,
+          youtubeTag: document.getElementById('connector-youtube-tag').value.trim() || DEFAULT_CHAT_TAGS.youtube,
+        },
+        archive: { enabled: document.getElementById('connector-archive-enabled').checked },
+      }
+    }
+
+    function flashConnectorFeedback(text) {
+      const el = document.getElementById('connector-save-feedback')
+      if (!el) return
+      el.textContent = text
+      setTimeout(() => { if (el.textContent === text) el.textContent = '' }, 2500)
+    }
+
+    async function savePlatformConnectorConfig() {
+      const res = await fetch('/api/platform-connector', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(readConnectorForm()),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to save config')
+      if (data.configV2) applyConnectorConfigToForm(data.configV2)
+      renderConnectorStatus(data)
+      flashConnectorFeedback('Saved')
+      return data
+    }
+
+    async function setAllConnectorsEnabled(enabled) {
+      document.getElementById('connector-tiktok-enabled').checked = enabled
+      document.getElementById('connector-youtube-enabled').checked = enabled
+      await savePlatformConnectorConfig()
+    }
+
+    async function toggleSingleConnector(platform) {
+      const btn = document.getElementById(`connector-${platform}-toggle-btn`)
+      const checkbox = document.getElementById(`connector-${platform}-enabled`)
+      if (!btn || !checkbox) return
+      const nextEnabled = btn.dataset.enabled !== '1'
+      checkbox.checked = nextEnabled
+      btn.disabled = true
+      try {
+        await savePlatformConnectorConfig()
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    async function loadPlatformConnectorStatus() {
+      try {
+        const res = await fetch('/api/platform-connector')
+        if (!res.ok) return
+        renderConnectorStatus(await res.json())
+      } catch (err) {
+        console.warn('Failed to load platform connector status:', err)
+      }
+    }
+
+    async function initPlatformConnector() {
+      document.getElementById('connector-save-btn')?.addEventListener('click', async () => {
+        try { await savePlatformConnectorConfig() } catch (err) { alert(err.message || 'Failed to save config') }
+      })
+      document.getElementById('connector-start-all-btn')?.addEventListener('click', async () => {
+        try { await setAllConnectorsEnabled(true) } catch (err) { alert(err.message || 'Failed to start connectors') }
+      })
+      document.getElementById('connector-stop-all-btn')?.addEventListener('click', async () => {
+        try { await setAllConnectorsEnabled(false) } catch (err) { alert(err.message || 'Failed to stop connectors') }
+      })
+      for (const platform of ['tiktok', 'youtube']) {
+        document.getElementById(`connector-${platform}-toggle-btn`)?.addEventListener('click', async () => {
+          try { await toggleSingleConnector(platform) } catch (err) { alert(err.message || `Failed to toggle ${platform} connector`) }
+        })
+      }
+      document.getElementById('connector-yt-video-id')?.addEventListener('input', updateYoutubeVideoHint)
+      document.getElementById('connector-yt-channel-id')?.addEventListener('input', updateYoutubeVideoHint)
+      document.getElementById('connector-youtube-enabled')?.addEventListener('change', updateYoutubeVideoHint)
+
+      try {
+        const res = await fetch('/api/platform-connector')
+        if (res.ok) {
+          const data = await res.json()
+          applyConnectorConfigToForm(data.configV2)
+          renderConnectorStatus(data)
+        }
+      } catch (err) {
+        console.warn('Failed to init platform connector UI:', err)
+      }
+      setInterval(loadPlatformConnectorStatus, 4000)
+    }
+
     async function init() {
       const groups = await scanUsedGroups()
       usedGroups = groups
@@ -1769,6 +2183,7 @@
       scanned = true
       applyChatArchiveVisibility()
       applyChatReviewVisibility()
+      initPlatformConnector()
       await syncControlState()
       setInterval(syncControlState, POLL_MS)
       // Tick lokal buat display timer yang sedang running, tanpa nunggu poll 1 detik

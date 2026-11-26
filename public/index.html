@@ -200,156 +200,8 @@
         </div>
       </details>
 
-      <!-- Section 4: Platform Connectors (TikTok & YouTube independen) -->
-      <details class="p-3 border-b border-slate-800 space-y-2 group">
-        <summary
-          class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-          <div class="flex items-center gap-1.5">
-            <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px] shrink-0 mt-0.5">▶</span>
-            <div>
-              <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Platform Connectors</h2>
-              <p class="text-[10px] text-slate-500 mt-0.5">TikTok &amp; YouTube bisa aktif bersamaan.</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span id="platform-connector-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
-            <span id="platform-connector-state-label" class="text-[10px] text-slate-500">OFF</span>
-          </div>
-        </summary>
-        <div class="space-y-3 mt-2">
-
-          <!-- TikTok block -->
-          <div class="rounded-xl border border-slate-700/70 bg-slate-950/40 p-2.5 space-y-1.5">
-            <div class="flex items-center justify-between gap-2">
-              <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-200 cursor-pointer">
-                <input id="connector-tiktok-enabled" type="checkbox" class="accent-indigo-500">
-                <span>🎵 TikTok</span>
-              </label>
-              <span class="flex items-center gap-1.5">
-                <span id="connector-tiktok-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
-                <span id="connector-tiktok-state" class="text-[10px] text-slate-500">OFF</span>
-                <button id="connector-tiktok-toggle-btn" type="button" data-enabled="0"
-                  class="px-1.5 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-semibold transition">▶
-                  Start</button>
-              </span>
-            </div>
-            <label class="block text-[10px] text-slate-400">TikTok Username</label>
-            <input type="text" id="connector-tiktok-username" placeholder="@username"
-              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            <p id="connector-tiktok-error" class="text-[10px] text-rose-400 hidden"></p>
-          </div>
-
-          <!-- YouTube block -->
-          <div class="rounded-xl border border-slate-700/70 bg-slate-950/40 p-2.5 space-y-1.5">
-            <div class="flex items-center justify-between gap-2">
-              <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-200 cursor-pointer">
-                <input id="connector-youtube-enabled" type="checkbox" class="accent-indigo-500">
-                <span>▶️ YouTube</span>
-              </label>
-              <span class="flex items-center gap-1.5">
-                <span id="connector-youtube-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
-                <span id="connector-youtube-state" class="text-[10px] text-slate-500">OFF</span>
-                <button id="connector-youtube-toggle-btn" type="button" data-enabled="0"
-                  class="px-1.5 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-semibold transition">▶
-                  Start</button>
-              </span>
-            </div>
-            <label class="block text-[10px] text-slate-400">YouTube API Key <span class="text-slate-600">(Data API
-                v3)</span></label>
-            <input type="password" id="connector-yt-api-key" placeholder="AIza..."
-              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            <label class="block text-[10px] text-slate-400 mt-1">Video ID <span class="text-slate-600">(disarankan,
-                hemat quota)</span></label>
-            <input type="text" id="connector-yt-video-id" placeholder="dQw4w9WgXcQ"
-              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            <label class="block text-[10px] text-slate-400 mt-1">Channel ID <span class="text-slate-600">(fallback
-                jika Video ID kosong)</span></label>
-            <input type="text" id="connector-yt-channel-id" placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
-              class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            <p id="connector-youtube-video-hint" class="text-[10px] text-amber-400/90"></p>
-            <p class="text-[10px] text-slate-500">Quota terpakai hari ini: <span id="connector-youtube-quota"
-                class="text-slate-300">—</span></p>
-            <p id="connector-youtube-error" class="text-[10px] text-rose-400 hidden"></p>
-          </div>
-
-          <!-- Stats poll interval -->
-          <div class="flex items-center gap-2">
-            <label class="text-[10px] text-slate-400 shrink-0">Poll statistik tiap</label>
-            <input type="number" id="connector-poll-interval" min="10" max="300" value="30"
-              class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-            <span class="text-[10px] text-slate-500">detik</span>
-          </div>
-
-          <!-- Notification / chat settings -->
-          <div class="rounded-xl border border-indigo-500/20 bg-indigo-600/10 p-2.5 space-y-2">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Chat Notification</p>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Tampil</label>
-                <input type="number" id="connector-notif-display-ms" min="1500" max="15000" step="250" value="4000"
-                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-                <span class="text-[9px] text-slate-500">ms</span>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Jeda</label>
-                <input type="number" id="connector-notif-gap-ms" min="300" max="15000" step="100" value="600"
-                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-                <span class="text-[9px] text-slate-500">ms (≥ 300)</span>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Antrean</label>
-                <input type="number" id="connector-notif-max-queue" min="1" max="500" step="1" value="20"
-                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-                <span class="text-[9px] text-slate-500">chat</span>
-              </div>
-            </div>
-            <p class="text-[10px] text-slate-500">Jeda sebaiknya ≥ durasi animasi keluar, supaya state sempat
-              idle → showing lagi.</p>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Tag TikTok</label>
-                <input type="text" id="connector-tiktok-tag" placeholder="[TT]"
-                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Tag YouTube</label>
-                <input type="text" id="connector-youtube-tag" placeholder="[YT]"
-                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500">
-              </div>
-            </div>
-            <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
-              <input id="connector-archive-enabled" type="checkbox" class="accent-indigo-500">
-              <span>Arsipkan chat ke <code>chat-archive/</code></span>
-            </label>
-          </div>
-
-          <!-- Action buttons -->
-          <div class="flex gap-1.5">
-            <button id="connector-save-btn"
-              class="flex-1 px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-[11px] font-semibold text-slate-200 transition">Simpan</button>
-            <button id="connector-start-all-btn"
-              class="flex-1 px-2 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-semibold transition">▶
-              Start Semua</button>
-            <button id="connector-stop-all-btn"
-              class="flex-1 px-2 py-1.5 rounded-lg bg-rose-600/60 hover:bg-rose-600/80 text-white text-[11px] font-semibold transition">■
-              Stop Semua</button>
-          </div>
-
-          <!-- Status display -->
-          <div id="platform-connector-status-box"
-            class="bg-slate-950 border border-slate-800 rounded-lg p-2 space-y-0.5">
-            <p class="text-[10px] text-slate-500">Chat terakhir: <span id="connector-status-last-chat"
-                class="text-slate-300">—</span></p>
-            <p class="text-[10px] text-slate-500">Updated: <span id="connector-status-updated"
-                class="text-slate-300">—</span></p>
-            <p id="connector-status-error" class="text-[10px] text-rose-400 hidden"></p>
-          </div>
-        </div>
-      </details>
-
-      <!-- Section 5: Layers List -->
-      <div class="flex flex-col min-h-0">
+      <!-- Section 3: Layers List -->
+      <div class="flex flex-col flex-1 min-h-0">
         <div class="p-3 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 z-10">
           <h2 class="text-xs uppercase tracking-wider font-bold text-slate-400">Layers</h2>
           <div class="flex items-center space-x-1">
@@ -5200,7 +5052,7 @@
       await loadScene(currentSceneId)
       loadLiveStats()
       loadAssets()
-      initPlatformConnector()
+      loadPlatformConnectorStatus()
       fitZoom()
       setInterval(loadLiveStats, 2000)
       setInterval(loadF1Data, 30000)
@@ -5234,186 +5086,7 @@
       }, 1000)
     })
 
-    // ── Platform Connectors UI (TikTok & YouTube independen) ─────────────────
-
-    function setConnectorPlatformStatus(platform, status) {
-      const dot = document.getElementById(`connector-${platform}-dot`)
-      const label = document.getElementById(`connector-${platform}-state`)
-      const errorEl = document.getElementById(`connector-${platform}-error`)
-      if (!dot || !label) return
-
-      const enabled = !!status?.enabled
-      const live = !!(enabled && status?.running && status?.isLive)
-      const connecting = !!(enabled && status?.running && !status?.isLive)
-      dot.className = `w-2 h-2 rounded-full ${live ? 'bg-emerald-500 animate-pulse' : enabled ? 'bg-amber-500' : 'bg-slate-600'}`
-      label.textContent = live ? 'LIVE' : connecting ? 'CONNECTING…' : enabled ? 'OFFLINE' : 'OFF'
-      label.className = `text-[10px] ${live ? 'text-emerald-400 font-semibold' : enabled ? 'text-amber-400' : 'text-slate-500'}`
-
-      const toggleBtn = document.getElementById(`connector-${platform}-toggle-btn`)
-      if (toggleBtn) {
-        toggleBtn.dataset.enabled = enabled ? '1' : '0'
-        toggleBtn.textContent = enabled ? '■ Stop' : '▶ Start'
-        toggleBtn.className = enabled
-          ? 'px-1.5 py-0.5 rounded bg-rose-600/70 hover:bg-rose-600 text-white text-[10px] font-semibold transition'
-          : 'px-1.5 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-600 text-white text-[10px] font-semibold transition'
-      }
-
-      if (errorEl) {
-        if (status?.lastError) {
-          errorEl.textContent = `⚠ ${status.lastError}`
-          errorEl.classList.remove('hidden')
-        } else {
-          errorEl.classList.add('hidden')
-        }
-      }
-    }
-
-    function updateYoutubeVideoHint() {
-      const hint = document.getElementById('connector-youtube-video-hint')
-      if (!hint) return
-      const enabled = document.getElementById('connector-youtube-enabled').checked
-      const videoId = document.getElementById('connector-yt-video-id').value.trim()
-      const channelId = document.getElementById('connector-yt-channel-id').value.trim()
-      if (!enabled) {
-        hint.textContent = ''
-      } else if (!videoId) {
-        hint.textContent = channelId
-          ? '💡 Isi Video ID kalau tahu; pencarian lewat Channel ID memakai quota lebih banyak.'
-          : '💡 Isi Video ID (atau Channel ID) supaya connector bisa menemukan live chat.'
-      } else {
-        hint.textContent = ''
-      }
-    }
-
-    function renderConnectorStatus(data) {
-      const statuses = data?.statusV2 || {}
-      const tiktok = statuses.tiktok || null
-      const youtube = statuses.youtube || null
-      setConnectorPlatformStatus('tiktok', tiktok)
-      setConnectorPlatformStatus('youtube', youtube)
-
-      const anyLive = !!(tiktok?.running && tiktok?.isLive) || !!(youtube?.running && youtube?.isLive)
-      const anyEnabled = !!tiktok?.enabled || !!youtube?.enabled
-      const dot = document.getElementById('platform-connector-dot')
-      const label = document.getElementById('platform-connector-state-label')
-      if (dot && label) {
-        dot.className = `w-2 h-2 rounded-full ${anyLive ? 'bg-emerald-500 animate-pulse' : anyEnabled ? 'bg-amber-500' : 'bg-slate-600'}`
-        label.textContent = anyLive ? 'LIVE' : anyEnabled ? 'CONNECTING…' : 'OFF'
-        label.className = `text-[10px] ${anyLive ? 'text-emerald-400 font-semibold' : anyEnabled ? 'text-amber-400' : 'text-slate-500'}`
-      }
-
-      const quotaEl = document.getElementById('connector-youtube-quota')
-      if (quotaEl) {
-        const quota = Number(youtube?.quotaUnitsUsedToday)
-        quotaEl.textContent = Number.isFinite(quota) && quota > 0 ? quota.toLocaleString() + ' unit' : '0 unit'
-      }
-
-      const lastChatEl = document.getElementById('connector-status-last-chat')
-      if (lastChatEl) {
-        const last = editorChatEvents.at(-1)
-        lastChatEl.textContent = last ? `${last.author}: ${last.message}`.slice(0, 48) : '—'
-      }
-
-      const updatedEl = document.getElementById('connector-status-updated')
-      if (updatedEl) {
-        const stamps = [tiktok?.lastSuccessAt, youtube?.lastSuccessAt].filter(Boolean).map(s => new Date(s).getTime())
-        updatedEl.textContent = stamps.length ? new Date(Math.max(...stamps)).toLocaleTimeString() : '—'
-      }
-
-      const errorEl = document.getElementById('connector-status-error')
-      if (errorEl) {
-        const errors = [tiktok?.lastError, youtube?.lastError].filter(Boolean)
-        if (errors.length) {
-          errorEl.textContent = errors.join(' · ')
-          errorEl.classList.remove('hidden')
-        } else {
-          errorEl.classList.add('hidden')
-        }
-      }
-      updateYoutubeVideoHint()
-    }
-
-    function applyConnectorConfigToForm(configV2) {
-      const cfg = configV2 || {}
-      document.getElementById('connector-tiktok-enabled').checked = !!cfg.tiktok?.enabled
-      document.getElementById('connector-tiktok-username').value = cfg.tiktok?.username || ''
-      document.getElementById('connector-youtube-enabled').checked = !!cfg.youtube?.enabled
-      document.getElementById('connector-yt-api-key').value = cfg.youtube?.apiKey || ''
-      document.getElementById('connector-yt-video-id').value = cfg.youtube?.videoId || ''
-      document.getElementById('connector-yt-channel-id').value = cfg.youtube?.channelId || ''
-      document.getElementById('connector-poll-interval').value = Math.round((cfg.stats?.pollIntervalMs || 30000) / 1000)
-      document.getElementById('connector-notif-display-ms').value = cfg.notif?.displayMs ?? 4000
-      document.getElementById('connector-notif-gap-ms').value = cfg.notif?.gapMs ?? 600
-      document.getElementById('connector-notif-max-queue').value = cfg.notif?.maxQueue ?? 20
-      document.getElementById('connector-tiktok-tag').value = cfg.chatFormat?.tiktokTag || DEFAULT_CHAT_TAGS.tiktok
-      document.getElementById('connector-youtube-tag').value = cfg.chatFormat?.youtubeTag || DEFAULT_CHAT_TAGS.youtube
-      document.getElementById('connector-archive-enabled').checked = cfg.archive?.enabled !== false
-      if (cfg.chatFormat) {
-        if (cfg.chatFormat.tiktokTag) editorChatTags.tiktok = cfg.chatFormat.tiktokTag
-        if (cfg.chatFormat.youtubeTag) editorChatTags.youtube = cfg.chatFormat.youtubeTag
-      }
-      updateYoutubeVideoHint()
-    }
-
-    function readConnectorForm() {
-      const pollIntervalSec = Math.max(10, Math.min(300, parseInt(document.getElementById('connector-poll-interval').value, 10) || 30))
-      const displayMs = Math.max(1500, Math.min(15000, parseInt(document.getElementById('connector-notif-display-ms').value, 10) || 4000))
-      const gapMs = Math.max(300, Math.min(15000, parseInt(document.getElementById('connector-notif-gap-ms').value, 10) || 600))
-      const maxQueue = Math.max(1, Math.min(500, parseInt(document.getElementById('connector-notif-max-queue').value, 10) || 20))
-      return {
-        tiktok: {
-          enabled: document.getElementById('connector-tiktok-enabled').checked,
-          username: document.getElementById('connector-tiktok-username').value.trim(),
-        },
-        youtube: {
-          enabled: document.getElementById('connector-youtube-enabled').checked,
-          apiKey: document.getElementById('connector-yt-api-key').value.trim(),
-          videoId: document.getElementById('connector-yt-video-id').value.trim(),
-          channelId: document.getElementById('connector-yt-channel-id').value.trim(),
-        },
-        stats: { pollIntervalMs: pollIntervalSec * 1000 },
-        notif: { displayMs, gapMs, maxQueue },
-        chatFormat: {
-          tiktokTag: document.getElementById('connector-tiktok-tag').value.trim() || DEFAULT_CHAT_TAGS.tiktok,
-          youtubeTag: document.getElementById('connector-youtube-tag').value.trim() || DEFAULT_CHAT_TAGS.youtube,
-        },
-        archive: { enabled: document.getElementById('connector-archive-enabled').checked },
-      }
-    }
-
-    async function savePlatformConnectorConfig() {
-      const res = await fetch('/api/platform-connector', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(readConnectorForm()),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Failed to save config')
-      if (data.configV2) applyConnectorConfigToForm(data.configV2)
-      renderConnectorStatus(data)
-      return data
-    }
-
-    async function setAllConnectorsEnabled(enabled) {
-      document.getElementById('connector-tiktok-enabled').checked = enabled
-      document.getElementById('connector-youtube-enabled').checked = enabled
-      await savePlatformConnectorConfig()
-    }
-
-    async function toggleSingleConnector(platform) {
-      const btn = document.getElementById(`connector-${platform}-toggle-btn`)
-      const checkbox = document.getElementById(`connector-${platform}-enabled`)
-      if (!btn || !checkbox) return
-      const nextEnabled = btn.dataset.enabled !== '1'
-      checkbox.checked = nextEnabled
-      btn.disabled = true
-      try {
-        await savePlatformConnectorConfig()
-      } finally {
-        btn.disabled = false
-      }
-    }
-
+    // ── Passive Platform Connector Sync (UI moved to /control) ──────────────
     function applyChatIcons(data) {
       const icons = data?.chatIcons
       if (icons && typeof icons === 'object') {
@@ -5435,6 +5108,18 @@
       }
     }
 
+    function updateEditorConnectorIndicator(data) {
+      const dot = document.getElementById('editor-connector-dot')
+      if (!dot) return
+      const statuses = data?.statusV2 || {}
+      const tiktok = statuses.tiktok || null
+      const youtube = statuses.youtube || null
+      const anyLive = !!(tiktok?.running && tiktok?.isLive) || !!(youtube?.running && youtube?.isLive)
+      const anyEnabled = !!tiktok?.enabled || !!youtube?.enabled
+      dot.className = `w-2 h-2 rounded-full shrink-0 ${anyLive ? 'bg-emerald-500 animate-pulse' : anyEnabled ? 'bg-amber-500' : 'bg-slate-600'}`
+      dot.title = anyLive ? 'Connectors: LIVE (manage in Control Panel)' : anyEnabled ? 'Connectors: Connecting (manage in Control Panel)' : 'Connectors: OFF (manage in Control Panel)'
+    }
+
     async function loadPlatformConnectorStatus() {
       try {
         const res = await fetch('/api/platform-connector')
@@ -5446,58 +5131,9 @@
           if (tags.youtubeTag) editorChatTags.youtube = tags.youtubeTag
         }
         applyChatIcons(data)
-        renderConnectorStatus(data)
+        updateEditorConnectorIndicator(data)
       } catch (err) {
         console.warn('Failed to load platform connector status:', err)
-      }
-    }
-
-    async function initPlatformConnector() {
-      document.getElementById('connector-save-btn').addEventListener('click', async () => {
-        try {
-          await savePlatformConnectorConfig()
-        } catch (err) {
-          alert(err.message || 'Failed to save config')
-        }
-      })
-      document.getElementById('connector-start-all-btn').addEventListener('click', async () => {
-        try {
-          await setAllConnectorsEnabled(true)
-        } catch (err) {
-          alert(err.message || 'Failed to start connectors')
-        }
-      })
-      document.getElementById('connector-stop-all-btn').addEventListener('click', async () => {
-        try {
-          await setAllConnectorsEnabled(false)
-        } catch (err) {
-          alert(err.message || 'Failed to stop connectors')
-        }
-      })
-      for (const platform of ['tiktok', 'youtube']) {
-        document.getElementById(`connector-${platform}-toggle-btn`)?.addEventListener('click', async () => {
-          try {
-            await toggleSingleConnector(platform)
-          } catch (err) {
-            alert(err.message || `Failed to toggle ${platform} connector`)
-          }
-        })
-      }
-      document.getElementById('connector-yt-video-id').addEventListener('input', updateYoutubeVideoHint)
-      document.getElementById('connector-yt-channel-id').addEventListener('input', updateYoutubeVideoHint)
-      document.getElementById('connector-youtube-enabled').addEventListener('change', updateYoutubeVideoHint)
-
-      // Load current config once; status polling must not overwrite fields the user is editing.
-      try {
-        const res = await fetch('/api/platform-connector')
-        if (res.ok) {
-          const data = await res.json()
-          applyConnectorConfigToForm(data.configV2)
-          applyChatIcons(data)
-          renderConnectorStatus(data)
-        }
-      } catch (err) {
-        console.warn('Failed to init platform connector UI:', err)
       }
     }
 

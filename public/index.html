@@ -155,57 +155,45 @@
       class="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col shrink-0 z-20 overflow-y-auto min-h-0">
 
       <!-- Section 1: Quick Add Elements -->
-      <details class="p-3.5 border-b border-slate-800 group">
+      <details data-accordion-id="add-elements" open class="p-3.5 border-b border-slate-800 group">
         <summary
           class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2.5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden flex items-center gap-1.5">
           <span
-            class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+            class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
           <span>Add Elements</span>
         </summary>
         <div class="grid grid-cols-2 gap-2 mt-2.5">
-          <button id="add-text-btn"
-            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
-            <span class="text-lg">🔤</span>
-            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Text</span>
+          <button id="add-text-btn" type="button"
+            class="p-2.5 border rounded-xl text-left transition flex flex-col gap-1.5 group cursor-pointer">
+            <svg class="w-5 h-5" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+            </svg>
+            <span class="text-xs font-semibold text-white">Text</span>
           </button>
 
-          <button id="add-shape-btn"
-            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
-            <span class="text-lg">⬛</span>
-            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Shape Box</span>
+          <button id="add-shape-btn" type="button"
+            class="p-2.5 border rounded-xl text-left transition flex flex-col gap-1.5 group cursor-pointer">
+            <svg class="w-5 h-5" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="4" width="16" height="16" rx="3" />
+            </svg>
+            <span class="text-xs font-semibold text-white">Shape Box</span>
           </button>
 
-          <button id="add-badge-btn"
-            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
-            <span class="text-lg">🎵</span>
-            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Social Badge</span>
-          </button>
-
-          <button id="add-banner-btn"
-            class="p-2.5 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-xl text-left transition flex flex-col gap-1 group">
-            <span class="text-lg">📢</span>
-            <span class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300">Banner</span>
-          </button>
-          <button id="upload-asset-btn"
-            class="p-2.5 bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/40 hover:border-indigo-500/70 rounded-xl text-left transition flex flex-col gap-1 group">
-            <span class="text-lg">🖼️</span>
-            <span class="text-xs font-semibold text-indigo-200">Upload Asset</span>
-          </button>
           <input id="asset-file-input" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif"
             class="hidden">
         </div>
       </details>
 
       <!-- Section 2: Uploaded Assets -->
-      <details class="p-3 border-b border-slate-800 group">
+      <details data-accordion-id="assets" class="p-3 border-b border-slate-800 group">
         <summary
           class="flex items-center justify-between mb-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
           <span class="flex items-center gap-1.5 text-xs uppercase tracking-wider font-bold text-slate-400">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>Assets</span>
           </span>
-          <span id="assets-add-btn" class="text-[10px] text-slate-500">Click to add</span>
+          <button id="assets-add-btn" type="button">+ Upload</button>
         </summary>
         <div id="asset-list" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto">
           <p class="col-span-3 text-[11px] text-slate-500">No uploaded assets yet.</p>
@@ -455,7 +443,7 @@
       </div>
 
       <!-- Properties Form -->
-      <div id="selection-form" class="hidden p-4 space-y-5">
+      <div id="selection-form" data-active-tab="style" class="hidden p-4 space-y-4">
 
         <!-- Header Info & Quick Element Actions -->
         <div class="pb-3 border-b border-slate-800">
@@ -492,40 +480,65 @@
           </div>
           <input type="text" id="prop-name" placeholder="Layer Name" aria-label="Layer Name"
             class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:outline-none w-full">
+
+          <!-- 2-Tab Inspector Switcher -->
+          <div class="grid grid-cols-2 gap-1.5 mt-3" role="tablist" aria-label="Inspector sections">
+            <button id="inspector-tab-style" type="button" role="tab" aria-selected="true" data-inspector-tab="style"
+              class="studio-tab-btn studio-tab-active py-1.5 rounded-lg text-xs font-semibold cursor-pointer">
+              Style
+            </button>
+            <button id="inspector-tab-motion" type="button" role="tab" aria-selected="false" data-inspector-tab="motion"
+              class="studio-tab-btn py-1.5 rounded-lg text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5">
+              <span>Motion &amp; Data</span>
+              <span id="motion-tab-indicator" class="hidden w-1.5 h-1.5 rounded-full" style="background: var(--color-sage-hover)" title="Active motion or data bindings" aria-hidden="true"></span>
+            </button>
+          </div>
         </div>
 
         <!-- Alignment Controls -->
-        <details class="space-y-2 group">
+        <details data-inspector-pane="style" data-accordion-id="align" class="space-y-2 group">
           <summary
-            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>Canvas Alignment</span>
           </summary>
           <div class="grid grid-cols-6 gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800 mt-2">
-            <button id="align-left-btn"
-              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
-              title="Align Left">⬅️</button>
-            <button id="align-center-h-btn"
-              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
-              title="Align Center Horizontal">↔️</button>
-            <button id="align-right-btn"
-              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
-              title="Align Right">➡️</button>
-            <button id="align-top-btn"
-              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
-              title="Align Top">⬆️</button>
-            <button id="align-center-v-btn"
-              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
-              title="Align Center Vertical">↕️</button>
-            <button id="align-bottom-btn"
-              class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white text-xs text-center"
-              title="Align Bottom">⬇️</button>
+            <button id="align-left-btn" type="button" aria-label="Align Left"
+              class="h-7 flex items-center justify-center rounded text-xs cursor-pointer"
+              title="Align Left">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4v16M8 8h10M8 16h6" /></svg>
+            </button>
+            <button id="align-center-h-btn" type="button" aria-label="Align Center Horizontal"
+              class="h-7 flex items-center justify-center rounded text-xs cursor-pointer"
+              title="Align Center Horizontal">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16M6 8h12M8 16h8" /></svg>
+            </button>
+            <button id="align-right-btn" type="button" aria-label="Align Right"
+              class="h-7 flex items-center justify-center rounded text-xs cursor-pointer"
+              title="Align Right">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 4v16M6 8h10M10 16h6" /></svg>
+            </button>
+            <button id="align-top-btn" type="button" aria-label="Align Top"
+              class="h-7 flex items-center justify-center rounded text-xs cursor-pointer"
+              title="Align Top">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16M8 8v10M16 8v6" /></svg>
+            </button>
+            <button id="align-center-v-btn" type="button" aria-label="Align Center Vertical"
+              class="h-7 flex items-center justify-center rounded text-xs cursor-pointer"
+              title="Align Center Vertical">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M8 6v12M16 8v8" /></svg>
+            </button>
+            <button id="align-bottom-btn" type="button" aria-label="Align Bottom"
+              class="h-7 flex items-center justify-center rounded text-xs cursor-pointer"
+              title="Align Bottom">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16M8 6v10M16 10v6" /></svg>
+            </button>
           </div>
         </details>
 
         <!-- State Binding: state chooses visual target for the element -->
-        <details id="state-binding-section" data-accordion-id="state-binding" class="space-y-2 pt-2 border-t border-slate-800 group">
+        <details id="state-binding-section" data-inspector-pane="motion" data-accordion-id="state-binding" class="space-y-2 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -622,11 +635,11 @@
 
 
         <!-- Typography Section (Text Elements) -->
-        <details id="text-props-section" class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details id="text-props-section" data-inspector-pane="style" data-accordion-id="typography" open class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
-            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>Typography</span>
           </summary>
 
@@ -753,7 +766,7 @@
         </details>
 
         <!-- Dynamic Content: Running Text (Marquee) & Data Binding -->
-        <details id="dynamic-content-section" data-accordion-id="dynamic-content" class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details id="dynamic-content-section" data-inspector-pane="motion" data-accordion-id="dynamic-content" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -1077,7 +1090,7 @@
         </details>
 
         <!-- Transform: Dimensions, Position & Rotation -->
-        <details id="transform-props-section" data-accordion-id="transform" open class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details id="transform-props-section" data-inspector-pane="style" data-accordion-id="transform" open class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5">
@@ -1197,7 +1210,7 @@
         </details>
 
         <!-- Animation Sequence Editor -->
-        <details id="animation-sequence-section" data-accordion-id="animation" open
+        <details id="animation-sequence-section" data-inspector-pane="motion" data-accordion-id="animation" open
           class="studio-subcard space-y-3 p-3 rounded-2xl group">
           <summary
             class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
@@ -1346,11 +1359,11 @@
 
 
         <!-- Image / SVG Section -->
-        <details id="image-props-section" class="hidden space-y-3 pt-2 border-t border-slate-800 group">
+        <details id="image-props-section" data-inspector-pane="style" data-accordion-id="image" open class="hidden space-y-3 pt-2 border-t border-slate-800 group">
           <summary
-            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>Image / SVG</span>
           </summary>
           <div>
@@ -1386,13 +1399,13 @@
         </details>
 
         <!-- Fill & Gradient Section -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details data-inspector-pane="style" data-accordion-id="fill" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5">
               <span
-                class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
-              <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 inline">Fill & Background</h3>
+                class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 inline">Fill &amp; Background</h3>
             </span>
             <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300"
               onclick="event.stopPropagation()">
@@ -1452,7 +1465,7 @@
         </details>
 
         <!-- Borders & Corners Section -->
-        <details data-accordion-id="borders" class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details data-inspector-pane="style" data-accordion-id="borders" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -1497,7 +1510,7 @@
         </details>
 
         <!-- Shadow & Glow Section -->
-        <details data-accordion-id="shadow" class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details data-inspector-pane="style" data-accordion-id="shadow" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
             class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
@@ -3652,6 +3665,63 @@
       document.getElementById('prop-shadow-blur').value = el.style?.shadowBlur || 0
       document.getElementById('prop-shadow-x').value = el.style?.shadowOffsetX || 0
       document.getElementById('prop-shadow-y').value = el.style?.shadowOffsetY || 0
+
+      updateMotionTabIndicator(el)
+    }
+
+    // ── Inspector 2-Tab Switcher & Accordion Persistence ────────────────────
+    const ACCORDION_STORAGE_KEY = 'liveoverlay-editor-accordions-v1'
+    const INSPECTOR_TAB_STORAGE_KEY = 'liveoverlay-editor-inspector-tab-v1'
+
+    function updateMotionTabIndicator(el) {
+      const dot = document.getElementById('motion-tab-indicator')
+      if (!dot) return
+      if (!el) { dot.classList.add('hidden'); return }
+      const hasMotionOrData = Boolean(
+        el.stateBinding?.enabled ||
+        el.textBinding?.enabled ||
+        el.marquee?.enabled ||
+        el.scroll?.enabled ||
+        (Array.isArray(el.animation?.enter?.sequence) && el.animation.enter.sequence.length > 0) ||
+        (Array.isArray(el.animation?.transition?.sequence) && el.animation.transition.sequence.length > 0)
+      )
+      dot.classList.toggle('hidden', !hasMotionOrData)
+    }
+
+    function setActiveInspectorTab(tab) {
+      const next = tab === 'motion' ? 'motion' : 'style'
+      selectionFormEl.dataset.activeTab = next
+      document.querySelectorAll('[data-inspector-tab]').forEach((btn) => {
+        const active = btn.dataset.inspectorTab === next
+        btn.classList.toggle('studio-tab-active', active)
+        btn.setAttribute('aria-selected', active ? 'true' : 'false')
+      })
+      try { localStorage.setItem(INSPECTOR_TAB_STORAGE_KEY, next) } catch {}
+    }
+
+    function initInspectorTabsAndAccordions() {
+      try {
+        const savedTab = localStorage.getItem(INSPECTOR_TAB_STORAGE_KEY)
+        if (savedTab === 'motion' || savedTab === 'style') setActiveInspectorTab(savedTab)
+      } catch {}
+
+      document.querySelectorAll('[data-inspector-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => setActiveInspectorTab(btn.dataset.inspectorTab))
+      })
+
+      let savedAccordions = {}
+      try { savedAccordions = JSON.parse(localStorage.getItem(ACCORDION_STORAGE_KEY) || '{}') || {} } catch {}
+
+      document.querySelectorAll('details[data-accordion-id]').forEach((det) => {
+        const key = det.dataset.accordionId
+        if (Object.prototype.hasOwnProperty.call(savedAccordions, key)) {
+          det.open = Boolean(savedAccordions[key])
+        }
+        det.addEventListener('toggle', () => {
+          savedAccordions[key] = det.open
+          try { localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(savedAccordions)) } catch {}
+        })
+      })
     }
 
     // ---------------------------------------------------------------------
@@ -4931,90 +5001,6 @@
       selectElement(newEl.id)
     })
 
-    document.getElementById('add-badge-btn').addEventListener('click', () => {
-      const newEl = {
-        id: 'bdg_' + Date.now().toString(36),
-        type: 'text',
-        name: 'TikTok Badge',
-        x: 60,
-        y: 860,
-        width: 280,
-        height: 60,
-        rotation: -2,
-        opacity: 0.95,
-        zIndex: scene.elements.length + 1,
-        style: {
-          text: '🎵 @your_channel',
-          fontFamily: 'Manrope',
-          fontSize: 20,
-          fontWeight: '800',
-          color: '#f43f5e',
-          backgroundColor: '#18181b',
-          borderRadius: 18,
-          padding: 16,
-          borderWidth: 2,
-          borderColor: '#ec4899',
-          borderStyle: 'solid',
-          shadowColor: 'rgba(236,72,153,0.4)',
-          shadowBlur: 20,
-          gradient: { enabled: true, from: '#27272a', to: '#09090b', angle: 90 }
-        },
-        animation: {
-          enter: { loop: false, sequence: [
-            { id: 'delay0', type: 'delay', duration: 0.2 },
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out' },
-            { id: 'q1', type: 'to', properties: { y: -10 }, duration: 1.3, repeat: -1, yoyo: true, ease: 'sine.inOut' },
-          ] },
-          transition: { sequence: [] }
-        }
-      }
-      scene.elements.push(newEl)
-      commitSceneChange()
-      selectElement(newEl.id)
-    })
-
-    document.getElementById('add-banner-btn').addEventListener('click', () => {
-      const newEl = {
-        id: 'bnr_' + Date.now().toString(36),
-        type: 'text',
-        name: 'Stream Banner',
-        x: 60,
-        y: 935,
-        width: 680,
-        height: 65,
-        rotation: 0,
-        opacity: 0.95,
-        zIndex: scene.elements.length + 1,
-        style: {
-          text: '✨ Follow & Subscribe for daily live stream content!',
-          fontFamily: 'Manrope',
-          fontSize: 17,
-          fontWeight: '600',
-          color: '#f8fafc',
-          backgroundColor: '#090d16',
-          borderRadius: 20,
-          padding: 20,
-          borderWidth: 1.5,
-          borderColor: '#334155',
-          borderStyle: 'solid',
-          shadowColor: 'rgba(0,0,0,0.6)',
-          shadowBlur: 24,
-          gradient: { enabled: true, from: '#0f172a', to: '#020617', angle: 135 }
-        },
-        animation: {
-          enter: { loop: false, sequence: [
-            { id: 'delay0', type: 'delay', duration: 0.3 },
-            { id: 'q0', type: 'from', properties: { opacity: 0, y: 60 }, duration: 0.8, ease: 'power3.out' },
-            { id: 'q1', type: 'to', properties: { scale: 1.04 }, duration: 1.6, repeat: -1, yoyo: true, ease: 'power1.inOut' },
-          ] },
-          transition: { sequence: [] }
-        }
-      }
-      scene.elements.push(newEl)
-      commitSceneChange()
-      selectElement(newEl.id)
-    })
-
     // Layer Reorder Buttons
     // Helper: renumber every element's zIndex to 1..N following a given
     // bottom-to-top order, so values are always unique and gap-free.
@@ -5206,6 +5192,7 @@
     })
 
     document.addEventListener('DOMContentLoaded', async () => {
+      initInspectorTabsAndAccordions()
       attachPropertyListeners()
       renderAnimationPresetButtons()
       loadF1Data()

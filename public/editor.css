@@ -109,6 +109,9 @@
   box-shadow: var(--shadow-neu-flat);
 }
 
+#selection-form[data-active-tab="style"] [data-inspector-pane="motion"] { display: none !important; }
+#selection-form[data-active-tab="motion"] [data-inspector-pane="style"] { display: none !important; }
+
 /* Tactile editor controls. */
 #zoom-fit-btn, #zoom-out-btn, #zoom-in-btn,
 #layer-top-btn, #layer-up-btn, #layer-down-btn, #layer-bottom-btn {

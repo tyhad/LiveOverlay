@@ -312,3 +312,131 @@
   .editor-page #left-sidebar,
   .editor-page #properties-panel { width: 280px !important; }
 }
+
+/* Phase 1: Safety nets — History buttons, Save status pill, Toast & Studio Dialog */
+.editor-page .studio-icon-btn {
+  background: var(--color-studio-canvas);
+  border-color: var(--color-surface-light);
+  color: var(--color-muted-chalk);
+  box-shadow: var(--shadow-neu-flat);
+}
+.editor-page .studio-icon-btn:hover:not(:disabled) {
+  color: var(--color-pure-white);
+  border-color: var(--color-sage-olive);
+  background: var(--color-surface-light);
+}
+
+.editor-page .save-status-pill {
+  color: var(--color-muted-chalk);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.editor-page .save-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-sage-hover);
+  flex-shrink: 0;
+}
+.editor-page .save-status-pill[data-state="dirty"] {
+  color: #f3d28f;
+}
+.editor-page .save-status-pill[data-state="dirty"] .save-status-dot {
+  background: #e9b949;
+}
+
+.studio-toast-host {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  pointer-events: none;
+}
+.studio-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--color-studio-canvas);
+  border: 1px solid var(--color-surface-light);
+  color: var(--color-pure-white);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-neu-flat), 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.studio-toast-warn { border-color: rgba(233, 185, 73, 0.55); }
+.studio-toast-error { border-color: rgba(229, 77, 66, 0.65); }
+.studio-toast-action {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-sage-olive);
+  background: var(--color-sage-primary, #5f6856);
+  color: var(--color-pure-white);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.studio-toast-action:hover { background: var(--color-sage-primary-hover, #6c7662); }
+.studio-toast-close {
+  border: none;
+  background: transparent;
+  color: var(--color-muted-chalk);
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.studio-toast-close:hover { color: var(--color-pure-white); }
+
+.studio-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(14, 16, 18, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.studio-dialog-backdrop.hidden { display: none !important; }
+.studio-dialog-card {
+  width: min(400px, 100%);
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--color-studio-canvas);
+  border: 1px solid var(--color-surface-light);
+  box-shadow: var(--shadow-neu-flat), 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.studio-dialog-input {
+  background: var(--color-dark-trench);
+  border: 1px solid var(--color-surface-light);
+  box-shadow: var(--shadow-neu-pressed);
+}
+.studio-btn-secondary {
+  background: var(--color-studio-canvas);
+  border: 1px solid var(--color-surface-light);
+  color: var(--color-muted-chalk);
+  box-shadow: var(--shadow-neu-flat);
+}
+.studio-btn-secondary:hover {
+  color: var(--color-pure-white);
+  border-color: var(--color-sage-olive);
+  background: var(--color-surface-light);
+}
+.studio-btn-primary {
+  background: var(--color-sage-primary, #5f6856);
+  border: 1px solid var(--color-sage-olive);
+  color: var(--color-pure-white);
+  box-shadow: var(--shadow-neu-flat);
+}
+.studio-btn-primary:hover { background: var(--color-sage-primary-hover, #6c7662); }
+.studio-btn-danger {
+  background: var(--color-danger-bg, #b9362c);
+  border: 1px solid var(--color-live-crimson);
+  color: var(--color-pure-white);
+  box-shadow: var(--shadow-neu-flat);
+}
+.studio-btn-danger:hover { background: #cb3f34; }

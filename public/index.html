@@ -27,50 +27,60 @@
 
   <!-- TOP HEADER -->
   <header
-    class="min-h-[56px] bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between shrink-0 z-30 shadow-md flex-wrap gap-y-2">
-    <div class="flex items-center space-x-3">
-      <div
-        class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm">
-        <img src="/KerasnG.png" alt="LiveOverlay Studio"
-          class="w-8 h-8 rounded-xl object-cover" />
+    class="studio-header h-14 px-4 flex items-center justify-between gap-3 shrink-0 z-30 border-b">
+    <!-- Left: Brand + Scene Switcher & Menu -->
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="studio-logo w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
+        <img src="/KerasnG.png" alt="LiveOverlay Studio" class="w-8 h-8 rounded-xl object-cover" />
       </div>
-      <div>
-        <div class="flex items-center space-x-2">
-          <h1 class="text-sm font-bold tracking-tight text-white">LiveOverlay Studio</h1>
-          <span
-            class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">GSAP
-            ANIMATION</span>
+      <h1 class="text-sm font-bold tracking-tight text-white shrink-0">LiveOverlay</h1>
+      <span class="header-divider" aria-hidden="true"></span>
+
+      <div class="flex items-center gap-1.5 min-w-0">
+        <select id="scene-selector" aria-label="Select scene"
+          class="studio-select h-8 max-w-[180px] rounded-lg px-2.5 text-xs font-semibold text-white">
+          <option value="default">default</option>
+        </select>
+
+        <div class="relative">
+          <button id="scene-menu-btn" type="button"
+            class="studio-icon-btn w-8 h-8 flex items-center justify-center rounded-lg border text-xs transition cursor-pointer"
+            title="Scene actions" aria-label="Scene actions" aria-haspopup="menu" aria-expanded="false">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle cx="19" cy="12" r="1.75" />
+            </svg>
+          </button>
+
+          <div id="scene-menu-popover" class="studio-menu-popover hidden" role="menu" aria-label="Scene actions">
+            <div class="pb-2.5 mb-2 border-b" style="border-color: var(--color-surface-light)">
+              <label for="scene-name-input" class="block text-[11px] font-semibold mb-1" style="color: var(--color-muted-chalk)">Scene Name</label>
+              <input id="scene-name-input" type="text" value="Live Streaming Scene"
+                class="studio-dialog-input h-8 w-full rounded-lg px-2.5 text-xs font-semibold text-white">
+            </div>
+            <div class="flex flex-col gap-1">
+              <button id="new-scene-btn" type="button" role="menuitem" class="studio-menu-item">New Scene</button>
+              <button id="duplicate-scene-btn" type="button" role="menuitem" class="studio-menu-item">Duplicate Scene</button>
+              <button id="delete-scene-btn" type="button" role="menuitem" class="studio-menu-item studio-menu-item-danger">Delete Scene</button>
+            </div>
+          </div>
         </div>
-        <div class="mt-1 flex flex-wrap items-center gap-2">
-          <select id="scene-selector"
-            class="h-7 max-w-[180px] rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100">
-            <option value="default">default</option>
-          </select>
-          <input id="scene-name-input" type="text" value="Live Streaming Scene"
-            class="h-7 w-52 rounded-lg border border-slate-700 bg-slate-950 px-2 text-[11px] font-semibold text-slate-100 focus:border-indigo-500 focus:outline-none">
-          <button id="new-scene-btn"
-            class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">New</button>
-          <button id="duplicate-scene-btn"
-            class="h-7 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-[11px] font-semibold text-slate-200 hover:border-indigo-500/60 hover:text-white transition">Duplicate</button>
-          <button id="delete-scene-btn"
-            class="h-7 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2.5 text-[11px] font-semibold text-rose-200 hover:bg-rose-500/20 transition">Delete</button>
-        </div>
-        <p class="text-[11px] text-slate-400 font-mono mt-1" id="scene-info">1920 × 1080 Full HD</p>
+
+        <p class="text-[11px] font-mono tabular-nums hidden xl:block truncate ml-1" style="color: var(--color-slate-ash)" id="scene-info">1920 × 1080 • default</p>
       </div>
     </div>
 
-    <!-- Zoom & Animation Playback Controls -->
-    <div class="flex items-center space-x-2">
+    <!-- Center: History, Zoom & Playback -->
+    <div class="flex items-center gap-2 shrink-0">
       <div class="flex items-center gap-1" role="group" aria-label="History">
         <button id="undo-btn" type="button" disabled
-          class="studio-icon-btn w-7 h-7 flex items-center justify-center rounded-lg border text-xs transition disabled:opacity-35 disabled:cursor-not-allowed"
+          class="studio-icon-btn w-7 h-7 flex items-center justify-center rounded-lg border text-xs transition disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
           title="Undo (Ctrl+Z)" aria-label="Undo">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
           </svg>
         </button>
         <button id="redo-btn" type="button" disabled
-          class="studio-icon-btn w-7 h-7 flex items-center justify-center rounded-lg border text-xs transition disabled:opacity-35 disabled:cursor-not-allowed"
+          class="studio-icon-btn w-7 h-7 flex items-center justify-center rounded-lg border text-xs transition disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer"
           title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
@@ -78,57 +88,61 @@
         </button>
       </div>
 
-      <button id="play-all-animations-btn"
-        class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-purple-200 text-xs font-semibold flex items-center gap-1.5 transition">
-            <span class="sequence-mark" aria-hidden="true"></span>
-        <span>Play All Animations</span>
-      </button>
-
-      <div class="flex items-center space-x-1.5 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
-        <button id="zoom-out-btn"
-          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition"
-          title="Zoom Out">−</button>
-        <span id="zoom-level" class="text-xs font-mono px-2 text-slate-300 min-w-[45px] text-center">45%</span>
-        <button id="zoom-in-btn"
-          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition"
-          title="Zoom In">+</button>
-        <button id="zoom-fit-btn"
-          class="px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">Fit</button>
+      <div class="studio-zoom-group flex items-center gap-1 p-1 rounded-xl border">
+        <button id="zoom-out-btn" type="button"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-xs transition cursor-pointer"
+          title="Zoom Out" aria-label="Zoom Out">−</button>
+        <span id="zoom-level" class="text-xs font-mono tabular-nums px-1.5 min-w-[44px] text-center" style="color: var(--color-muted-chalk)">45%</span>
+        <button id="zoom-in-btn" type="button"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-xs transition cursor-pointer"
+          title="Zoom In" aria-label="Zoom In">+</button>
+        <button id="zoom-fit-btn" type="button"
+          class="h-7 px-2.5 flex items-center justify-center text-xs font-semibold rounded-lg transition cursor-pointer">Fit</button>
       </div>
+
+      <button id="play-all-animations-btn" type="button"
+        class="studio-btn-secondary h-8 px-3 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+        <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="m8 5 11 7-11 7V5Z" />
+        </svg>
+        <span>Play All</span>
+      </button>
     </div>
 
-    <!-- Save & OBS Actions -->
-    <div class="flex items-center space-x-3">
+    <!-- Right: Save Status, Primary CTA & External Links -->
+    <div class="flex items-center gap-2 shrink-0">
       <div id="save-status" role="status" aria-live="polite"
-        class="save-status-pill text-xs font-medium transition-colors duration-200 flex items-center gap-1.5">
+        class="save-status-pill text-[11px] font-medium transition-colors duration-200 flex items-center gap-1.5 mr-1">
         <span id="save-status-dot" class="save-status-dot" aria-hidden="true"></span>
         <span id="save-status-text">Saved</span>
       </div>
 
       <button id="save-scene-btn" type="button"
-        class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
-        <span class="save-mark" aria-hidden="true"></span>
+        class="studio-btn-primary h-8 px-3.5 rounded-xl text-xs font-semibold active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
+        <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 4h12l2 2v14H5V4Z" /><path d="M8 4v6h7V4" /><path d="M8 20v-6h8v6" />
+        </svg>
         <span>Save Scene</span>
         <span id="save-dirty-dot" class="hidden w-1.5 h-1.5 rounded-full bg-amber-300" aria-hidden="true"></span>
       </button>
 
       <a id="overlay-preview-link" href="/overlay.html" target="_blank"
-        class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
+        class="studio-btn-secondary h-8 px-3 rounded-xl font-semibold text-xs transition flex items-center gap-1.5">
         <span>Preview OBS</span>
-        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
       </a>
 
       <a id="control-panel-link" href="/control" target="_blank"
-        class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs border border-slate-700 transition flex items-center gap-1.5"
-        title="Buka Control Panel (Counter, Event State, Timer)">
-        <span class="control-mark" aria-hidden="true"></span><span>Control Panel</span>
-        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        class="studio-btn-secondary h-8 px-3 rounded-xl font-semibold text-xs transition flex items-center gap-1.5"
+        title="Open Control Panel (Counters, Event States, Timers, Connectors)">
+        <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 8h16M4 16h16M8 5v6M16 13v6" />
         </svg>
+        <span>Control Panel</span>
+        <span id="editor-connector-dot" class="w-2 h-2 rounded-full bg-slate-600 shrink-0" title="Connectors: OFF" aria-hidden="true"></span>
       </a>
     </div>
   </header>
@@ -391,46 +405,50 @@
       <!-- Empty Selection State / Canvas Settings -->
       <div id="no-selection" class="flex flex-col p-4 space-y-5">
         <div
-          class="flex flex-col items-center justify-center p-4 text-center text-slate-500 border-b border-slate-800/80 mb-2">
-          <span class="text-3xl mb-2">🎯</span>
-          <p class="text-xs font-semibold text-slate-300">No element selected</p>
-          <p class="text-[10px] text-slate-500 mt-0.5">Select a layer to configure elements & animations.</p>
+          class="studio-empty-card flex flex-col items-center justify-center p-4 text-center border rounded-2xl mb-1">
+          <svg class="w-7 h-7 mb-2" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" />
+          </svg>
+          <p class="text-xs font-semibold text-white">No element selected</p>
+          <p class="text-[11px] mt-1" style="color: var(--color-slate-ash)">Select a layer on the canvas or in Layers to edit its properties.</p>
         </div>
 
         <div class="space-y-4">
           <div class="pb-2 border-b border-slate-800">
-            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <span>🎨</span>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <svg class="w-4 h-4 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 9h18M9 21V9" />
+              </svg>
               <span>Canvas Settings</span>
             </h3>
           </div>
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Scene ID (Slug)</label>
+            <label for="canvas-scene-id" class="block text-[11px] text-slate-400 mb-1">Scene ID (Slug)</label>
             <input type="text" id="canvas-scene-id" placeholder="scene-slug"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono">
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
+              <label for="canvas-width" class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
               <input type="number" id="canvas-width" min="100" max="7680"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
+              <label for="canvas-height" class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
               <input type="number" id="canvas-height" min="100" max="7680"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
           </div>
 
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
+            <label for="canvas-bg-color" class="block text-[11px] text-slate-400 mb-1">Background Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="canvas-bg-color-picker"
+              <input type="color" id="canvas-bg-color-picker" aria-label="Canvas background color picker"
                 class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
               <input type="text" id="canvas-bg-color" placeholder="transparent"
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono">
             </div>
           </div>
         </div>
@@ -443,35 +461,37 @@
         <div class="pb-3 border-b border-slate-800">
           <div class="flex items-center justify-between mb-2">
             <span id="prop-type-badge"
-              class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">TEXT</span>
-            <div class="flex items-center space-x-1">
-              <button id="lock-toggle-btn"
-                class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-amber-400 transition"
-                title="Toggle Lock">
-                <span id="lock-icon">🔓</span>
+              class="studio-badge px-2 py-0.5 rounded-md text-[11px] font-extrabold uppercase tracking-wider">TEXT</span>
+            <div class="flex items-center gap-1.5">
+              <button id="lock-toggle-btn" type="button"
+                class="studio-icon-btn w-8 h-8 flex items-center justify-center rounded-lg border transition cursor-pointer"
+                title="Lock layer" aria-label="Lock layer" aria-pressed="false">
+                <span id="lock-icon" class="flex items-center justify-center" aria-hidden="true"></span>
               </button>
-              <button id="visibility-toggle-btn"
-                class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
-                title="Toggle Visibility">
-                <span id="visibility-icon">👁️</span>
+              <button id="visibility-toggle-btn" type="button"
+                class="studio-icon-btn w-8 h-8 flex items-center justify-center rounded-lg border transition cursor-pointer"
+                title="Hide layer" aria-label="Hide layer" aria-pressed="false">
+                <span id="visibility-icon" class="flex items-center justify-center" aria-hidden="true"></span>
               </button>
-              <button id="duplicate-btn"
-                class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
-                title="Duplicate">
-                <span>📋</span>
+              <button id="duplicate-btn" type="button"
+                class="studio-icon-btn w-8 h-8 flex items-center justify-center rounded-lg border transition cursor-pointer"
+                title="Duplicate layer (Ctrl+D)" aria-label="Duplicate layer">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="8" y="8" width="12" height="12" rx="2" /><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1" />
+                </svg>
               </button>
-              <button id="delete-element-btn"
-                class="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition"
-                title="Delete">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button id="delete-element-btn" type="button"
+                class="studio-icon-btn studio-icon-btn-danger w-8 h-8 flex items-center justify-center rounded-lg border transition cursor-pointer"
+                title="Delete layer (Del)" aria-label="Delete layer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
             </div>
           </div>
-          <input type="text" id="prop-name" placeholder="Layer Name"
-            class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:border-indigo-500 focus:outline-none w-full">
+          <input type="text" id="prop-name" placeholder="Layer Name" aria-label="Layer Name"
+            class="text-sm font-bold text-white bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1.5 focus:outline-none w-full">
         </div>
 
         <!-- Alignment Controls -->
@@ -504,30 +524,30 @@
           </div>
         </details>
 
-        <!-- State Binding: state memilih target visual elemen -->
-        <details id="state-binding-section" class="space-y-2 pt-2 border-t border-slate-800 group">
+        <!-- State Binding: state chooses visual target for the element -->
+        <details id="state-binding-section" data-accordion-id="state-binding" class="space-y-2 pt-2 border-t border-slate-800 group">
           <summary
-            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>State Binding</span>
           </summary>
-          <div class="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-600/10 p-3 mt-2">
+          <div class="studio-subcard space-y-2.5 rounded-xl p-3 mt-2">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Active State</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
-                <input id="prop-vis-enabled" type="checkbox" class="accent-emerald-500">
+              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Active State</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                <input id="prop-vis-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
-            <p id="state-binding-disabled-note" class="hidden text-[10px] text-amber-400 font-medium bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1">
-              ⚠️ State Binding nonaktif — State Targets tidak diterapkan pada elemen ini.
+            <p id="state-binding-disabled-note" class="hidden text-[11px] font-medium rounded-lg px-2.5 py-1.5" style="color: #f3d28f; background: rgba(233, 185, 73, 0.1); border: 1px solid rgba(233, 185, 73, 0.3);">
+              State Binding is off — State Targets will not be applied to this layer.
             </p>
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Source</label>
                 <select id="prop-vis-source"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="counter">Counter</option>
                   <option value="eventState">Event State</option>
                   <option value="chatNotif">Chat Notification</option>
@@ -535,38 +555,37 @@
                 </select>
               </div>
               <div id="prop-vis-name-wrap">
-                <label class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
-                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="mis. raceStatus"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+                <label class="block text-[11px] text-slate-400 mb-1">Group Name</label>
+                <input type="text" id="prop-vis-name" list="vis-group-names" placeholder="e.g. raceStatus"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                 <datalist id="vis-group-names"></datalist>
               </div>
             </div>
             <p id="prop-vis-chatnotif-note"
-              class="hidden text-[10px] text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 rounded px-2 py-1">
-              State dari server: <code>idle</code> dan <code>showing</code>. Contoh preset: showing = opacity 1,
-              idle = opacity 0, lalu atur Enter/Transition di tab Animation.
+              class="hidden text-[11px] rounded-lg px-2.5 py-1.5" style="color: var(--color-muted-chalk); background: var(--color-dark-trench); border: 1px solid var(--color-surface-light);">
+              Server states: <code>idle</code> and <code>showing</code>. Example: showing = opacity 1, idle = opacity 0, then configure Enter/Transition below.
             </p>
             <button id="chatnotif-preset-btn" type="button"
-              class="hidden w-full px-2 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-[10px] font-semibold transition cursor-pointer">
-              + Buat preset state idle / showing
+              class="hidden studio-btn-secondary w-full px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition cursor-pointer">
+              + Create idle / showing preset
             </button>
             <div class="grid grid-cols-2 gap-2">
               <div id="prop-vis-comparator-wrap">
-                <label class="block text-[11px] text-slate-400 mb-1">Kondisi</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Condition</label>
                 <select id="prop-vis-comparator"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500">
-                  <option value="eq">= sama dengan</option>
-                  <option value="neq">≠ tidak sama</option>
-                  <option value="gt">&gt; lebih dari</option>
-                  <option value="gte">≥ minimal</option>
-                  <option value="lt">&lt; kurang dari</option>
-                  <option value="lte">≤ maksimal</option>
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                  <option value="eq">= equals</option>
+                  <option value="neq">≠ not equal</option>
+                  <option value="gt">&gt; greater than</option>
+                  <option value="gte">≥ at least</option>
+                  <option value="lt">&lt; less than</option>
+                  <option value="lte">≤ at most</option>
                 </select>
               </div>
               <div id="prop-vis-value-wrap" class="col-span-1">
                 <label class="block text-[11px] text-slate-400 mb-1">Fallback State</label>
                 <input type="text" id="prop-vis-value" list="vis-value-options" placeholder="default"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                 <datalist id="vis-value-options"></datalist>
               </div>
             </div>
@@ -574,29 +593,29 @@
             <div class="flex items-center justify-between mb-1.5">
               <label class="text-[11px] text-slate-400 font-semibold">State Targets</label>
               <button id="state-target-add-btn" type="button"
-                class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-0.5 px-2 py-0.5 rounded border border-emerald-500/30 hover:border-emerald-400/60 bg-emerald-500/10 transition cursor-pointer">
-                + Tambah State
+                class="studio-btn-secondary text-[11px] font-semibold flex items-center gap-0.5 px-2.5 py-1 rounded-lg transition cursor-pointer">
+                + Add State
               </button>
             </div>
             <!-- Inline add-state form (hidden by default) -->
             <div id="state-target-add-form" class="hidden mb-2 flex gap-1.5 items-center">
               <input id="state-target-new-name" type="text" list="state-target-name-suggestions"
-                placeholder="nama state (mis. MAIN)"
-                class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-emerald-500" />
+                placeholder="state name (e.g. MAIN)"
+                class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white font-mono focus:outline-none" />
               <datalist id="state-target-name-suggestions"></datalist>
               <button id="state-target-add-confirm" type="button"
-                class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer">
-                OK
+                class="studio-btn-primary px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer">
+                Add
               </button>
               <button id="state-target-add-cancel" type="button"
-                class="px-2 py-1 rounded border border-slate-700 text-slate-400 hover:text-white text-xs transition cursor-pointer">
-                Batal
+                class="studio-btn-secondary px-2 py-1 rounded-lg text-xs transition cursor-pointer">
+                Cancel
               </button>
             </div>
             <!-- Cards per state -->
             <div id="state-targets-container" class="space-y-1.5"></div>
-            <p class="text-[10px] text-slate-500 mt-1.5">
-              Toggle 👁️ manual (hidden) tetap menang. Live dari <code>/control</code>.
+            <p class="text-[11px] text-slate-500 mt-1.5">
+              Manual hidden toggle still takes priority. Driven live from <code>/control</code>.
             </p>
           </div>
         </details>
@@ -677,40 +696,36 @@
 
           <!-- Vertical Align -->
           <div>
-            <label class="block text-[11px] text-slate-400 mb-1">Vertical Align (posisi teks kalau box lebih kecil dari
-              isi/multiline)</label>
+            <label class="block text-[11px] text-slate-400 mb-1">Vertical Align</label>
             <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-              <button type="button" id="align-v-top" class="py-1 text-xs rounded text-slate-300 hover:text-white">⬆
-                Top</button>
-              <button type="button" id="align-v-center" class="py-1 text-xs rounded text-slate-300 hover:text-white">■
-                Center</button>
-              <button type="button" id="align-v-bottom" class="py-1 text-xs rounded text-slate-300 hover:text-white">⬇
-                Bottom</button>
+              <button type="button" id="align-v-top" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Top</button>
+              <button type="button" id="align-v-center" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Center</button>
+              <button type="button" id="align-v-bottom" class="py-1 text-xs rounded text-slate-300 hover:text-white cursor-pointer">Bottom</button>
             </div>
           </div>
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Letter Spacing (px)</label>
             <input type="number" id="prop-letter-spacing" step="0.5" min="-5" max="30"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
           </div>
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="prop-text-color-picker"
+              <input type="color" id="prop-text-color-picker" aria-label="Text color picker"
                 class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
               <input type="text" id="prop-text-color"
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono">
             </div>
           </div>
 
           <!-- Text Drop Shadow & Glow -->
           <div class="pt-2 border-t border-slate-800/60 space-y-2">
-            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow & Glow</label>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Drop Shadow &amp; Glow</label>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
               <div class="flex items-center gap-2">
-                <input type="color" id="prop-text-shadow-color-picker"
+                <input type="color" id="prop-text-shadow-color-picker" aria-label="Text shadow color picker"
                   class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
                 <input type="text" id="prop-text-shadow-color" placeholder="rgba(0,0,0,0.5)"
                   class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
@@ -719,17 +734,17 @@
 
             <div class="grid grid-cols-3 gap-2">
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Blur (px)</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Blur (px)</label>
                 <input type="number" id="prop-text-shadow-blur" min="0" max="100"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Offset X</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Offset X</label>
                 <input type="number" id="prop-text-shadow-x" min="-100" max="100"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Offset Y</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Offset Y</label>
                 <input type="number" id="prop-text-shadow-y" min="-100" max="100"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
               </div>
@@ -738,113 +753,110 @@
         </details>
 
         <!-- Dynamic Content: Running Text (Marquee) & Data Binding -->
-        <details id="dynamic-content-section" class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details id="dynamic-content-section" data-accordion-id="dynamic-content" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
-            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
             <span>Dynamic Content</span>
           </summary>
 
-          <div class="space-y-2 rounded-xl border border-pink-500/20 bg-pink-600/10 p-3">
+          <div class="studio-subcard space-y-2 rounded-xl p-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-pink-300">Running Text (Marquee)</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
-                <input id="prop-marquee-enabled" type="checkbox" class="accent-pink-500">
+              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Running Text (Marquee)</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                <input id="prop-marquee-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Speed (px/detik)</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Speed (px/s)</label>
                 <input type="number" id="prop-marquee-speed" min="10" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Gap (px)</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Gap (px)</label>
                 <input type="number" id="prop-marquee-gap" min="0" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
             </div>
 
             <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Direction</label>
+              <label class="block text-[11px] text-slate-400 mb-1">Direction</label>
               <select id="prop-marquee-direction"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-pink-500">
-                <option value="rtl">Right → Left (standar ticker)</option>
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                <option value="rtl">Right → Left (standard ticker)</option>
                 <option value="ltr">Left → Right</option>
               </select>
             </div>
-            <p class="text-[10px] text-slate-500">Preview animasi hanya tampil di overlay (Preview OBS), bukan di kanvas
-              editor ini.</p>
+            <p class="text-[11px] text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
           </div>
 
-          <div class="space-y-2 rounded-xl border border-cyan-500/20 bg-cyan-600/10 p-3">
+          <div class="studio-subcard space-y-2 rounded-xl p-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-cyan-300">Scroll Text (Up /
-                Down)</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
-                <input id="prop-scroll-enabled" type="checkbox" class="accent-cyan-500">
+              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Scroll Text (Up / Down)</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                <input id="prop-scroll-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Speed (px/detik)</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Speed (px/s)</label>
                 <input type="number" id="prop-scroll-speed" min="10" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Gap (px)</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Gap (px)</label>
                 <input type="number" id="prop-scroll-gap" min="0" max="500" step="5"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Direction</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Direction</label>
                 <select id="prop-scroll-direction"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="up">Bottom → Up (Scroll Up)</option>
                   <option value="down">Top → Down (Scroll Down)</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Yoyo Delay (detik)</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Yoyo Delay (s)</label>
                 <input type="number" id="prop-scroll-yoyo-delay" min="0" max="10" step="0.1"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
                   placeholder="1">
               </div>
             </div>
 
             <div class="pt-1">
               <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
-                <input id="prop-scroll-yoyo" type="checkbox" class="accent-cyan-500">
-                <span>Yoyo Mode (Bolak-balik)</span>
+                <input id="prop-scroll-yoyo" type="checkbox" class="studio-checkbox">
+                <span>Yoyo Mode (Ping-pong)</span>
               </label>
             </div>
-            <p class="text-[10px] text-slate-500">Preview animasi hanya tampil di overlay (Preview OBS), bukan di kanvas
-              editor ini.</p>
+            <p class="text-[11px] text-slate-500">Live scroll preview runs in OBS Preview, not inside this static canvas.</p>
           </div>
 
-          <div class="space-y-2 rounded-xl border border-indigo-500/20 bg-indigo-600/15 p-3">
+          <div class="studio-subcard space-y-2 rounded-xl p-3">
             <div class="flex items-center justify-between">
-              <label class="text-[11px] font-bold uppercase tracking-wider text-indigo-300">Data Binding</label>
-              <label class="flex items-center gap-1.5 text-[11px] text-slate-300">
-                <input id="prop-text-binding-enabled" type="checkbox" class="accent-indigo-500">
+              <label class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--color-sage-hover)">Data Binding</label>
+              <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                <input id="prop-text-binding-enabled" type="checkbox" class="studio-checkbox">
                 <span>Enable</span>
               </label>
             </div>
-            <p id="prop-text-binding-status" class="text-[10px] text-slate-400">Source: platform stats</p>
+            <p id="prop-text-binding-status" class="text-[11px] text-slate-400">Source: platform stats</p>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Binding Source</label>
                 <select id="prop-text-binding-source"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="platform">Platform Stats</option>
                   <option value="chat">Chat</option>
                   <option value="f1data">F1 Data (Local DB)</option>
@@ -853,9 +865,9 @@
                 </select>
               </div>
               <div id="control-type-group" class="hidden">
-                <label class="block text-[11px] text-slate-400 mb-1">Format</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Control Type</label>
                 <select id="prop-control-type"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="counter">Counter</option>
                   <option value="eventState">Event State</option>
                   <option value="timer">Timer</option>
@@ -865,7 +877,7 @@
               <div id="standard-format-group">
                 <label class="block text-[11px] text-slate-400 mb-1">Format</label>
                 <select id="prop-text-binding-format"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="raw">Raw</option>
                   <option value="number">Number</option>
                   <option value="uppercase">UPPERCASE</option>
@@ -877,14 +889,13 @@
             <div id="platform-binding-group">
               <label class="block text-[11px] text-slate-400 mb-1">Platform Field</label>
               <select id="prop-text-binding-field"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 <option value="statusTiktok">Status TikTok</option>
                 <option value="statusYoutube">Status YouTube</option>
                 <option value="viewerTiktok">Viewers TikTok</option>
                 <option value="viewerYoutube">Viewers YouTube</option>
               </select>
-              <p class="text-[10px] text-slate-500 mt-1">Field lama (username, followers, likes, dll.) tetap
-                terbaca untuk scene lama, tetapi disembunyikan dari pilihan baru.</p>
+              <p class="text-[11px] text-slate-500 mt-1">Legacy fields remain readable for older scenes but are hidden for new bindings.</p>
             </div>
 
             <div id="chat-binding-group" class="hidden space-y-2">
@@ -892,7 +903,7 @@
                 <div>
                   <label class="block text-[11px] text-slate-400 mb-1">Chat Field</label>
                   <select id="prop-chat-field"
-                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                     <option value="stack">Chat Stack</option>
                     <option value="notif">Chat Notification (Author + Message)</option>
                     <option value="topViewers">Top Viewer List (TikTok)</option>
@@ -901,24 +912,24 @@
                   </select>
                 </div>
                 <div id="chat-lines-group">
-                  <label class="block text-[11px] text-slate-400 mb-1">Jumlah baris</label>
+                  <label class="block text-[11px] text-slate-400 mb-1">Line Count</label>
                   <input type="number" id="prop-chat-lines" min="1" max="30" step="1" value="5"
-                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 </div>
                 <div id="chat-style-group" class="hidden">
-                  <label class="block text-[11px] text-slate-400 mb-1">Tampilan Notif</label>
+                  <label class="block text-[11px] text-slate-400 mb-1">Notification Style</label>
                   <select id="prop-chat-display-style"
-                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                     <option value="tiktok">TikTok Live (Default)</option>
                     <option value="f1Radio">F1 Team Radio</option>
                   </select>
                 </div>
               </div>
               <div id="chat-f1-preview-group" class="hidden space-y-1">
-                <label class="block text-[11px] text-slate-400">Preview Tema F1 (Editor)</label>
+                <label class="block text-[11px] text-slate-400">F1 Theme Preview (Editor)</label>
                 <select id="prop-chat-f1-preview"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                  <option value="auto">Auto (Chat Live / Default)</option>
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
+                  <option value="auto">Auto (Live Chat / Default)</option>
                   <option value="ferrari">Ferrari — Leclerc #16</option>
                   <option value="redbull">Red Bull — Verstappen #3</option>
                   <option value="mclaren">McLaren — Piastri #81</option>
@@ -930,43 +941,36 @@
                   <option value="racingbulls">Racing Bulls — Lawson #30</option>
                   <option value="audi">Audi — Hulkenberg #27</option>
                   <option value="cadillac">Cadillac — Perez #11</option>
-                  <option value="teamOnly">Ferrari (Tim saja — Avatar/Kode)</option>
-                  <option value="neutral">Netral F1 (Tanpa match)</option>
+                  <option value="teamOnly">Ferrari (Team only — Avatar/Code)</option>
+                  <option value="neutral">Neutral F1 (No match)</option>
                 </select>
-                <p class="text-[10px] text-slate-500">Warna, logo tim, &amp; nomor driver otomatis menyesuaikan
-                  username → isi chat. Taruh logo PNG/SVG di <code>public/f1-logos/</code> &amp; keyword manual di
-                  <code>f1-radio-keywords.json</code>.</p>
+                <p class="text-[11px] text-slate-500">Team color, logo, and driver number auto-match from username or message. Custom logos live in <code>public/f1-logos/</code>.</p>
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Template</label>
                 <input type="text" id="prop-chat-template" list="chat-template-presets"
                   placeholder="{platformTag} {author}: {message}"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                 <datalist id="chat-template-presets">
                   <option value="{platformTag} {author}: {message}">{platformTag} author: message (stack)</option>
-                  <option value="{author}\n{message}">author, baris baru message (notification)</option>
-                  <option value="{platformTag} {author}\n{message}">icon + author, baris baru message</option>
+                  <option value="{author}\n{message}">author, newline message (notification)</option>
+                  <option value="{platformTag} {author}\n{message}">icon + author, newline message</option>
                   <option value="{platformTag} {message}">{platformTag} message</option>
                   <option value="{author}">{author}</option>
                 </datalist>
               </div>
-              <p class="text-[10px] text-slate-500">Chat Notification &amp; Chat Stack otomatis tampil bergaya TikTok Live
-                (avatar bulat, ikon platform, badge user, nama di atas, pesan di bawah). Template di atas tetap dipakai
-                untuk mode Marquee / Scroll.</p>
+              <p class="text-[11px] text-slate-500">Chat Notification and Chat Stack render in styled card mode. The template above is used for Marquee and Scroll modes.</p>
             </div>
 
             <div id="f1data-binding-group" class="hidden space-y-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">F1 Field Path</label>
                 <input type="text" id="prop-text-binding-f1-field-path" list="f1-field-paths"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
                   placeholder="driverStandingsText.abbrMarquee">
                 <datalist id="f1-field-paths"></datalist>
               </div>
-              <p class="text-[10px] text-slate-500">Contoh: <code>driverStandingsText.abbrMarquee</code> (WDC ringkas 1
-                baris), <code>constructorStandingsText.fullMultiline</code> (WCC lengkap per baris),
-                <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code> (jadwal race berjalan).
-              </p>
+              <p class="text-[11px] text-slate-500">Examples: <code>driverStandingsText.abbrMarquee</code>, <code>constructorStandingsText.fullMultiline</code>, <code>startingGridText.marquee</code>, <code>scheduleText.nowMultiline</code>.</p>
             </div>
 
             <div id="clock-binding-group" class="hidden space-y-2">
@@ -974,7 +978,7 @@
                 <div>
                   <label class="block text-[11px] text-slate-400 mb-1">Timezone</label>
                   <select id="prop-text-binding-timezone"
-                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                     <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
                     <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
                     <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
@@ -991,7 +995,7 @@
                 <div>
                   <label class="block text-[11px] text-slate-400 mb-1">Clock Format</label>
                   <input type="text" id="prop-text-binding-clock-format" list="clock-format-presets"
-                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono"
                     placeholder="HH:mm:ss">
                   <datalist id="clock-format-presets">
                     <option value="HH:mm:ss">14:30:00 (24h with Sec)</option>
@@ -1005,29 +1009,27 @@
               </div>
             </div>
 
-            <!-- Control Panel bindings (Counter / Event State / Timer): nama grup = named registry,
-                 auto-create di server kalau belum ada. Datalist diisi dari /api/control-state. -->
             <div id="control-binding-group" class="hidden space-y-2">
               <div>
-                <label id="prop-control-group-label" class="block text-[11px] text-slate-400 mb-1">Nama Grup</label>
-                <input type="text" id="prop-control-group" list="control-group-names" placeholder="mis. killCount"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                <label id="prop-control-group-label" class="block text-[11px] text-slate-400 mb-1">Group Name</label>
+                <input type="text" id="prop-control-group" list="control-group-names" placeholder="e.g. killCount"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                 <datalist id="control-group-names"></datalist>
               </div>
               <div id="eventstate-options-group" class="hidden">
-                <label class="block text-[11px] text-slate-400 mb-1">Daftar Opsi (pisahkan koma)</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Options (comma-separated)</label>
                 <div class="flex gap-2">
                   <input type="text" id="prop-es-options" placeholder="green, yellow, red, vsc, sc, finish"
-                    class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                    class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none font-mono">
                   <button id="prop-es-options-save" type="button"
-                    class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium">Simpan</button>
+                    class="studio-btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Save</button>
                 </div>
-                <p id="prop-es-options-status" class="text-[10px] text-slate-500 mt-1">Jadi tombol pill di /control. Opsi lama tidak dihapus.</p>
+                <p id="prop-es-options-status" class="text-[11px] text-slate-500 mt-1">Appears as pills on /control. Existing options are kept.</p>
               </div>
               <div id="control-text-format-group" class="hidden">
-                <label class="block text-[11px] text-slate-400 mb-1">Gaya Teks</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Text Style</label>
                 <select id="prop-control-text-format"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="raw">Raw</option>
                   <option value="number">Number</option>
                   <option value="uppercase">UPPERCASE</option>
@@ -1037,33 +1039,32 @@
               <div id="timer-format-group" class="hidden">
                 <label class="block text-[11px] text-slate-400 mb-1">Timer Format</label>
                 <select id="prop-timer-format"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                   <option value="mm:ss">mm:ss (10:00)</option>
                   <option value="hh:mm:ss">hh:mm:ss (00:10:00)</option>
-                  <option value="seconds">Detik (600)</option>
+                  <option value="seconds">Seconds (600)</option>
                 </select>
               </div>
-              <p class="text-[10px] text-slate-500">Nilai dikontrol dari halaman <code>/control</code>. Section di
-                Control Panel muncul otomatis setelah binding ini disimpan.</p>
+              <p class="text-[11px] text-slate-500">Values are controlled from <code>/control</code>. New groups appear automatically after saving the scene.</p>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Prefix</label>
                 <input type="text" id="prop-text-binding-prefix"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
               <div>
                 <label class="block text-[11px] text-slate-400 mb-1">Suffix</label>
                 <input type="text" id="prop-text-binding-suffix"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
               </div>
             </div>
 
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Fallback</label>
               <input type="text" id="prop-text-binding-fallback"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
             </div>
 
             <div>
@@ -1076,27 +1077,25 @@
         </details>
 
         <!-- Transform: Dimensions, Position & Rotation -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details id="transform-props-section" data-accordion-id="transform" open class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
-            class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span class="flex items-center gap-1.5">
               <span
-                class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
-              <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 inline">Transform & Position</h3>
+                class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 inline">Transform &amp; Position</h3>
             </span>
-            <span class="text-[9px] text-slate-500 italic"
-              title="Nilai di sini jadi state awal (atau state akhir untuk step 'from') bagi Animation Sequence di bawah">=
-              start state animasi</span>
+            <span class="text-[11px] text-slate-500"
+              title="Baseline values used as the starting state for Animation Sequence">Base state</span>
           </summary>
 
           <div class="mt-3">
             <label class="block text-[11px] text-slate-400 mb-1">Parent (Grouping)</label>
             <select id="prop-parent"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="">— Tidak ada (top-level) —</option>
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+              <option value="">— None (top-level) —</option>
             </select>
-            <p class="text-[10px] text-slate-500 mt-1">Kalau diisi, X/Y elemen ini jadi relatif terhadap parent —
-              otomatis ikut posisi &amp; animasi parent (1 level, lihat Vision.md §3.3.2).</p>
+            <p class="text-[11px] text-slate-500 mt-1">Child layers follow parent position and animation (1 level nesting).</p>
           </div>
 
           <div class="grid grid-cols-2 gap-2 mt-3">
@@ -1197,87 +1196,89 @@
           </div>
         </details>
 
-        <!-- Animation Sequence Editor (Fase 8 / Fase 3) — lihat issue.md -->
-        <details
-          class="space-y-3 bg-gradient-to-b from-indigo-950/40 to-purple-950/20 p-3 rounded-2xl border border-indigo-500/30 group">
+        <!-- Animation Sequence Editor -->
+        <details id="animation-sequence-section" data-accordion-id="animation" open
+          class="studio-subcard space-y-3 p-3 rounded-2xl group">
           <summary
-            class="flex items-center justify-between cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
-            <span class="flex items-center space-x-1.5">
+            class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            <span class="flex items-center gap-1.5 min-w-0">
               <span
-                class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
-              <span class="text-base">✨</span>
-              <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300 inline">Animation Sequence</h3>
+                class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs shrink-0" style="color: var(--color-sage-hover)">▸</span>
+              <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8m0-12.8-2.8 2.8m-7.2 7.2-2.8 2.8" />
+              </svg>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white whitespace-nowrap truncate">Animation Sequence</h3>
             </span>
-            <button id="test-element-animation-btn"
-              class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] shadow-sm transition flex items-center gap-1">
-              <span class="play-mark" aria-hidden="true"></span><span>Test</span>
+            <button id="test-element-animation-btn" type="button"
+              class="studio-btn-secondary px-2.5 py-1 rounded-lg font-semibold text-[11px] transition flex items-center gap-1 shrink-0 cursor-pointer">
+              <svg class="w-3 h-3 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="m8 5 11 7-11 7V5Z" />
+              </svg>
+              <span>Test</span>
             </button>
           </summary>
 
           <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none mt-3">
-            <input type="checkbox" id="anim-loop-toggle"
-              class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
-            <span>🔁 Ulangi dari Q0 setelah step terakhir selesai</span>
+            <input type="checkbox" id="anim-loop-toggle" class="studio-checkbox">
+            <span>Loop sequence from Q0 after final step</span>
           </label>
 
-          <div class="grid grid-cols-2 gap-1 mt-3">
+          <div class="grid grid-cols-2 gap-1.5 mt-3">
             <button id="anim-enter-tab" type="button" data-animation-mode="enter"
-              class="py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Enter</button>
+              class="studio-tab-btn studio-tab-active py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Enter</button>
             <button id="anim-transition-tab" type="button" data-animation-mode="transition"
-              class="py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold">Transition</button>
+              class="studio-tab-btn py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Transition</button>
           </div>
-          <p id="anim-mode-help" class="text-[10px] text-slate-500">Dimainkan saat elemen pertama kali muncul.</p>
-          <!-- List step Q0..Qn, di-render ulang oleh renderAnimationSequenceEditor() -->
+          <p id="anim-mode-help" class="text-[11px] text-slate-500">Plays when the layer first appears.</p>
+          <!-- List step Q0..Qn, rendered by renderAnimationSequenceEditor() -->
           <div id="anim-step-list" class="space-y-2"></div>
 
           <div class="grid grid-cols-2 gap-1.5">
-            <button id="anim-add-step-btn"
-              class="py-1.5 rounded-lg border border-dashed border-indigo-500/40 text-indigo-300 text-xs font-semibold hover:bg-indigo-500/10 hover:border-indigo-500/70 transition">
+            <button id="anim-add-step-btn" type="button"
+              class="studio-btn-secondary py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer">
               + Add Step
             </button>
-            <button id="anim-add-delay-btn"
-              class="py-1.5 rounded-lg border border-dashed border-slate-500/40 text-slate-300 text-xs font-semibold hover:bg-slate-500/10 hover:border-slate-500/70 transition">
-              ⏱ Add Delay
+            <button id="anim-add-delay-btn" type="button"
+              class="studio-btn-secondary py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer">
+              + Add Delay
             </button>
           </div>
 
-          <!-- Quick-insert preset: isi otomatis satu step generik, murni helper UI (lihat animation-engine.js) -->
-          <div class="pt-2 border-t border-indigo-500/20 space-y-1.5">
-            <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert
-              Preset</label>
+          <div class="pt-2 border-t space-y-1.5" style="border-color: var(--color-surface-light)">
+            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</label>
             <div class="grid grid-cols-2 gap-1.5" id="anim-preset-buttons"></div>
           </div>
         </details>
 
         <template id="anim-step-template">
-          <div class="anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5">
+          <div class="anim-step-card space-y-2 rounded-xl p-2.5">
             <div class="flex items-center justify-between">
-              <span class="anim-step-label text-[11px] font-bold text-indigo-300 font-mono"></span>
+              <span class="anim-step-label text-[11px] font-bold font-mono" style="color: var(--color-sage-hover)"></span>
               <div class="flex items-center gap-1">
-                <button data-action="move-up" title="Pindah naik"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↑</button>
-                <button data-action="move-down" title="Pindah turun"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↓</button>
-                <button data-action="duplicate" title="Duplikat step"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">⧉</button>
-                <button data-action="delete" title="Hapus step"
-                  class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px]">✕</button>
+                <button type="button" data-action="move-up" title="Move up" aria-label="Move step up"
+                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↑</button>
+                <button type="button" data-action="move-down" title="Move down" aria-label="Move step down"
+                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↓</button>
+                <button type="button" data-action="duplicate" title="Duplicate step" aria-label="Duplicate step"
+                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">⧉</button>
+                <button type="button" data-action="delete" title="Delete step" aria-label="Delete step"
+                  class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[11px] cursor-pointer">✕</button>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-1.5">
               <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Type</label>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Type</label>
                 <select data-field="type"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
-                  <option value="to">to (menuju target)</option>
-                  <option value="from">from (dari state awal)</option>
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
+                  <option value="to">to (toward target)</option>
+                  <option value="from">from (initial offset)</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Ease</label>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Ease</label>
                 <select data-field="ease"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
                   <option value="power2.out">Power2 Out</option>
                   <option value="power3.out">Power3 Out</option>
                   <option value="power1.inOut">Power1 InOut</option>
@@ -1289,61 +1290,56 @@
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Duration (s)</label>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Duration (s)</label>
                 <input type="number" data-field="duration" step="0.01" min="0"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-0.5">Repeat (-1=infinite)</label>
+                <label class="block text-[11px] text-slate-400 mb-0.5">Repeat (-1=loop)</label>
                 <input type="number" data-field="repeat" step="1" min="-1"
                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
               </div>
               <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none">
-                <input type="checkbox" data-field="yoyo"
-                  class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500">
-                <span>Yoyo (bolak-balik)</span>
+                <input type="checkbox" data-field="yoyo" class="studio-checkbox">
+                <span>Yoyo (ping-pong)</span>
               </label>
             </div>
 
             <div class="pt-1.5 border-t border-slate-700/40">
-              <label class="block text-[10px] text-slate-400 mb-1">Target Properties</label>
+              <label class="block text-[11px] text-slate-400 mb-1">Target Properties</label>
               <div class="grid grid-cols-2 gap-1.5" data-role="properties"></div>
             </div>
           </div>
         </template>
 
         <template id="anim-property-row-template">
-          <label class="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" data-role="prop-toggle"
-              class="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500 shrink-0">
+          <label class="flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer select-none">
+            <input type="checkbox" data-role="prop-toggle" class="studio-checkbox shrink-0">
             <span class="w-10 shrink-0" data-role="prop-name"></span>
             <input type="number" step="0.01" data-role="prop-value" disabled
               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-0 disabled:opacity-40">
           </label>
         </template>
 
-        <!-- Kartu step 'delay' — visual beda sengaja (dashed, abu-abu) supaya kelihatan
-             beda dari step animasi biasa, cuma nunggu tanpa properti apapun. -->
         <template id="anim-delay-step-template">
           <div
-            class="anim-step-card flex items-center gap-2 bg-slate-900/40 border border-dashed border-slate-600/60 rounded-xl p-2.5">
+            class="anim-step-card flex items-center gap-2 border border-dashed rounded-xl p-2.5">
             <span class="anim-step-label text-[11px] font-bold text-slate-400 font-mono shrink-0"></span>
-            <span class="text-slate-500 text-sm shrink-0">⏱</span>
             <div class="flex-1 flex items-center gap-1.5">
-              <label class="text-[10px] text-slate-400 shrink-0">Wait</label>
+              <label class="text-[11px] text-slate-400 shrink-0">Wait</label>
               <input type="number" data-field="duration" step="0.01" min="0"
                 class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white">
-              <span class="text-[10px] text-slate-500 shrink-0">detik</span>
+              <span class="text-[11px] text-slate-500 shrink-0">s</span>
             </div>
             <div class="flex items-center gap-1 shrink-0">
-              <button data-action="move-up" title="Pindah naik"
-                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↑</button>
-              <button data-action="move-down" title="Pindah turun"
-                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">↓</button>
-              <button data-action="duplicate" title="Duplikat step"
-                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]">⧉</button>
-              <button data-action="delete" title="Hapus step"
-                class="w-5 h-5 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[10px]">✕</button>
+              <button type="button" data-action="move-up" title="Move up" aria-label="Move delay up"
+                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↑</button>
+              <button type="button" data-action="move-down" title="Move down" aria-label="Move delay down"
+                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">↓</button>
+              <button type="button" data-action="duplicate" title="Duplicate step" aria-label="Duplicate delay"
+                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] cursor-pointer">⧉</button>
+              <button type="button" data-action="delete" title="Delete step" aria-label="Delete delay"
+                class="w-6 h-6 flex items-center justify-center rounded bg-slate-800 hover:bg-red-900/60 text-red-400 hover:text-red-300 text-[11px] cursor-pointer">✕</button>
             </div>
           </div>
         </template>
@@ -1400,8 +1396,8 @@
             </span>
             <label class="flex items-center space-x-1.5 cursor-pointer text-xs text-slate-300"
               onclick="event.stopPropagation()">
-              <input type="checkbox" id="prop-gradient-toggle" class="rounded accent-indigo-500">
-              <span class="text-[10px]">Gradient</span>
+              <input type="checkbox" id="prop-gradient-toggle" class="studio-checkbox">
+              <span class="text-[11px]">Gradient</span>
             </label>
           </summary>
 
@@ -1409,10 +1405,10 @@
           <div id="solid-fill-section">
             <label class="block text-[11px] text-slate-400 mb-1">Background Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="prop-bg-color-picker"
+              <input type="color" id="prop-bg-color-picker" aria-label="Background color picker"
                 class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
               <input type="text" id="prop-bg-color"
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none font-mono">
             </div>
           </div>
 
@@ -1421,18 +1417,18 @@
             class="hidden space-y-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Color From</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Color From</label>
                 <div class="flex items-center gap-1">
-                  <input type="color" id="prop-grad-from-picker"
+                  <input type="color" id="prop-grad-from-picker" aria-label="Gradient start color"
                     class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
                   <input type="text" id="prop-grad-from"
                     class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
                 </div>
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400 mb-1">Color To</label>
+                <label class="block text-[11px] text-slate-400 mb-1">Color To</label>
                 <div class="flex items-center gap-1">
-                  <input type="color" id="prop-grad-to-picker"
+                  <input type="color" id="prop-grad-to-picker" aria-label="Gradient end color"
                     class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
                   <input type="text" id="prop-grad-to"
                     class="flex-1 bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] text-white font-mono">
@@ -1440,40 +1436,40 @@
               </div>
             </div>
             <div>
-              <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+              <div class="flex justify-between text-[11px] text-slate-400 mb-1">
                 <span>Angle</span>
                 <span id="prop-grad-angle-val" class="font-mono text-white">90°</span>
               </div>
-              <input type="range" id="prop-grad-angle" min="0" max="360" value="90" class="w-full accent-indigo-500">
+              <input type="range" id="prop-grad-angle" min="0" max="360" value="90" class="w-full">
             </div>
           </div>
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Internal Padding (px)</label>
             <input type="number" id="prop-padding" min="0" max="100"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
           </div>
         </details>
 
         <!-- Borders & Corners Section -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details data-accordion-id="borders" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
-            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
-            <span>Borders & Corners</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+            <span>Borders &amp; Corners</span>
           </summary>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Radius (px)</label>
               <input type="number" id="prop-border-radius" min="0" max="200"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Width (px)</label>
               <input type="number" id="prop-border-width" min="0" max="30"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
             </div>
           </div>
 
@@ -1481,7 +1477,7 @@
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Style</label>
               <select id="prop-border-style"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none">
                 <option value="solid">Solid</option>
                 <option value="dashed">Dashed</option>
                 <option value="dotted">Dotted</option>
@@ -1491,7 +1487,7 @@
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">Border Color</label>
               <div class="flex items-center gap-1.5">
-                <input type="color" id="prop-border-color-picker"
+                <input type="color" id="prop-border-color-picker" aria-label="Border color picker"
                   class="w-7 h-7 rounded border border-slate-700 bg-transparent cursor-pointer">
                 <input type="text" id="prop-border-color"
                   class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono">
@@ -1501,18 +1497,18 @@
         </details>
 
         <!-- Shadow & Glow Section -->
-        <details class="space-y-3 pt-2 border-t border-slate-800 group">
+        <details data-accordion-id="shadow" class="space-y-3 pt-2 border-t border-slate-800 group">
           <summary
-            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+            class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
             <span
-              class="inline-block transition-transform duration-150 group-open:rotate-90 text-indigo-400 text-[9px]">▶</span>
-            <span>Drop Shadow & Glow</span>
+              class="inline-block transition-transform duration-150 group-open:rotate-90 text-xs" style="color: var(--color-sage-hover)">▸</span>
+            <span>Drop Shadow &amp; Glow</span>
           </summary>
 
           <div>
             <label class="block text-[11px] text-slate-400 mb-1">Shadow Color</label>
             <div class="flex items-center gap-2">
-              <input type="color" id="prop-shadow-color-picker"
+              <input type="color" id="prop-shadow-color-picker" aria-label="Shadow color picker"
                 class="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer">
               <input type="text" id="prop-shadow-color" placeholder="rgba(0,0,0,0.5)"
                 class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
@@ -1521,17 +1517,17 @@
 
           <div class="grid grid-cols-3 gap-2">
             <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Blur (px)</label>
+              <label class="block text-[11px] text-slate-400 mb-1">Blur (px)</label>
               <input type="number" id="prop-shadow-blur" min="0" max="100"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
             <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Offset X</label>
+              <label class="block text-[11px] text-slate-400 mb-1">Offset X</label>
               <input type="number" id="prop-shadow-x" min="-100" max="100"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
             <div>
-              <label class="block text-[10px] text-slate-400 mb-1">Offset Y</label>
+              <label class="block text-[11px] text-slate-400 mb-1">Offset Y</label>
               <input type="number" id="prop-shadow-y" min="-100" max="100"
                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
             </div>
@@ -2040,8 +2036,8 @@
 
       if (stateNames.length === 0) {
         container.innerHTML = `
-          <p class="text-[10px] text-slate-500 italic py-1">
-            Belum ada state. Klik "+ Tambah State" untuk membuat state target baru.
+          <p class="text-[11px] text-slate-500 italic py-1">
+            No states yet. Click "+ Add State" to create a state target.
           </p>`
         return
       }
@@ -2578,7 +2574,7 @@
       document.getElementById('eventstate-options-group').classList.toggle('hidden', binding?.source !== 'eventState')
       if (isControl) {
         document.getElementById('prop-control-group-label').textContent =
-          binding.source === 'counter' ? 'Nama Counter' : binding.source === 'eventState' ? 'Nama Event State' : binding.source === 'text' ? 'Nama Teks' : 'Nama Timer'
+          binding.source === 'counter' ? 'Counter Name' : binding.source === 'eventState' ? 'Event State Name' : binding.source === 'text' ? 'Text Group Name' : 'Timer Name'
       }
 
         ;[
@@ -3489,7 +3485,7 @@
       // dan BUKAN sudah jadi child elemen lain (scope 1 level, lihat Vision.md §3.3.2).
       const parentSelect = document.getElementById('prop-parent')
       const eligibleParents = scene.elements.filter(item => item.id !== el.id && !item.parentId)
-      parentSelect.innerHTML = '<option value="">— Tidak ada (top-level) —</option>' +
+      parentSelect.innerHTML = '<option value="">— None (top-level) —</option>' +
         eligibleParents.map(item => `<option value="${item.id}">${item.name || item.id}</option>`).join('')
       parentSelect.value = el.parentId && eligibleParents.some(item => item.id === el.parentId) ? el.parentId : ''
 
@@ -3697,17 +3693,13 @@
       loopToggle.disabled = isTransition
       loopToggle.closest('label').classList.toggle('opacity-50', isTransition)
       document.getElementById('anim-mode-help').textContent = isTransition
-        ? 'Template timing untuk perpindahan menuju target state baru.'
-        : 'Dimainkan saat elemen pertama kali muncul.'
+        ? 'Timing template used when transitioning to a new state target.'
+        : 'Plays when the layer first appears.'
       
       document.querySelectorAll('[data-animation-mode]').forEach(button => {
         const active = button.dataset.animationMode === animationEditorMode
-        button.classList.toggle('bg-indigo-600', active)
-        button.classList.toggle('text-white', active)
-        button.classList.toggle('bg-slate-800', !active)
-        button.classList.toggle('text-slate-300', !active)
+        button.classList.toggle('studio-tab-active', active)
       })
-
     }
 
     /** Preset quick-insert: label -> step generik siap pakai (murni helper UI). */
@@ -5147,6 +5139,28 @@
       await loadScene(nextId)
       showStudioToast(`Created scene "${nextName}"`)
     })
+    // Scene actions popover menu
+    const sceneMenuBtn = document.getElementById('scene-menu-btn')
+    const sceneMenuPopover = document.getElementById('scene-menu-popover')
+    function setSceneMenuOpen(open) {
+      if (!sceneMenuPopover || !sceneMenuBtn) return
+      sceneMenuPopover.classList.toggle('hidden', !open)
+      sceneMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false')
+    }
+    sceneMenuBtn?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      setSceneMenuOpen(sceneMenuPopover.classList.contains('hidden'))
+    })
+    document.addEventListener('click', (e) => {
+      if (!sceneMenuPopover || sceneMenuPopover.classList.contains('hidden')) return
+      if (!sceneMenuPopover.contains(e.target) && !sceneMenuBtn.contains(e.target)) {
+        setSceneMenuOpen(false)
+      }
+    })
+    newSceneBtn.addEventListener('click', () => setSceneMenuOpen(false))
+    duplicateSceneBtn.addEventListener('click', () => setSceneMenuOpen(false))
+    deleteSceneBtn.addEventListener('click', () => setSceneMenuOpen(false))
+
     duplicateSceneBtn.addEventListener('click', duplicateCurrentScene)
     deleteSceneBtn.addEventListener('click', deleteCurrentScene)
     window.addEventListener('resize', fitZoom)

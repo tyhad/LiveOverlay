@@ -3,16 +3,29 @@
   --color-surface-light: #282c30;
   --color-surface-dark: #141618;
   --color-sage-olive: #7b8472;
+  --color-sage-primary: #5f6856;
+  --color-sage-primary-hover: #6c7662;
   --color-sage-hover: #8e9884;
   --color-pure-white: #ffffff;
   --color-muted-chalk: #c2c6be;
-  --color-slate-ash: #7e848c;
+  --color-slate-ash: #949ba3;
   --color-dark-trench: #16181a;
   --color-live-crimson: #e54d42;
+  --color-danger-bg: #b9362c;
+  --color-ok-bg: #157a55;
   --font-manrope: 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --shadow-neu-flat: -6px -6px 12px #282c30, 6px 6px 12px #141618;
   --shadow-neu-pressed: inset -4px -4px 8px #282c30, inset 4px 4px 8px #141618;
   --shadow-sage-glow: 0 0 12px rgba(123, 132, 114, .4);
+}
+
+::selection {
+  background: rgba(123, 132, 114, 0.35);
+  color: var(--color-pure-white);
+}
+
+input, textarea {
+  caret-color: var(--color-sage-hover);
 }
 
 /* Component rules moved to editor.css. */

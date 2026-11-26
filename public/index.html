@@ -27,20 +27,23 @@
 
   <!-- TOP HEADER -->
   <header
-    class="studio-header min-h-[56px] px-3 xl:px-4 py-1.5 flex items-center justify-between gap-2 xl:gap-3 shrink-0 z-30 border-b flex-wrap">
+    class="studio-header min-h-[56px] px-3 py-1.5 flex items-center justify-between gap-1.5 xl:gap-2 shrink-0 z-30 border-b flex-wrap">
     <!-- Left: Brand + Scene Switcher & Menu -->
-    <div class="flex items-center gap-2 min-w-0 shrink">
+    <div class="flex items-center gap-1.5 xl:gap-2 min-w-0 shrink">
       <div class="studio-logo w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
         <img src="/KerasnG.png" alt="LiveOverlay Studio" class="w-8 h-8 rounded-xl object-cover" />
       </div>
-      <h1 class="text-base font-bold tracking-tight text-white shrink-0">LiveOverlay</h1>
+      <h1 class="text-sm xl:text-base font-bold tracking-tight text-white shrink-0">LiveOverlay</h1>
       <span class="header-divider hidden sm:inline-block" aria-hidden="true"></span>
 
       <div class="flex items-center gap-1.5 min-w-0 shrink">
         <select id="scene-selector" aria-label="Select scene"
-          class="studio-select h-8 w-[130px] xl:w-[170px] rounded-lg px-2 text-xs font-semibold text-white truncate">
+          class="studio-select h-8 w-[112px] xl:w-[132px] rounded-lg px-2 text-xs font-semibold text-white truncate">
           <option value="default">default</option>
         </select>
+
+        <input id="scene-name-input" type="text" value="Live Streaming Scene" aria-label="Scene Name" title="Rename current scene"
+          class="studio-select h-8 w-[104px] xl:w-[126px] rounded-lg px-2 text-xs font-semibold text-white truncate">
 
         <div class="relative shrink-0">
           <button id="scene-menu-btn" type="button"
@@ -52,11 +55,6 @@
           </button>
 
           <div id="scene-menu-popover" class="studio-menu-popover hidden" role="menu" aria-label="Scene actions">
-            <div class="pb-2.5 mb-2 border-b" style="border-color: var(--color-surface-light)">
-              <label for="scene-name-input" class="block text-[11px] font-semibold mb-1" style="color: var(--color-muted-chalk)">Scene Name</label>
-              <input id="scene-name-input" type="text" value="Live Streaming Scene"
-                class="studio-dialog-input h-8 w-full rounded-lg px-2.5 text-xs font-semibold text-white">
-            </div>
             <div class="flex flex-col gap-1">
               <button id="new-scene-btn" type="button" role="menuitem" class="studio-menu-item flex items-center gap-2">
                 <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -74,7 +72,7 @@
           </div>
         </div>
 
-        <p class="text-xs font-mono tabular-nums hidden xl:block truncate ml-1" style="color: var(--color-slate-ash)" id="scene-info">1920 × 1080 • default</p>
+        <p class="text-xs font-mono tabular-nums hidden 2xl:block truncate ml-1" style="color: var(--color-slate-ash)" id="scene-info">1920 × 1080</p>
       </div>
     </div>
 
@@ -120,7 +118,7 @@
       </div>
 
       <button id="play-all-animations-btn" type="button"
-        class="studio-btn-secondary h-8 px-3 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+        class="studio-btn-secondary h-8 px-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
         <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="m8 5 11 7-11 7V5Z" />
         </svg>
@@ -129,15 +127,15 @@
     </div>
 
     <!-- Right: Save Status, Primary CTA & External Links -->
-    <div class="flex items-center gap-2 shrink-0">
+    <div class="flex items-center gap-1.5 shrink-0">
       <div id="save-status" role="status" aria-live="polite"
-        class="save-status-pill text-[11px] font-medium transition-colors duration-200 flex items-center gap-1.5 mr-1">
+        class="save-status-pill text-[11px] font-medium transition-colors duration-200 flex items-center gap-1.5 mr-0.5">
         <span id="save-status-dot" class="save-status-dot" aria-hidden="true"></span>
         <span id="save-status-text">Saved</span>
       </div>
 
       <button id="save-scene-btn" type="button"
-        class="studio-btn-primary h-8 px-3.5 rounded-xl text-xs font-semibold active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
+        class="studio-btn-primary h-8 px-3 rounded-xl text-xs font-semibold active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
         <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M5 4h12l2 2v14H5V4Z" /><path d="M8 4v6h7V4" /><path d="M8 20v-6h8v6" />
         </svg>
@@ -146,7 +144,7 @@
       </button>
 
       <a id="overlay-preview-link" href="/overlay.html" target="_blank"
-        class="studio-btn-secondary h-8 px-3 rounded-xl font-semibold text-xs transition flex items-center gap-1.5">
+        class="studio-btn-secondary h-8 px-2.5 rounded-xl font-semibold text-xs transition flex items-center gap-1.5">
         <span>Preview OBS</span>
         <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -155,7 +153,7 @@
       </a>
 
       <a id="control-panel-link" href="/control" target="_blank"
-        class="studio-btn-secondary h-8 px-3 rounded-xl font-semibold text-xs transition flex items-center gap-1.5"
+        class="studio-btn-secondary h-8 px-2.5 rounded-xl font-semibold text-xs transition flex items-center gap-1.5"
         title="Open Control Panel (Counters, Event States, Timers, Connectors)">
         <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-sage-hover)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M4 8h16M4 16h16M8 5v6M16 13v6" />
@@ -312,17 +310,20 @@
             <p id="canvas-scene-id-error" class="hidden text-[11px] mt-1" style="color: #f3a29b"></p>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label for="canvas-width" class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
-              <input type="number" id="canvas-width" min="100" max="7680"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+          <div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label for="canvas-width" class="block text-[11px] text-slate-400 mb-1">Width (px)</label>
+                <input type="number" id="canvas-width" min="100" max="7680"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+              </div>
+              <div>
+                <label for="canvas-height" class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
+                <input type="number" id="canvas-height" min="100" max="7680"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+              </div>
             </div>
-            <div>
-              <label for="canvas-height" class="block text-[11px] text-slate-400 mb-1">Height (px)</label>
-              <input type="number" id="canvas-height" min="100" max="7680"
-                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
-            </div>
+            <p id="canvas-size-error" class="hidden text-[11px] mt-1" style="color: #f3a29b"></p>
           </div>
 
           <div>
@@ -335,6 +336,81 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Multi-Selection Batch Inspector -->
+      <div id="multi-selection-panel" class="hidden p-4 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span id="multi-select-count"
+              class="studio-badge px-2 py-0.5 rounded-md text-[11px] font-extrabold uppercase tracking-wider">2 LAYERS</span>
+            <span class="text-xs font-semibold text-white">Multi-Select</span>
+          </div>
+          <button id="multi-clear-btn" type="button"
+            class="studio-btn-secondary px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer">Clear</button>
+        </div>
+
+        <div id="multi-select-list" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto"></div>
+
+        <div class="space-y-2 pt-2 border-t border-slate-800">
+          <span class="block text-xs font-bold uppercase tracking-wider text-slate-400">Align Selected to Canvas</span>
+          <div class="grid grid-cols-6 gap-1 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+            <button id="multi-align-left" type="button" aria-label="Align selected left" title="Align Left"
+              class="studio-icon-btn h-7 flex items-center justify-center rounded border cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4v16M8 8h10M8 16h6" /></svg>
+            </button>
+            <button id="multi-align-center-h" type="button" aria-label="Align selected center horizontal" title="Align Center Horizontal"
+              class="studio-icon-btn h-7 flex items-center justify-center rounded border cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16M6 8h12M8 16h8" /></svg>
+            </button>
+            <button id="multi-align-right" type="button" aria-label="Align selected right" title="Align Right"
+              class="studio-icon-btn h-7 flex items-center justify-center rounded border cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 4v16M6 8h10M10 16h6" /></svg>
+            </button>
+            <button id="multi-align-top" type="button" aria-label="Align selected top" title="Align Top"
+              class="studio-icon-btn h-7 flex items-center justify-center rounded border cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16M8 8v10M16 8v6" /></svg>
+            </button>
+            <button id="multi-align-center-v" type="button" aria-label="Align selected center vertical" title="Align Center Vertical"
+              class="studio-icon-btn h-7 flex items-center justify-center rounded border cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M8 6v12M16 8v8" /></svg>
+            </button>
+            <button id="multi-align-bottom" type="button" aria-label="Align selected bottom" title="Align Bottom"
+              class="studio-icon-btn h-7 flex items-center justify-center rounded border cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16M8 6v10M16 10v6" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-slate-800">
+          <label for="multi-parent-select" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Assign Parent Group</label>
+          <select id="multi-parent-select"
+            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+            <option value="__keep__">Keep current parent</option>
+            <option value="">None (top-level)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+          <button id="multi-lock-btn" type="button"
+            class="studio-btn-secondary py-2 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>Lock All</span>
+          </button>
+          <button id="multi-hide-btn" type="button"
+            class="studio-btn-secondary py-2 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>Hide All</span>
+          </button>
+          <button id="multi-duplicate-btn" type="button"
+            class="studio-btn-secondary py-2 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>Duplicate</span>
+          </button>
+          <button id="multi-delete-btn" type="button"
+            class="studio-icon-btn studio-icon-btn-danger py-2 px-2.5 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>Delete</span>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-500">Tip: Drag on canvas or press Arrow / Shift+Arrow to nudge all selected unlocked layers together.</p>
       </div>
 
       <!-- Properties Form -->
@@ -1152,16 +1228,16 @@
 
           <label for="anim-loop-toggle" class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none mt-3">
             <input type="checkbox" id="anim-loop-toggle" class="studio-checkbox">
-            <span>Loop sequence from Q0 after final step</span>
+            <span>Loop full sequence from start</span>
           </label>
 
-          <div class="grid grid-cols-2 gap-1.5 mt-3">
-            <button id="anim-enter-tab" type="button" data-animation-mode="enter"
+          <div class="grid grid-cols-2 gap-1.5 mt-3" role="tablist" aria-label="Animation sequence mode">
+            <button id="anim-enter-tab" type="button" role="tab" aria-selected="true" tabindex="0" data-animation-mode="enter"
               class="studio-tab-btn studio-tab-active py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Enter</button>
-            <button id="anim-transition-tab" type="button" data-animation-mode="transition"
+            <button id="anim-transition-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-animation-mode="transition"
               class="studio-tab-btn py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Transition</button>
           </div>
-          <p id="anim-mode-help" class="text-xs text-slate-500">Plays when the layer first appears.</p>
+          <p id="anim-mode-help" class="text-xs text-slate-500">Plays in order (Q0, Q1...) when the layer first appears.</p>
           <!-- List step Q0..Qn, rendered by renderAnimationSequenceEditor() -->
           <div id="anim-step-list" class="space-y-2"></div>
 
@@ -1177,7 +1253,7 @@
           </div>
 
           <div class="pt-2 border-t space-y-1.5" style="border-color: var(--color-surface-light)">
-            <span class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</span>
+            <span id="anim-preset-heading" class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Quick Insert Preset</span>
             <div class="grid grid-cols-2 gap-1.5" id="anim-preset-buttons"></div>
           </div>
         </details>
@@ -1208,25 +1284,25 @@
 
             <div class="grid grid-cols-2 gap-1.5">
               <div>
-                <label class="block text-[11px] text-slate-400 mb-0.5">Type
+                <label class="block text-[11px] text-slate-400 mb-0.5">Direction
                   <select data-field="type"
                     class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
-                    <option value="to">To (target)</option>
-                    <option value="from">From (offset)</option>
+                    <option value="to">Animate To</option>
+                    <option value="from">Animate From</option>
                   </select>
                 </label>
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-0.5">Ease
+                <label class="block text-[11px] text-slate-400 mb-0.5">Motion Curve
                   <select data-field="ease"
                     class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
-                    <option value="power2.out">Power2 Out</option>
-                    <option value="power3.out">Power3 Out</option>
-                    <option value="power1.inOut">Power1 InOut</option>
-                    <option value="back.out(1.7)">Back Out</option>
-                    <option value="bounce.out">Bounce Out</option>
-                    <option value="elastic.out(1, 0.4)">Elastic Out</option>
-                    <option value="sine.inOut">Sine InOut</option>
+                    <option value="power2.out">Smooth Out</option>
+                    <option value="power3.out">Fast Decel</option>
+                    <option value="power1.inOut">Smooth In-Out</option>
+                    <option value="back.out(1.7)">Overshoot</option>
+                    <option value="bounce.out">Bounce</option>
+                    <option value="elastic.out(1, 0.4)">Elastic Spring</option>
+                    <option value="sine.inOut">Gentle Wave</option>
                     <option value="none">Linear</option>
                   </select>
                 </label>
@@ -1238,31 +1314,45 @@
                 </label>
               </div>
               <div>
-                <label class="block text-[11px] text-slate-400 mb-0.5">Repeat (-1=loop)
-                  <input type="number" data-field="repeat" step="1" min="-1"
-                    class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono tabular-nums">
+                <label class="block text-[11px] text-slate-400 mb-0.5">Extra Repeats
+                  <input type="number" data-field="repeat" step="1" min="0"
+                    class="mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono tabular-nums disabled:opacity-40">
                 </label>
               </div>
-              <label class="col-span-2 flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none pt-0.5">
-                <input type="checkbox" data-field="yoyo" class="studio-checkbox">
-                <span>Yoyo (ping-pong)</span>
-              </label>
+              <div class="col-span-2 flex items-center justify-between gap-2 pt-0.5">
+                <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none">
+                  <input type="checkbox" data-field="infinite" class="studio-checkbox">
+                  <span>Loop forever</span>
+                </label>
+                <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer select-none">
+                  <input type="checkbox" data-field="yoyo" class="studio-checkbox">
+                  <span>Ping-pong</span>
+                </label>
+              </div>
             </div>
 
-            <div class="pt-1.5 border-t border-slate-700/40">
-              <span class="block text-[11px] text-slate-400 mb-1.5 font-semibold">Target Properties</span>
+            <div class="pt-1.5 border-t border-slate-700/40 space-y-1.5">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[11px] text-slate-400 font-semibold">Animated Properties</span>
+              </div>
               <div class="grid grid-cols-1 gap-1.5" data-role="properties"></div>
+              <select data-role="add-prop" aria-label="Add animated property"
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none cursor-pointer">
+              </select>
             </div>
           </div>
         </template>
 
         <template id="anim-property-row-template">
-          <label class="flex items-center gap-2 text-[11px] text-slate-400 cursor-pointer select-none">
-            <input type="checkbox" data-role="prop-toggle" class="studio-checkbox shrink-0">
-            <span class="w-20 shrink-0 font-mono" data-role="prop-name"></span>
-            <input type="number" step="0.01" data-role="prop-value" disabled
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-[72px] font-mono tabular-nums disabled:opacity-40">
-          </label>
+          <div class="flex items-center gap-1.5 text-[11px] text-slate-300">
+            <span class="w-20 shrink-0 font-mono text-slate-300" data-role="prop-name"></span>
+            <input type="number" step="0.01" data-role="prop-value"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white flex-1 min-w-[72px] font-mono tabular-nums">
+            <button type="button" data-role="prop-remove" title="Remove property" aria-label="Remove property"
+              class="studio-icon-btn studio-icon-btn-danger w-6 h-6 flex items-center justify-center rounded border shrink-0 cursor-pointer">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
         </template>
 
         <template id="anim-delay-step-template">
@@ -1508,6 +1598,7 @@
       <div class="space-y-1 text-xs">
         <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Save Scene</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + S</kbd></div>
         <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Undo / Redo</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + Z / Shift+Z</kbd></div>
+        <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Multi-select Layers</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Shift / Ctrl + Click</kbd></div>
         <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Duplicate / Delete Layer</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Ctrl + D / Del</kbd></div>
         <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Nudge Layer (1px / 10px)</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Arrow / Shift+Arrow</kbd></div>
         <div class="flex items-center justify-between py-2 border-b" style="border-color: var(--color-surface-light)"><span style="color: var(--color-muted-chalk)">Pan Canvas</span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-[11px] text-white">Space + Drag</kbd></div>
@@ -1576,11 +1667,14 @@
     let availableScenes = []
 
     let selectedElementId = null
+    let selectedElementIds = new Set()
+    let visibleLayerOrderIds = []
     let zoom = 0.45
     let isDragging = false
     let isResizing = false
     let activeResizeHandle = null
     let dragStartX = 0, dragStartY = 0
+    let dragStartPositions = new Map()
     let elementStartX = 0, elementStartY = 0
     let elementStartW = 0, elementStartH = 0
 
@@ -1592,6 +1686,7 @@
     const zoomLevelEl = document.getElementById('zoom-level')
     const layersListEl = document.getElementById('layers-list')
     const noSelectionEl = document.getElementById('no-selection')
+    const multiSelectionPanelEl = document.getElementById('multi-selection-panel')
     const selectionFormEl = document.getElementById('selection-form')
     const saveStatusEl = document.getElementById('save-status')
     const saveStatusTextEl = document.getElementById('save-status-text')
@@ -1844,38 +1939,60 @@
       restoreSceneSnapshot(next.snapshot, next.selectedId)
     }
 
+    function getSelectedElements() {
+      return scene.elements.filter((item) => selectedElementIds.has(item.id))
+    }
+
     function deleteSelectedElement() {
-      if (!selectedElementId) return
-      const el = scene.elements.find((item) => item.id === selectedElementId)
-      if (!el) return
-      if (el.locked) {
-        showStudioToast(`Layer "${el.name || el.id}" is locked. Unlock it before deleting.`, { variant: 'warn' })
+      const selected = getSelectedElements()
+      if (selected.length === 0) return
+      const unlocked = selected.filter((el) => !el.locked)
+      const lockedCount = selected.length - unlocked.length
+      if (unlocked.length === 0) {
+        const msg = selected.length === 1
+          ? `Layer "${selected[0].name || selected[0].id}" is locked. Unlock it before deleting.`
+          : `All ${selected.length} selected layers are locked. Unlock them before deleting.`
+        showStudioToast(msg, { variant: 'warn' })
         return
       }
       if (pendingCommitTimer) commitSceneChange()
-      const deletedName = el.name || el.id
-      scene.elements = scene.elements.filter((item) => item.id !== selectedElementId)
+      const deleteSet = new Set(unlocked.map((el) => el.id))
+      scene.elements = scene.elements.filter((item) => !deleteSet.has(item.id))
       commitSceneChange()
       selectElement(null)
-      showStudioToast(`Deleted "${deletedName}"`, {
+      const label = unlocked.length === 1
+        ? `Deleted "${unlocked[0].name || unlocked[0].id}"`
+        : `Deleted ${unlocked.length} layers${lockedCount > 0 ? ` (${lockedCount} locked kept)` : ''}`
+      showStudioToast(label, {
         actionLabel: 'Undo',
         onAction: () => performUndo(),
       })
     }
 
     function duplicateSelectedElement() {
-      const el = scene.elements.find((item) => item.id === selectedElementId)
-      if (!el) return
+      const selected = getSelectedElements()
+      if (selected.length === 0) return
       if (pendingCommitTimer) commitSceneChange()
-      const cloned = JSON.parse(JSON.stringify(el))
-      cloned.id = 'el_' + Date.now().toString(36)
-      cloned.name = (el.name || 'Element') + ' Copy'
-      cloned.x += 30
-      cloned.y += 30
-      cloned.zIndex = (el.zIndex || 1) + 1
-      scene.elements.push(cloned)
+      const newIds = []
+      const now = Date.now().toString(36)
+      selected.forEach((el, idx) => {
+        const cloned = JSON.parse(JSON.stringify(el))
+        cloned.id = `el_${now}_${idx}`
+        cloned.name = (el.name || 'Element') + ' Copy'
+        cloned.x += 30
+        cloned.y += 30
+        cloned.zIndex = (scene.elements.length || 1) + 1
+        scene.elements.push(cloned)
+        newIds.push(cloned.id)
+      })
       commitSceneChange()
-      selectElement(cloned.id)
+      if (newIds.length === 1) {
+        selectElement(newIds[0])
+      } else {
+        selectedElementIds = new Set(newIds)
+        selectedElementId = newIds[newIds.length - 1]
+        syncSelectionViews()
+      }
     }
     let assets = []
     let liveStats = {
@@ -3130,11 +3247,11 @@
       const sortByZ = (a, b) => (a.zIndex || 0) - (b.zIndex || 0)
 
       function buildAndMount(el, container) {
-        if (el.hidden && el.id !== selectedElementId) return
+        if (el.hidden && !selectedElementIds.has(el.id)) return
 
         const div = document.createElement('div')
         div.id = `el-node-${el.id}`
-        div.className = `absolute ${el.locked ? 'element-locked cursor-not-allowed' : 'cursor-move'} ${el.id === selectedElementId ? 'element-selected' : ''}`
+        div.className = `absolute ${el.locked ? 'element-locked cursor-not-allowed' : 'cursor-move'} ${selectedElementIds.has(el.id) ? 'element-selected' : ''}`
         div.style.left = `${el.x}px`
         div.style.top = `${el.y}px`
         div.style.width = `${el.width}px`
@@ -3293,17 +3410,29 @@
         div.addEventListener('mousedown', (e) => {
           if (e.target.classList.contains('resize-handle')) return
           e.stopPropagation()
-          selectElement(el.id)
-          if (el.locked) return
+          if (e.ctrlKey || e.metaKey) {
+            selectElement(el.id, { toggle: true })
+            return
+          }
+          if (e.shiftKey) {
+            selectElement(el.id, { additive: true })
+            return
+          }
+          if (!selectedElementIds.has(el.id)) {
+            selectElement(el.id)
+          }
+          const draggable = getSelectedElements().filter((item) => !item.locked)
+          if (draggable.length === 0) return
 
           isDragging = true
           dragStartX = e.clientX
           dragStartY = e.clientY
+          dragStartPositions = new Map(draggable.map((item) => [item.id, { x: item.x, y: item.y }]))
           elementStartX = el.x
           elementStartY = el.y
         })
 
-        if (el.id === selectedElementId && !el.locked) {
+        if (selectedElementIds.size === 1 && el.id === selectedElementId && !el.locked) {
           const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
           handles.forEach(h => {
             const handle = document.createElement('div')
@@ -3386,18 +3515,24 @@
 
     // Global Mouse Handlers
     window.addEventListener('mousemove', (e) => {
-      if (!selectedElementId) return
-      const el = scene.elements.find(item => item.id === selectedElementId)
-      if (!el || el.locked) return
+      if (selectedElementIds.size === 0) return
 
       if (isDragging) {
+        if (dragStartPositions.size === 0) return
         const dx = (e.clientX - dragStartX) / zoom
         const dy = (e.clientY - dragStartY) / zoom
-        el.x = Math.round(elementStartX + dx)
-        el.y = Math.round(elementStartY + dy)
+        dragStartPositions.forEach((pos, id) => {
+          const item = scene.elements.find(el => el.id === id)
+          if (item && !item.locked) {
+            item.x = Math.round(pos.x + dx)
+            item.y = Math.round(pos.y + dy)
+          }
+        })
         renderCanvas()
-        updateInspectorValues()
+        if (selectedElementIds.size === 1) updateInspectorValues()
       } else if (isResizing && activeResizeHandle) {
+        const el = scene.elements.find(item => item.id === selectedElementId)
+        if (!el || el.locked) return
         const dx = (e.clientX - dragStartX) / zoom
         const dy = (e.clientY - dragStartY) / zoom
 
@@ -3424,6 +3559,7 @@
         isDragging = false
         isResizing = false
         activeResizeHandle = null
+        dragStartPositions.clear()
         commitSceneChange()
       }
     })
@@ -3474,6 +3610,7 @@
       })
 
       if (visibleElements.length === 0) {
+        visibleLayerOrderIds = []
         const empty = document.createElement('p')
         empty.className = 'text-xs text-slate-500 text-center py-4'
         empty.textContent = q ? 'No matching layers.' : 'No layers yet.'
@@ -3481,8 +3618,10 @@
         return
       }
 
+      visibleLayerOrderIds = visibleElements.map(item => item.id)
+
       visibleElements.forEach(el => {
-        const isSelected = el.id === selectedElementId
+        const isSelected = selectedElementIds.has(el.id)
         const item = document.createElement('div')
         item.setAttribute('role', 'button')
         item.setAttribute('tabindex', '0')
@@ -3588,14 +3727,22 @@
 
         item.addEventListener('click', (e) => {
           e.stopPropagation()
-          selectElement(el.id)
+          if (e.shiftKey && selectedElementId) {
+            selectElement(el.id, { range: true })
+          } else if (e.ctrlKey || e.metaKey) {
+            selectElement(el.id, { toggle: true })
+          } else {
+            selectElement(el.id)
+          }
         })
         item.addEventListener('keydown', (e) => {
           if (e.target !== item) return
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             e.stopPropagation()
-            selectElement(el.id)
+            if (e.shiftKey && selectedElementId) selectElement(el.id, { range: true })
+            else if (e.ctrlKey || e.metaKey) selectElement(el.id, { toggle: true })
+            else selectElement(el.id)
           }
         })
 
@@ -3609,30 +3756,120 @@
       const height = Number(scene.canvas.height) || 1080
       const bg = scene.canvas.backgroundColor || 'transparent'
 
-      document.getElementById('canvas-scene-id').value = scene.id || ''
-      document.getElementById('canvas-width').value = width
-      document.getElementById('canvas-height').value = height
+      const idEl = document.getElementById('canvas-scene-id')
+      const wEl = document.getElementById('canvas-width')
+      const hEl = document.getElementById('canvas-height')
+      idEl.value = scene.id || ''
+      wEl.value = width
+      hEl.value = height
+      setInputValidity(idEl, true, document.getElementById('canvas-scene-id-error'))
+      setInputValidity(wEl, true, document.getElementById('canvas-size-error'))
+      setInputValidity(hEl, true)
       document.getElementById('canvas-bg-color').value = bg
       if (bg.startsWith('#')) {
         document.getElementById('canvas-bg-color-picker').value = bg
       }
     }
 
-    function selectElement(id) {
-      selectedElementId = id
+    function updateMultiSelectionPanel() {
+      const selected = getSelectedElements()
+      if (!multiSelectionPanelEl) return
+      const countEl = document.getElementById('multi-select-count')
+      const listEl = document.getElementById('multi-select-list')
+      const lockBtn = document.getElementById('multi-lock-btn')
+      const hideBtn = document.getElementById('multi-hide-btn')
+      const parentSelect = document.getElementById('multi-parent-select')
+
+      if (countEl) countEl.textContent = `${selected.length} LAYERS`
+      if (listEl) {
+        listEl.innerHTML = selected.map((el) =>
+          `<span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-800 border border-slate-700 text-slate-200 truncate max-w-[130px]" title="${escHtml(el.name || el.id)}">${escHtml(el.name || el.id)}</span>`
+        ).join('')
+      }
+      const allLocked = selected.length > 0 && selected.every((el) => el.locked)
+      const allHidden = selected.length > 0 && selected.every((el) => el.hidden)
+      if (lockBtn) lockBtn.querySelector('span').textContent = allLocked ? 'Unlock All' : 'Lock All'
+      if (hideBtn) hideBtn.querySelector('span').textContent = allHidden ? 'Show All' : 'Hide All'
+
+      if (parentSelect) {
+        const selectedSet = new Set(selected.map((el) => el.id))
+        const eligibleParents = scene.elements.filter((item) => !selectedSet.has(item.id) && !item.parentId)
+        parentSelect.innerHTML =
+          '<option value="__keep__">Keep current parent</option>' +
+          '<option value="">None (top-level)</option>' +
+          eligibleParents.map((item) => `<option value="${item.id}">${escHtml(item.name || item.id)}</option>`).join('')
+        parentSelect.value = '__keep__'
+      }
+    }
+
+    function syncSelectionViews() {
+      // Drop stale IDs if any element was removed
+      const validIds = new Set(scene.elements.map((item) => item.id))
+      selectedElementIds = new Set([...selectedElementIds].filter((id) => validIds.has(id)))
+      if (selectedElementId && !selectedElementIds.has(selectedElementId)) {
+        selectedElementId = [...selectedElementIds].at(-1) || null
+      }
+
       renderCanvas()
       renderLayers()
 
-      if (!id) {
+      if (selectedElementIds.size === 0) {
         noSelectionEl.classList.remove('hidden')
+        multiSelectionPanelEl?.classList.add('hidden')
         selectionFormEl.classList.add('hidden')
         updateCanvasInspectorValues()
         return
       }
 
+      if (selectedElementIds.size > 1) {
+        noSelectionEl.classList.add('hidden')
+        selectionFormEl.classList.add('hidden')
+        multiSelectionPanelEl?.classList.remove('hidden')
+        updateMultiSelectionPanel()
+        return
+      }
+
       noSelectionEl.classList.add('hidden')
+      multiSelectionPanelEl?.classList.add('hidden')
       selectionFormEl.classList.remove('hidden')
       updateInspectorValues()
+    }
+
+    function selectElement(id, options = {}) {
+      if (!id) {
+        selectedElementIds.clear()
+        selectedElementId = null
+        syncSelectionViews()
+        return
+      }
+
+      if (options.toggle) {
+        if (selectedElementIds.has(id)) {
+          selectedElementIds.delete(id)
+          selectedElementId = [...selectedElementIds].at(-1) || null
+        } else {
+          selectedElementIds.add(id)
+          selectedElementId = id
+        }
+      } else if (options.range && selectedElementId && visibleLayerOrderIds.length > 0) {
+        const a = visibleLayerOrderIds.indexOf(selectedElementId)
+        const b = visibleLayerOrderIds.indexOf(id)
+        if (a !== -1 && b !== -1) {
+          const [start, end] = a < b ? [a, b] : [b, a]
+          for (let i = start; i <= end; i++) selectedElementIds.add(visibleLayerOrderIds[i])
+          selectedElementId = id
+        } else {
+          selectedElementIds.add(id)
+          selectedElementId = id
+        }
+      } else if (options.additive) {
+        selectedElementIds.add(id)
+        selectedElementId = id
+      } else {
+        selectedElementIds = new Set([id])
+        selectedElementId = id
+      }
+      syncSelectionViews()
     }
 
     function updateInspectorValues() {
@@ -3950,13 +4187,20 @@
       loopToggle.disabled = isTransition
       loopToggle.closest('label').classList.toggle('opacity-50', isTransition)
       document.getElementById('anim-mode-help').textContent = isTransition
-        ? 'Timing template used when transitioning to a new state target.'
-        : 'Plays when the layer first appears.'
-      
+        ? 'Plays in order (T0, T1...) when switching between State Targets.'
+        : 'Plays in order (Q0, Q1...) when the layer first appears.'
+      const presetHeading = document.getElementById('anim-preset-heading')
+      if (presetHeading) {
+        presetHeading.textContent = isTransition ? 'Quick Insert Transition Preset' : 'Quick Insert Enter Preset'
+      }
+
       document.querySelectorAll('[data-animation-mode]').forEach(button => {
         const active = button.dataset.animationMode === animationEditorMode
         button.classList.toggle('studio-tab-active', active)
+        button.setAttribute('aria-selected', active ? 'true' : 'false')
+        button.setAttribute('tabindex', active ? '0' : '-1')
       })
+      renderAnimationPresetButtons()
     }
 
     /** Preset quick-insert: label -> step generik siap pakai (murni helper UI). */
@@ -3964,6 +4208,7 @@
       'Fade In': { type: 'from', properties: { opacity: 0 }, duration: 0.6, ease: 'power2.out', repeat: 0, yoyo: false },
       'Fade Out': { type: 'to', properties: { opacity: 0 }, duration: 0.4, ease: 'power2.in', repeat: 0, yoyo: false },
       'Slide Up In': { type: 'from', properties: { opacity: 0, y: 60 }, duration: 0.8, ease: 'power3.out', repeat: 0, yoyo: false },
+      'Slide Down In': { type: 'from', properties: { opacity: 0, y: -60 }, duration: 0.8, ease: 'power3.out', repeat: 0, yoyo: false },
       'Bounce In': { type: 'from', properties: { opacity: 0, y: 100, scale: 0.8 }, duration: 0.9, ease: 'bounce.out', repeat: 0, yoyo: false },
       'Zoom In': { type: 'from', properties: { opacity: 0, scale: 0.3 }, duration: 0.7, ease: 'back.out(1.7)', repeat: 0, yoyo: false },
       'Pulse (loop)': { type: 'to', properties: { scale: 1.04 }, duration: 1.5, ease: 'power1.inOut', repeat: -1, yoyo: true },
@@ -3971,6 +4216,26 @@
     }
 
     const TRANSITION_PROPERTIES = ['x', 'y', 'opacity', 'scale', 'rotation', 'rotationX', 'rotationY', 'perspective']
+
+    const TRANSITION_PRESETS = {
+      'Snappy (0.25s)': { type: 'to', properties: TRANSITION_PROPERTIES.slice(), duration: 0.25, ease: 'power3.out' },
+      'Smooth (0.5s)': { type: 'to', properties: TRANSITION_PROPERTIES.slice(), duration: 0.5, ease: 'power2.out' },
+      'Overshoot (0.6s)': { type: 'to', properties: TRANSITION_PROPERTIES.slice(), duration: 0.6, ease: 'back.out(1.7)' },
+      'Elastic (0.7s)': { type: 'to', properties: TRANSITION_PROPERTIES.slice(), duration: 0.7, ease: 'elastic.out(1, 0.4)' },
+      'Fade Only (0.3s)': { type: 'to', properties: ['opacity'], duration: 0.3, ease: 'power2.out' },
+      'Move Only (0.45s)': { type: 'to', properties: ['x', 'y'], duration: 0.45, ease: 'power3.out' },
+    }
+
+    const ANIM_PROP_LABELS = {
+      x: 'X offset',
+      y: 'Y offset',
+      opacity: 'Opacity',
+      scale: 'Scale',
+      rotation: 'Rotation Z',
+      rotationX: 'Tilt X',
+      rotationY: 'Yaw Y',
+      perspective: 'Perspective',
+    }
 
     // Durasi animasi (detik): maksimal 2 angka di belakang koma (mis. 0,15 dt), tidak boleh negatif.
     // Dibulatkan agar tidak muncul artefak floating point seperti 0.15000000000000002.
@@ -3980,9 +4245,9 @@
     }
 
     const TRANSITION_EASES = [
-      ['power2.out', 'Power2 Out'], ['power3.out', 'Power3 Out'], ['power1.inOut', 'Power1 InOut'],
-      ['back.out(1.7)', 'Back Out'], ['bounce.out', 'Bounce Out'], ['elastic.out(1, 0.4)', 'Elastic Out'],
-      ['sine.inOut', 'Sine InOut'], ['none', 'Linear'],
+      ['power2.out', 'Smooth Out'], ['power3.out', 'Fast Decel'], ['power1.inOut', 'Smooth In-Out'],
+      ['back.out(1.7)', 'Overshoot'], ['bounce.out', 'Bounce'], ['elastic.out(1, 0.4)', 'Elastic Spring'],
+      ['sine.inOut', 'Gentle Wave'], ['none', 'Linear'],
     ]
 
     function renderTransitionSequenceEditor(el, anim) {
@@ -3990,7 +4255,8 @@
       listEl.innerHTML = ''
       const inputCls = 'mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white font-mono tabular-nums focus:outline-none'
       const selectCls = 'mt-0.5 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none'
-      anim.transition.sequence.forEach((step, index) => {
+      const sequence = anim.transition.sequence
+      sequence.forEach((step, index) => {
         const isDelay = step.type === 'delay'
         const card = document.createElement('div')
         card.className = 'anim-step-card space-y-2 bg-slate-900/70 border border-slate-700/60 rounded-xl p-2.5'
@@ -4000,26 +4266,67 @@
         card.innerHTML = `
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold font-mono" style="color: var(--color-sage-hover)">T${index}${isDelay ? ' · delay' : ''}</span>
-            <button type="button" data-delete class="studio-icon-btn studio-icon-btn-danger w-6 h-6 flex items-center justify-center rounded border cursor-pointer" title="Delete step" aria-label="Delete step">
-              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
+            <div class="flex items-center gap-1">
+              <button type="button" data-action="move-up" ${index === 0 ? 'disabled' : ''} title="Move up" aria-label="Move transition step up"
+                class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+              </button>
+              <button type="button" data-action="move-down" ${index === sequence.length - 1 ? 'disabled' : ''} title="Move down" aria-label="Move transition step down"
+                class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <button type="button" data-action="duplicate" title="Duplicate step" aria-label="Duplicate transition step"
+                class="studio-icon-btn w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+              <button type="button" data-action="delete" title="Delete step" aria-label="Delete transition step"
+                class="studio-icon-btn studio-icon-btn-danger w-6 h-6 flex items-center justify-center rounded border cursor-pointer">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
           </div>
           ${isDelay ? `
-            <label class="block text-[11px] text-slate-400">Delay (s)
+            <label class="block text-[11px] text-slate-400">Wait (s)
               <input data-duration type="number" min="0" step="0.01" class="${inputCls}">
             </label>` : `
             <div class="grid grid-cols-2 gap-1.5">
               <label class="text-[11px] text-slate-400">Duration (s)
                 <input data-duration type="number" min="0" step="0.01" class="${inputCls}">
               </label>
-              <label class="text-[11px] text-slate-400">Ease
+              <label class="text-[11px] text-slate-400">Motion Curve
                 <select data-ease class="${selectCls}"></select>
               </label>
             </div>
-            <div data-properties class="grid grid-cols-2 gap-1.5 pt-1"></div>`}`
+            <div class="pt-1.5 border-t border-slate-700/40 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-400 font-semibold">Animated Properties</span>
+                <button type="button" data-toggle-all class="text-[11px] font-semibold cursor-pointer" style="color: var(--color-sage-hover)">All</button>
+              </div>
+              <div data-properties class="flex flex-wrap gap-1.5"></div>
+            </div>`}`
 
-        card.querySelector('[data-delete]').onclick = () => {
-          anim.transition.sequence.splice(index, 1)
+        card.querySelector('[data-action="move-up"]').onclick = () => {
+          if (index === 0) return
+          ;[sequence[index - 1], sequence[index]] = [sequence[index], sequence[index - 1]]
+          commitSceneChange()
+          renderAnimationSequenceEditor(el)
+        }
+        card.querySelector('[data-action="move-down"]').onclick = () => {
+          if (index === sequence.length - 1) return
+          ;[sequence[index + 1], sequence[index]] = [sequence[index], sequence[index + 1]]
+          commitSceneChange()
+          renderAnimationSequenceEditor(el)
+        }
+        card.querySelector('[data-action="duplicate"]').onclick = () => {
+          const clone = JSON.parse(JSON.stringify(step))
+          clone.id = `t${sequence.length}`
+          sequence.splice(index + 1, 0, clone)
+          commitSceneChange()
+          renderAnimationSequenceEditor(el)
+        }
+        card.querySelector('[data-action="delete"]').onclick = () => {
+          sequence.splice(index, 1)
+          commitSceneChange()
           renderAnimationSequenceEditor(el)
         }
         const durationInput = card.querySelector('[data-duration]')
@@ -4030,7 +4337,7 @@
           const easeSelect = card.querySelector('[data-ease]')
           const eases = TRANSITION_EASES.slice()
           const current = step.ease || 'power2.out'
-          if (!eases.some(([value]) => value === current)) eases.push([current, current]) // ease kustom tetap tampil
+          if (!eases.some(([value]) => value === current)) eases.push([current, current])
           eases.forEach(([value, label]) => {
             const opt = document.createElement('option')
             opt.value = value
@@ -4040,13 +4347,22 @@
           easeSelect.value = current
           easeSelect.onchange = e => { step.ease = e.target.value }
 
-          // step.properties kosong/undefined berarti "semua properti" -> materialisasi dulu
-          // supaya uncheck satu properti tidak diam-diam menghapus semua yang lain.
           if (!Array.isArray(step.properties)) step.properties = TRANSITION_PROPERTIES.slice()
           const propsEl = card.querySelector('[data-properties]')
+          const toggleAllBtn = card.querySelector('[data-toggle-all]')
+          const syncToggleAllLabel = () => {
+            if (toggleAllBtn) toggleAllBtn.textContent = step.properties.length === TRANSITION_PROPERTIES.length ? 'Clear' : 'All'
+          }
+          syncToggleAllLabel()
+          toggleAllBtn?.addEventListener('click', () => {
+            step.properties = step.properties.length === TRANSITION_PROPERTIES.length ? [] : TRANSITION_PROPERTIES.slice()
+            commitSceneChange()
+            renderAnimationSequenceEditor(el)
+          })
+
           TRANSITION_PROPERTIES.forEach(name => {
             const label = document.createElement('label')
-            label.className = 'text-[11px] font-mono text-slate-400 flex items-center gap-1.5 cursor-pointer select-none'
+            label.className = 'text-[11px] font-mono text-slate-300 flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-slate-700/60 bg-slate-800/70 cursor-pointer select-none'
             const checkbox = document.createElement('input')
             checkbox.type = 'checkbox'
             checkbox.className = 'studio-checkbox shrink-0'
@@ -4054,6 +4370,7 @@
             checkbox.onchange = e => {
               if (e.target.checked && !step.properties.includes(name)) step.properties.push(name)
               if (!e.target.checked) step.properties = step.properties.filter(item => item !== name)
+              syncToggleAllLabel()
             }
             label.appendChild(checkbox)
             label.appendChild(document.createTextNode(name))
@@ -4062,18 +4379,21 @@
         }
         listEl.appendChild(card)
       })
-      if (anim.transition.sequence.length === 0) {
+      if (sequence.length === 0) {
         const empty = document.createElement('p')
         empty.className = 'text-[11px] text-slate-500 italic text-center py-2'
-        empty.textContent = 'No transition steps yet. State changes apply immediately.'
+        empty.textContent = 'No transition steps yet. Pick a preset below or add a step.'
         listEl.appendChild(empty)
       }
     }
 
     function renderAnimationPresetButtons() {
       const container = document.getElementById('anim-preset-buttons')
+      if (!container) return
       container.innerHTML = ''
-      Object.keys(ANIMATION_PRESETS).forEach(label => {
+      const isTransition = animationEditorMode === 'transition'
+      const presets = isTransition ? TRANSITION_PRESETS : ANIMATION_PRESETS
+      Object.keys(presets).forEach(label => {
         const btn = document.createElement('button')
         btn.type = 'button'
         btn.textContent = label
@@ -4081,15 +4401,28 @@
         btn.addEventListener('click', () => {
           const el = scene.elements.find(item => item.id === selectedElementId)
           if (!el) return
-          if (animationEditorMode === 'transition') return
+          const anim = ensureAnimation(el)
+          const sequence = activeAnimationSequence(anim)
+          if (isTransition) {
+            const preset = TRANSITION_PRESETS[label]
+            sequence.push({
+              id: `t${sequence.length}`,
+              type: 'to',
+              properties: preset.properties.slice(),
+              duration: preset.duration,
+              ease: preset.ease,
+            })
+            commitSceneChange()
+            renderAnimationSequenceEditor(el)
+            updateMotionTabIndicator(el)
+            return
+          }
           const preset = ANIMATION_PRESETS[label]
           const properties = {}
           for (const key of Object.keys(preset.properties)) {
             const value = preset.properties[key]
             properties[key] = typeof value === 'function' ? value(el) : value
           }
-          const anim = ensureAnimation(el)
-          const sequence = activeAnimationSequence(anim)
           sequence.push({
             id: `q${sequence.length}`,
             type: preset.type,
@@ -4099,8 +4432,10 @@
             repeat: preset.repeat,
             yoyo: preset.yoyo,
           })
+          commitSceneChange()
           renderAnimationSequenceEditor(el)
           renderLayers()
+          updateMotionTabIndicator(el)
         })
         container.appendChild(btn)
       })
@@ -4132,31 +4467,39 @@
         const card = (isDelay ? delayTemplate : stepTemplate).content.firstElementChild.cloneNode(true)
         card.querySelector('.anim-step-label').textContent = `Q${index}`
 
-        // Aksi reorder/duplikat/hapus — sama persis buat step delay maupun step animasi.
-        card.querySelector('[data-action="move-up"]').addEventListener('click', () => {
+        const moveUpBtn = card.querySelector('[data-action="move-up"]')
+        const moveDownBtn = card.querySelector('[data-action="move-down"]')
+        if (moveUpBtn) moveUpBtn.disabled = index === 0
+        if (moveDownBtn) moveDownBtn.disabled = index === sequence.length - 1
+
+        moveUpBtn?.addEventListener('click', () => {
           if (index === 0) return
-            ;[sequence[index - 1], sequence[index]] = [sequence[index], sequence[index - 1]]
+          ;[sequence[index - 1], sequence[index]] = [sequence[index], sequence[index - 1]]
+          commitSceneChange()
           renderAnimationSequenceEditor(el)
         })
-        card.querySelector('[data-action="move-down"]').addEventListener('click', () => {
+        moveDownBtn?.addEventListener('click', () => {
           if (index === sequence.length - 1) return
-            ;[sequence[index + 1], sequence[index]] = [sequence[index], sequence[index + 1]]
+          ;[sequence[index + 1], sequence[index]] = [sequence[index], sequence[index + 1]]
+          commitSceneChange()
           renderAnimationSequenceEditor(el)
         })
         card.querySelector('[data-action="duplicate"]').addEventListener('click', () => {
           const clone = JSON.parse(JSON.stringify(step))
           clone.id = `q${sequence.length}`
           sequence.splice(index + 1, 0, clone)
+          commitSceneChange()
           renderAnimationSequenceEditor(el)
         })
         card.querySelector('[data-action="delete"]').addEventListener('click', () => {
           sequence.splice(index, 1)
+          commitSceneChange()
           renderAnimationSequenceEditor(el)
           renderLayers()
+          updateMotionTabIndicator(el)
         })
 
         if (isDelay) {
-          // Kartu Delay: cuma field duration, tanpa Type/Ease/Repeat/Yoyo/Properties.
           const durationInput = card.querySelector('[data-field="duration"]')
           durationInput.value = step.duration ?? 0.5
           durationInput.addEventListener('input', (e) => { step.duration = parseDurationSeconds(e.target.value) })
@@ -4168,56 +4511,97 @@
         const easeInput = card.querySelector('[data-field="ease"]')
         const durationInput = card.querySelector('[data-field="duration"]')
         const repeatInput = card.querySelector('[data-field="repeat"]')
+        const infiniteInput = card.querySelector('[data-field="infinite"]')
         const yoyoInput = card.querySelector('[data-field="yoyo"]')
 
         typeInput.value = step.type || 'to'
-        easeInput.value = step.ease || 'power2.out'
+        const currentEase = step.ease || 'power2.out'
+        if (![...easeInput.options].some(o => o.value === currentEase)) {
+          const opt = document.createElement('option')
+          opt.value = currentEase
+          opt.textContent = currentEase
+          easeInput.appendChild(opt)
+        }
+        easeInput.value = currentEase
         durationInput.value = step.duration ?? 0.6
-        repeatInput.value = step.repeat ?? 0
+
+        const isInfinite = Number(step.repeat) === -1
+        if (infiniteInput) infiniteInput.checked = isInfinite
+        repeatInput.value = isInfinite ? 0 : Math.max(0, Number(step.repeat) || 0)
+        repeatInput.disabled = isInfinite
         yoyoInput.checked = !!step.yoyo
 
         typeInput.addEventListener('change', (e) => { step.type = e.target.value })
         easeInput.addEventListener('change', (e) => { step.ease = e.target.value })
         durationInput.addEventListener('input', (e) => { step.duration = parseDurationSeconds(e.target.value) })
-        repeatInput.addEventListener('input', (e) => { step.repeat = parseInt(e.target.value, 10) || 0 })
+        infiniteInput?.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            step.repeat = -1
+            repeatInput.disabled = true
+          } else {
+            step.repeat = Math.max(0, parseInt(repeatInput.value, 10) || 0)
+            repeatInput.disabled = false
+          }
+        })
+        repeatInput.addEventListener('input', (e) => {
+          if (infiniteInput?.checked) return
+          step.repeat = Math.max(0, parseInt(e.target.value, 10) || 0)
+        })
         yoyoInput.addEventListener('change', (e) => { step.yoyo = e.target.checked })
 
-        // Target Properties: satu baris checkbox+angka per properti yang didukung engine.
+        // Compact Animated Properties: only active rows + "+ Add property" selector
         const propsContainer = card.querySelector('[data-role="properties"]')
-        const PROPERTY_DEFAULTS = { x: el.x, y: el.y, opacity: 1, scale: 1, rotation: 0, rotationX: 0, rotationY: 0, perspective: 1000 }
-        AnimationEngine.SUPPORTED_PROPERTIES.forEach(propName => {
-          const row = propRowTemplate.content.firstElementChild.cloneNode(true)
-          const toggle = row.querySelector('[data-role="prop-toggle"]')
-          const nameEl = row.querySelector('[data-role="prop-name"]')
-          const valueInput = row.querySelector('[data-role="prop-value"]')
-          const isActive = Object.prototype.hasOwnProperty.call(step.properties || {}, propName)
-          const fallback = el[propName] !== undefined ? el[propName] : PROPERTY_DEFAULTS[propName]
+        const addPropSelect = card.querySelector('[data-role="add-prop"]')
+        const PROPERTY_DEFAULTS = { x: 0, y: 0, opacity: 0, scale: 1, rotation: 0, rotationX: 0, rotationY: 0, perspective: 1000 }
+        if (!step.properties || typeof step.properties !== 'object') step.properties = {}
 
-          nameEl.textContent = animationEditorMode === 'enter' && (propName === 'x' || propName === 'y')
-            ? `${propName} offset`
-            : propName
-          toggle.checked = isActive
-          valueInput.disabled = !isActive
-          valueInput.value = isActive ? step.properties[propName] : fallback
+        const activeProps = AnimationEngine.SUPPORTED_PROPERTIES.filter(p => Object.prototype.hasOwnProperty.call(step.properties, p))
+        const remainingProps = AnimationEngine.SUPPORTED_PROPERTIES.filter(p => !Object.prototype.hasOwnProperty.call(step.properties, p))
 
-          toggle.addEventListener('change', (e) => {
-            if (!step.properties) step.properties = {}
-            if (e.target.checked) {
-              step.properties[propName] = parseFloat(valueInput.value) || fallback
-              valueInput.disabled = false
-            } else {
+        if (activeProps.length === 0) {
+          const hint = document.createElement('p')
+          hint.className = 'text-[11px] text-slate-500 italic'
+          hint.textContent = 'No properties animated yet.'
+          propsContainer.appendChild(hint)
+        } else {
+          activeProps.forEach(propName => {
+            const row = propRowTemplate.content.firstElementChild.cloneNode(true)
+            const nameEl = row.querySelector('[data-role="prop-name"]')
+            const valueInput = row.querySelector('[data-role="prop-value"]')
+            const removeBtn = row.querySelector('[data-role="prop-remove"]')
+
+            nameEl.textContent = ANIM_PROP_LABELS[propName] || propName
+            valueInput.value = step.properties[propName]
+            valueInput.setAttribute('aria-label', `${nameEl.textContent} value`)
+            valueInput.addEventListener('input', (e) => {
+              const parsed = parseFloat(e.target.value)
+              step.properties[propName] = Number.isFinite(parsed) ? parsed : 0
+            })
+            removeBtn.addEventListener('click', () => {
               delete step.properties[propName]
-              valueInput.disabled = true
-            }
+              commitSceneChange()
+              renderAnimationSequenceEditor(el)
+            })
+            propsContainer.appendChild(row)
           })
-          valueInput.addEventListener('input', (e) => {
-            if (step.properties && Object.prototype.hasOwnProperty.call(step.properties, propName)) {
-              step.properties[propName] = parseFloat(e.target.value) || 0
-            }
-          })
+        }
 
-          propsContainer.appendChild(row)
-        })
+        if (addPropSelect) {
+          if (remainingProps.length === 0) {
+            addPropSelect.classList.add('hidden')
+          } else {
+            addPropSelect.classList.remove('hidden')
+            addPropSelect.innerHTML = '<option value="">+ Add property...</option>' +
+              remainingProps.map(p => `<option value="${p}">${ANIM_PROP_LABELS[p] || p}</option>`).join('')
+            addPropSelect.onchange = (e) => {
+              const propName = e.target.value
+              if (!propName) return
+              step.properties[propName] = PROPERTY_DEFAULTS[propName] ?? 0
+              commitSceneChange()
+              renderAnimationSequenceEditor(el)
+            }
+          }
+        }
 
         listEl.appendChild(card)
       })
@@ -4270,12 +4654,28 @@
         }
       })
 
-      document.querySelectorAll('[data-animation-mode]').forEach(button => {
+      const animModeButtons = [...document.querySelectorAll('[data-animation-mode]')]
+      animModeButtons.forEach((button, idx) => {
         button.addEventListener('click', () => {
           animationEditorMode = button.dataset.animationMode
           updateAnimationEditorMode()
           const el = getSelected()
           if (el) renderAnimationSequenceEditor(el)
+        })
+        button.addEventListener('keydown', (e) => {
+          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return
+          e.preventDefault()
+          e.stopPropagation()
+          const nextIdx = e.key === 'Home' ? 0 : e.key === 'End' ? animModeButtons.length - 1
+            : (idx + (e.key === 'ArrowRight' ? 1 : -1) + animModeButtons.length) % animModeButtons.length
+          const target = animModeButtons[nextIdx]
+          if (target) {
+            animationEditorMode = target.dataset.animationMode
+            updateAnimationEditorMode()
+            const el = getSelected()
+            if (el) renderAnimationSequenceEditor(el)
+            target.focus()
+          }
         })
       })
 
@@ -5070,25 +5470,82 @@
         updateSceneInfo()
         updateSceneUrl(sanitized)
       })
-      document.getElementById('canvas-width').addEventListener('input', (e) => {
+      const canvasSizeErrorEl = document.getElementById('canvas-size-error')
+      const validateCanvasSize = () => {
+        const wEl = document.getElementById('canvas-width')
+        const hEl = document.getElementById('canvas-height')
+        const w = parseInt(wEl.value, 10)
+        const h = parseInt(hEl.value, 10)
+        const wOk = Number.isFinite(w) && w >= 100 && w <= 7680
+        const hOk = Number.isFinite(h) && h >= 100 && h <= 7680
+        setInputValidity(wEl, wOk)
+        setInputValidity(hEl, hOk)
+        if (canvasSizeErrorEl) {
+          canvasSizeErrorEl.textContent = (!wOk || !hOk) ? 'Valid canvas dimensions: 100 – 7680 px.' : ''
+          canvasSizeErrorEl.classList.toggle('hidden', wOk && hOk)
+        }
+        return { w, h, wOk, hOk }
+      }
+      document.getElementById('canvas-width').addEventListener('input', () => {
         if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
-        const val = parseInt(e.target.value, 10)
-        const valid = Number.isFinite(val) && val >= 100 && val <= 7680
-        setInputValidity(e.target, valid)
-        if (!valid) return
-        scene.canvas.width = val
+        const { w, wOk } = validateCanvasSize()
+        if (!wOk) return
+        scene.canvas.width = w
         renderCanvas()
         updateSceneInfo()
       })
-      document.getElementById('canvas-height').addEventListener('input', (e) => {
+      document.getElementById('canvas-height').addEventListener('input', () => {
         if (!scene.canvas) scene.canvas = { width: 1920, height: 1080, backgroundColor: 'transparent' }
-        const val = parseInt(e.target.value, 10)
-        const valid = Number.isFinite(val) && val >= 100 && val <= 7680
-        setInputValidity(e.target, valid)
-        if (!valid) return
-        scene.canvas.height = val
+        const { h, hOk } = validateCanvasSize()
+        if (!hOk) return
+        scene.canvas.height = h
         renderCanvas()
         updateSceneInfo()
+      })
+
+      // Multi-Selection Batch Actions
+      const alignMulti = (fn) => {
+        const unlocked = getSelectedElements().filter((el) => !el.locked)
+        if (unlocked.length === 0) {
+          showStudioToast('All selected layers are locked.', { variant: 'warn' })
+          return
+        }
+        const size = getSceneCanvasSize()
+        unlocked.forEach((el) => fn(el, size))
+        commitSceneChange()
+        renderCanvas()
+      }
+      document.getElementById('multi-clear-btn')?.addEventListener('click', () => selectElement(null))
+      document.getElementById('multi-align-left')?.addEventListener('click', () => alignMulti((el) => { el.x = 0 }))
+      document.getElementById('multi-align-center-h')?.addEventListener('click', () => alignMulti((el, s) => { el.x = Math.round((s.width - el.width) / 2) }))
+      document.getElementById('multi-align-right')?.addEventListener('click', () => alignMulti((el, s) => { el.x = s.width - el.width }))
+      document.getElementById('multi-align-top')?.addEventListener('click', () => alignMulti((el) => { el.y = 0 }))
+      document.getElementById('multi-align-center-v')?.addEventListener('click', () => alignMulti((el, s) => { el.y = Math.round((s.height - el.height) / 2) }))
+      document.getElementById('multi-align-bottom')?.addEventListener('click', () => alignMulti((el, s) => { el.y = s.height - el.height }))
+      document.getElementById('multi-lock-btn')?.addEventListener('click', () => {
+        const selected = getSelectedElements()
+        if (selected.length === 0) return
+        const nextLocked = !selected.every((el) => el.locked)
+        selected.forEach((el) => { el.locked = nextLocked })
+        commitSceneChange()
+        syncSelectionViews()
+      })
+      document.getElementById('multi-hide-btn')?.addEventListener('click', () => {
+        const selected = getSelectedElements()
+        if (selected.length === 0) return
+        const nextHidden = !selected.every((el) => el.hidden)
+        selected.forEach((el) => { el.hidden = nextHidden })
+        commitSceneChange()
+        syncSelectionViews()
+      })
+      document.getElementById('multi-duplicate-btn')?.addEventListener('click', duplicateSelectedElement)
+      document.getElementById('multi-delete-btn')?.addEventListener('click', deleteSelectedElement)
+      document.getElementById('multi-parent-select')?.addEventListener('change', (e) => {
+        if (e.target.value === '__keep__') return
+        const targetParentId = e.target.value || null
+        getSelectedElements().forEach((el) => reparentElement(el, targetParentId))
+        commitSceneChange()
+        syncSelectionViews()
       })
 
       const canvasBgInput = document.getElementById('canvas-bg-color')
@@ -5324,9 +5781,12 @@
       updateOverlayPreviewLink()
     })
     sceneNameInputEl.addEventListener('input', () => {
-      scene.name = sceneNameInputEl.value.trim() || scene.name || 'Default Scene'
+      const nextName = sceneNameInputEl.value.trim()
+      if (!nextName) return
+      scene.name = nextName
       availableScenes = availableScenes.map((item) => (item.id === currentSceneId ? { ...item, name: scene.name } : item))
-      syncSceneControls()
+      renderSceneOptions()
+      sceneSelectorEl.value = currentSceneId
       scheduleDebouncedCommit()
     })
     newSceneBtn.addEventListener('click', async () => {
@@ -5497,17 +5957,19 @@
         return
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        if (selectedElementId && !document.activeElement?.closest('[role="tablist"]')) {
-          const el = scene.elements.find((item) => item.id === selectedElementId)
-          if (el && !el.locked) {
+        if (selectedElementIds.size > 0 && !document.activeElement?.closest('[role="tablist"]')) {
+          const unlocked = getSelectedElements().filter((item) => !item.locked)
+          if (unlocked.length > 0) {
             e.preventDefault()
             const step = e.shiftKey ? 10 : 1
-            if (e.key === 'ArrowLeft') el.x -= step
-            else if (e.key === 'ArrowRight') el.x += step
-            else if (e.key === 'ArrowUp') el.y -= step
-            else if (e.key === 'ArrowDown') el.y += step
+            unlocked.forEach((el) => {
+              if (e.key === 'ArrowLeft') el.x -= step
+              else if (e.key === 'ArrowRight') el.x += step
+              else if (e.key === 'ArrowUp') el.y -= step
+              else if (e.key === 'ArrowDown') el.y += step
+            })
             renderCanvas()
-            updateInspectorValues()
+            if (selectedElementIds.size === 1) updateInspectorValues()
             scheduleDebouncedCommit()
             return
           }
